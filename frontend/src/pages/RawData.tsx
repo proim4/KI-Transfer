@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import CodeName from '../components/CodeName';
 import RouteFilterBar, { EMPTY_ROUTE_FILTER, matchesRouteFilter, routeFilterOptions, type RouteFilterValue } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
 import WeekSelector from '../components/WeekSelector';
@@ -8,12 +9,24 @@ type Tab = 'actual' | 'plan';
 
 const actualColumns: Column<RawActualRow>[] = [
   { key: 'transfer_date', label: 'วันที่โอน', sortValue: (r) => r.transfer_date, render: (r) => r.transfer_date },
-  { key: 'origin_code', label: 'รหัสต้นทาง', sortValue: (r) => r.origin_code, render: (r) => r.origin_code },
-  { key: 'origin_name', label: 'โรงงานต้นทาง', sortValue: (r) => r.origin_name, render: (r) => r.origin_name },
-  { key: 'dest_code', label: 'รหัสปลายทาง', sortValue: (r) => r.dest_code, render: (r) => r.dest_code },
-  { key: 'dest_name', label: 'โรงงานปลายทาง', sortValue: (r) => r.dest_name, render: (r) => r.dest_name },
-  { key: 'sku_code', label: 'รหัสสินค้า', sortValue: (r) => r.sku_code, render: (r) => r.sku_code },
-  { key: 'sku_name', label: 'ชื่อสินค้า', sortValue: (r) => r.sku_name, render: (r) => r.sku_name },
+  {
+    key: 'origin',
+    label: 'ต้นทาง',
+    sortValue: (r) => r.origin_name,
+    render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
+  },
+  {
+    key: 'dest',
+    label: 'ปลายทาง',
+    sortValue: (r) => r.dest_name,
+    render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
+  },
+  {
+    key: 'sku',
+    label: 'สินค้า',
+    sortValue: (r) => r.sku_name,
+    render: (r) => <CodeName code={r.sku_code} name={r.sku_name} />,
+  },
   { key: 'product_group', label: 'กลุ่มสินค้า (P19)', sortValue: (r) => r.product_group, render: (r) => r.product_group },
   {
     key: 'weight_kg',
@@ -32,11 +45,19 @@ const planColumns: Column<RawPlanRow>[] = [
     render: (r) => (r.source_file === 'weekly' ? 'Weekly' : 'Daily'),
   },
   { key: 'production_date', label: 'วันที่', sortValue: (r) => r.production_date, render: (r) => r.production_date },
-  { key: 'origin_code', label: 'รหัสต้นทาง', sortValue: (r) => r.origin_code, render: (r) => r.origin_code },
-  { key: 'origin_name', label: 'โรงงานต้นทาง', sortValue: (r) => r.origin_name, render: (r) => r.origin_name },
-  { key: 'dest_code', label: 'รหัสปลายทาง', sortValue: (r) => r.dest_code, render: (r) => r.dest_code },
-  { key: 'dest_name', label: 'โรงงานปลายทาง', sortValue: (r) => r.dest_name, render: (r) => r.dest_name },
-  { key: 'product_group', label: 'กลุ่มสินค้า (productForPlan19)', sortValue: (r) => r.product_group, render: (r) => r.product_group },
+  {
+    key: 'origin',
+    label: 'ต้นทาง',
+    sortValue: (r) => r.origin_name,
+    render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
+  },
+  {
+    key: 'dest',
+    label: 'ปลายทาง',
+    sortValue: (r) => r.dest_name,
+    render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
+  },
+  { key: 'product_group', label: 'กลุ่มสินค้า', sortValue: (r) => r.product_group, render: (r) => r.product_group },
   {
     key: 'origin_price',
     label: 'ราคาต้นทาง',
@@ -60,7 +81,7 @@ const planColumns: Column<RawPlanRow>[] = [
   },
   {
     key: 'supply_after',
-    label: 'แผนสุดท้าย (supplyAfter)',
+    label: 'แผนสุดท้าย',
     align: 'right',
     sortValue: (r) => r.supply_after,
     render: (r) => r.supply_after.toLocaleString('en-US'),

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import CodeName from '../components/CodeName';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
 import RouteFilterBar, {
   EMPTY_ROUTE_FILTER,
@@ -64,10 +65,18 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
   const columns: Column<TrackingResultRow>[] = useMemo(
     () => [
       { key: 'production_date', label: 'วันที่', sortValue: (r) => r.production_date, render: (r) => r.production_date },
-      { key: 'origin_code', label: 'รหัสต้นทาง', sortValue: (r) => r.origin_code, render: (r) => r.origin_code },
-      { key: 'origin_name', label: 'โรงงานต้นทาง', sortValue: (r) => r.origin_name, render: (r) => r.origin_name },
-      { key: 'dest_code', label: 'รหัสปลายทาง', sortValue: (r) => r.dest_code, render: (r) => r.dest_code },
-      { key: 'dest_name', label: 'โรงงานปลายทาง', sortValue: (r) => r.dest_name, render: (r) => r.dest_name },
+      {
+        key: 'origin',
+        label: 'ต้นทาง',
+        sortValue: (r) => r.origin_name,
+        render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
+      },
+      {
+        key: 'dest',
+        label: 'ปลายทาง',
+        sortValue: (r) => r.dest_name,
+        render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
+      },
       { key: 'product_group', label: 'กลุ่มสินค้า', sortValue: (r) => r.product_group, render: (r) => r.product_group },
       {
         key: 'origin_price',
@@ -113,14 +122,14 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
       },
       {
         key: 'profit_realized',
-        label: 'กำไรที่ได้จากส่วนต่างราคา (บาท)',
+        label: 'กำไรที่ได้ (บาท)',
         align: 'right',
         sortValue: (r) => r.profit_realized,
         render: (r) => formatBaht(r.profit_realized),
       },
       {
         key: 'profit_lost',
-        label: 'สูญเสียกำไรจากส่วนต่างราคา (บาท)',
+        label: 'สูญเสียกำไร (บาท)',
         align: 'right',
         sortValue: (r) => r.profit_lost,
         render: (r) => <span className={r.profit_lost < 0 ? 'text-red-600' : ''}>{formatBaht(r.profit_lost)}</span>,

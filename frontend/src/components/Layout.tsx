@@ -13,7 +13,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-6">
             <span className="text-lg font-semibold text-gray-900">ติดตามโอนเทียบแผน</span>
             <nav className="flex gap-2">
@@ -54,7 +54,7 @@ export default function Layout() {
           )}
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className="mx-auto max-w-screen-2xl px-4 py-6">
         <Outlet />
       </main>
     </div>
