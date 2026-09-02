@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import RawData from './pages/RawData';
 import Settings from './pages/Settings';
+import TrackingChannel from './pages/TrackingChannel';
 import Upload from './pages/Upload';
 import AuthGuard from './routes/AuthGuard';
 
@@ -17,6 +18,18 @@ export default function App() {
           <Route path="/upload" element={<Upload />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/raw-data" element={<RawData />} />
+          <Route
+            path="/tracking/weekly"
+            element={<TrackingChannel channel="weekly" title="ติดตามโอน Weekly เทียบแผน" />}
+          />
+          <Route
+            path="/tracking/daily"
+            element={<TrackingChannel channel="daily" title="ติดตามโอน Daily เทียบแผน" />}
+          />
+          <Route
+            path="/tracking/total"
+            element={<TrackingChannel channel="total" title="ติดตามโอนรวม (Weekly + Daily) เทียบแผน" />}
+          />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>

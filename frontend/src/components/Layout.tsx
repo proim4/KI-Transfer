@@ -26,6 +26,15 @@ export default function Layout() {
               <NavLink to="/raw-data" className={navLinkClass}>
                 ข้อมูลดิบ
               </NavLink>
+              <NavLink to="/tracking/weekly" className={navLinkClass}>
+                ติดตามโอน Weekly
+              </NavLink>
+              <NavLink to="/tracking/daily" className={navLinkClass}>
+                ติดตามโอน Daily
+              </NavLink>
+              <NavLink to="/tracking/total" className={navLinkClass}>
+                ติดตามโอนรวม
+              </NavLink>
               <NavLink to="/settings" className={navLinkClass}>
                 Settings
               </NavLink>
