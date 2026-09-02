@@ -14,6 +14,17 @@ import type { ActualRow, PlanRow } from '../_shared/types.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+// Called cross-origin from the frontend's own domain (Vercel), not from
+// Supabase's own origin — without these headers the browser's CORS
+// preflight (OPTIONS) is rejected and supabase-js reports it simply as
+// "Failed to send a request to the Edge Function", with no server-side
+// error to show for it.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 function toIsoDate(value: string): string {
   // Postgres `date` columns already round-trip through supabase-js as
   // 'YYYY-MM-DD' strings, so no reparsing is needed here.
@@ -21,8 +32,12 @@ function toIsoDate(value: string): string {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: CORS_HEADERS });
+  }
+
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
+    return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS });
   }
 
   let weekId: string | undefined;
@@ -31,13 +46,13 @@ Deno.serve(async (req: Request) => {
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid JSON body, expected { weekId }' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     });
   }
   if (!weekId) {
     return new Response(JSON.stringify({ error: 'weekId is required' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     });
   }
 
@@ -150,13 +165,13 @@ Deno.serve(async (req: Request) => {
       trackingRowCount: trackingRows.length,
       unmatchedRowCount: unmatchedRows.length,
     }),
-    { headers: { 'Content-Type': 'application/json' } },
+    { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
   );
 });
 
 function jsonError(message: string): Response {
   return new Response(JSON.stringify({ error: message }), {
     status: 500,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   });
 }
