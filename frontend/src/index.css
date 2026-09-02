@@ -1,10 +1,20 @@
 @import 'tailwindcss';
 
+/*
+ * The app has no dark theme (every color is a fixed Tailwind light-mode
+ * utility). Declaring "light dark" here lets the browser apply its native
+ * dark UA styles to unstyled form controls (select/button/input) whenever
+ * the OS prefers dark — e.g. white text rendered on their still-white
+ * Tailwind background, invisible. Force light so native controls stay
+ * legible regardless of the visitor's OS/browser theme.
+ */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
+  background: #f9fafb;
+  color: #111827;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
 }

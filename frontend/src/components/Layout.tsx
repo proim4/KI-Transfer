@@ -34,7 +34,7 @@ export default function Layout() {
               <button
                 type="button"
                 onClick={() => supabase.auth.signOut()}
-                className="rounded-md border border-gray-300 px-3 py-1.5 hover:bg-gray-100"
+                className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-gray-900 hover:bg-gray-100"
               >
                 ออกจากระบบ
               </button>

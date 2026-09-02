@@ -38,7 +38,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap gap-2">
-        <select value={date} onChange={(e) => setDate(e.target.value)} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+        <select value={date} onChange={(e) => setDate(e.target.value)} className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900">
           <option value="">ทุกวันที่</option>
           {dates.map((d) => (
             <option key={d} value={d}>
@@ -46,7 +46,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
             </option>
           ))}
         </select>
-        <select value={origin} onChange={(e) => setOrigin(e.target.value)} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+        <select value={origin} onChange={(e) => setOrigin(e.target.value)} className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900">
           <option value="">ทุกโรงงานต้นทาง</option>
           {origins.map((o) => (
             <option key={o} value={o}>
@@ -54,7 +54,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
             </option>
           ))}
         </select>
-        <select value={dest} onChange={(e) => setDest(e.target.value)} className="rounded-md border border-gray-300 px-2 py-1.5 text-sm">
+        <select value={dest} onChange={(e) => setDest(e.target.value)} className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900">
           <option value="">ทุกโรงงานปลายทาง</option>
           {dests.map((d) => (
             <option key={d} value={d}>
@@ -65,7 +65,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
         <select
           value={productGroup}
           onChange={(e) => setProductGroup(e.target.value)}
-          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+          className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
         >
           <option value="">ทุกกลุ่มสินค้า</option>
           {productGroups.map((p) => (

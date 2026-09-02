@@ -71,7 +71,7 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={isBusy}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50"
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 hover:bg-gray-50 disabled:opacity-50"
         >
           {upload ? 'อัพโหลดไฟล์ใหม่ (แทนที่)' : 'เลือกไฟล์'}
         </button>
@@ -79,7 +79,7 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
           <button
             type="button"
             onClick={() => downloadErrors(`errors_${fileType}.csv`, upload.error_report!)}
-            className="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
+            className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
           >
             ดาวน์โหลดรายการ Error
           </button>
