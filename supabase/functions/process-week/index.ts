@@ -9,6 +9,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { computeTracking } from '../_shared/calcEngine.ts';
+import { fetchAllRows } from '../_shared/fetchAllRows.ts';
 import type { ActualRow, PlanRow } from '../_shared/types.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -58,15 +59,18 @@ Deno.serve(async (req: Request) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  const [{ data: planRowsRaw, error: planError }, { data: actualRowsRaw, error: actualError }] = await Promise.all([
-    supabase.from('plan_rows').select('*').eq('week_id', weekId),
-    supabase.from('actual_rows').select('*').eq('week_id', weekId),
-  ]);
+  let planRowsRaw: Record<string, unknown>[];
+  let actualRowsRaw: Record<string, unknown>[];
+  try {
+    [planRowsRaw, actualRowsRaw] = await Promise.all([
+      fetchAllRows((from, to) => supabase.from('plan_rows').select('*').eq('week_id', weekId).range(from, to)),
+      fetchAllRows((from, to) => supabase.from('actual_rows').select('*').eq('week_id', weekId).range(from, to)),
+    ]);
+  } catch (err) {
+    return jsonError(err instanceof Error ? err.message : String(err));
+  }
 
-  if (planError) return jsonError(planError.message);
-  if (actualError) return jsonError(actualError.message);
-
-  const planRows: PlanRow[] = (planRowsRaw ?? []).map((r) => ({
+  const planRows: PlanRow[] = planRowsRaw.map((r: any) => ({
     sourceFile: r.source_file,
     productionDate: toIsoDate(r.production_date),
     originCode: r.origin_code,
@@ -80,7 +84,7 @@ Deno.serve(async (req: Request) => {
     supplyAfter: Number(r.supply_after),
   }));
 
-  const actualRows: ActualRow[] = (actualRowsRaw ?? []).map((r) => ({
+  const actualRows: ActualRow[] = actualRowsRaw.map((r: any) => ({
     originCode: r.origin_code,
     originName: r.origin_name,
     destCode: r.dest_code,
@@ -150,14 +154,11 @@ Deno.serve(async (req: Request) => {
   const { error: deleteUnmatchedError } = await supabase.from('unmatched_actual').delete().eq('week_id', weekId);
   if (deleteUnmatchedError) return jsonError(deleteUnmatchedError.message);
 
-  if (trackingRows.length > 0) {
-    const { error: insertTrackingError } = await supabase.from('tracking_results').insert(trackingRows);
-    if (insertTrackingError) return jsonError(insertTrackingError.message);
-  }
-
-  if (unmatchedRows.length > 0) {
-    const { error: insertUnmatchedError } = await supabase.from('unmatched_actual').insert(unmatchedRows);
-    if (insertUnmatchedError) return jsonError(insertUnmatchedError.message);
+  try {
+    await insertInBatches(supabase, 'tracking_results', trackingRows);
+    await insertInBatches(supabase, 'unmatched_actual', unmatchedRows);
+  } catch (err) {
+    return jsonError(err instanceof Error ? err.message : String(err));
   }
 
   return new Response(
@@ -168,6 +169,19 @@ Deno.serve(async (req: Request) => {
     { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
   );
 });
+
+async function insertInBatches(
+  supabase: ReturnType<typeof createClient>,
+  table: string,
+  rows: Record<string, unknown>[],
+  batchSize = 500,
+): Promise<void> {
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const { error } = await supabase.from(table).insert(batch);
+    if (error) throw new Error(error.message);
+  }
+}
 
 function jsonError(message: string): Response {
   return new Response(JSON.stringify({ error: message }), {

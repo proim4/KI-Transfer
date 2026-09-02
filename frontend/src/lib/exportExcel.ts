@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { aggregateChannel, aggregateReject, buildDailyTrend } from './aggregate';
+import { fetchAllRows } from './fetchAllRows';
 import { supabase } from './supabase';
 import type { TrackingResultRow } from '../types/db';
 
@@ -83,9 +84,9 @@ function actualSheetRow(r: ActualRowDb) {
 }
 
 export async function exportWeekToExcel(weekId: string, weekLabel: string, trackingResults: TrackingResultRow[]) {
-  const [{ data: planRows }, { data: actualRows }] = await Promise.all([
-    supabase.from('plan_rows').select('*').eq('week_id', weekId),
-    supabase.from('actual_rows').select('*').eq('week_id', weekId),
+  const [planRows, actualRows] = await Promise.all([
+    fetchAllRows<PlanRowDb>((from, to) => supabase.from('plan_rows').select('*').eq('week_id', weekId).range(from, to)),
+    fetchAllRows<ActualRowDb>((from, to) => supabase.from('actual_rows').select('*').eq('week_id', weekId).range(from, to)),
   ]);
 
   const weekly = aggregateChannel(trackingResults, 'weekly');
@@ -133,19 +134,15 @@ export async function exportWeekToExcel(weekId: string, weekLabel: string, track
   );
   XLSX.utils.book_append_sheet(
     workbook,
-    XLSX.utils.json_to_sheet((planRows ?? []).filter((r) => r.source_file === 'weekly').map(planSheetRow)),
+    XLSX.utils.json_to_sheet(planRows.filter((r) => r.source_file === 'weekly').map(planSheetRow)),
     'Weekly Plan',
   );
   XLSX.utils.book_append_sheet(
     workbook,
-    XLSX.utils.json_to_sheet((planRows ?? []).filter((r) => r.source_file === 'daily').map(planSheetRow)),
+    XLSX.utils.json_to_sheet(planRows.filter((r) => r.source_file === 'daily').map(planSheetRow)),
     'Daily Plan',
   );
-  XLSX.utils.book_append_sheet(
-    workbook,
-    XLSX.utils.json_to_sheet((actualRows ?? []).map(actualSheetRow)),
-    'Actual Transfer',
-  );
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(actualRows.map(actualSheetRow)), 'Actual Transfer');
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(lossAnalysisRows), 'Loss Analysis');
 
   XLSX.writeFile(workbook, `Tracking_${weekLabel}.xlsx`);
