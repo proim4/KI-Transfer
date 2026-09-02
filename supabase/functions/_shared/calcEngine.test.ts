@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateChannel, aggregateReject, computeChannel, computeTracking } from './calcEngine.ts';
+import { aggregateChannel, aggregateReject, computeChannel, computeTracking, dedupedActualTotal } from './calcEngine.ts';
 import type { ActualRow, PlanRow } from './types.ts';
 
 function planRow(overrides: Partial<PlanRow>): PlanRow {
@@ -156,6 +156,38 @@ describe('computeTracking', () => {
     expect(unmatchedActual).toHaveLength(1);
     expect(unmatchedActual[0].productGroup).toBe('สินค้าที่ไม่มีในแผน');
     expect(unmatchedActual[0].totalWeightKg).toBe(42);
+  });
+
+  it('does not credit the same actual pool once per price-variant row when aggregating (real WK36 pattern: ~46 routes carry 2+ prices)', () => {
+    // Same route/date/group, two price points (e.g. a mid-week price change)
+    // -> two separate tracking rows, each independently capped against the
+    // SAME undivided actual pool (this matches Excel's own SUMIFS, which
+    // never references price). Only 300kg of the combined 500kg plan (300+200)
+    // actually moved.
+    const plans = [
+      planRow({ productGroup: 'ตับไก่', originPrice: 90, destPrice: 88, supplyAfter: 300 }),
+      planRow({ productGroup: 'ตับไก่', originPrice: 94, destPrice: 85, supplyAfter: 200 }),
+    ];
+    const actuals = [actualRow({ productGroup: 'ตับไก่', weightKg: 300 })];
+    const { results } = computeTracking(plans, actuals);
+
+    expect(results).toHaveLength(2); // two distinct price-variant rows
+    expect(results[0].actualTotal).toBe(300);
+    expect(results[1].actualTotal).toBe(300); // same shared pool, not split
+
+    // Naively summing each row's own stored capped/toleranceAdj would give
+    // 100% (300/300 + 200/200 both read as fully achieved) — this is the bug.
+    const naiveInflatedPct = (results[0].total.toleranceAdj + results[1].total.toleranceAdj) / (300 + 200);
+    expect(naiveInflatedPct).toBe(1);
+
+    // The de-duplicated aggregate must instead cap the ONE real 300kg
+    // against the combined 500kg plan: 60%, not 100%.
+    const agg = aggregateChannel(results, 'total');
+    expect(agg.planSum).toBe(500);
+    expect(agg.toleranceAdj).toBe(300);
+    expect(agg.pct).toBeCloseTo(0.6, 10);
+
+    expect(dedupedActualTotal(results)).toBe(300);
   });
 });
 

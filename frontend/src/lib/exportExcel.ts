@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { aggregateChannel, aggregateReject, buildDailyTrend } from './aggregate';
+import { aggregateChannel, aggregateReject, buildDailyTrend, dedupedActualTotal } from './aggregate';
 import { fetchAllRows } from './fetchAllRows';
 import { supabase } from './supabase';
 import type { TrackingResultRow } from '../types/db';
@@ -100,7 +100,7 @@ export async function exportWeekToExcel(weekId: string, weekLabel: string, track
     { KPI: '% โอนเทียบแผน Daily', 'ค่า': daily.pct },
     { KPI: '% โอนเทียบแผน Total', 'ค่า': total.pct },
     { KPI: 'ปริมาณแผนโอน (kg)', 'ค่า': total.planSum },
-    { KPI: 'ปริมาณโอนจริง (kg)', 'ค่า': trackingResults.reduce((a, r) => a + Number(r.actual_total), 0) },
+    { KPI: 'ปริมาณโอนจริง (kg)', 'ค่า': dedupedActualTotal(trackingResults) },
     { KPI: 'ปริมาณโอนจริงตามแผน (kg)', 'ค่า': total.toleranceAdjSum },
     { KPI: 'ปริมาณ Reject (kg)', 'ค่า': reject.rejectSum },
     { KPI: '% Reject', 'ค่า': reject.pct },

@@ -205,17 +205,56 @@ export interface ChannelAggregate extends ChannelResult {
   planSum: number;
 }
 
+function routeKeyOf(r: TrackingResult): string {
+  return matchKey(r.productionDate, r.originCode, r.destCode, r.productGroup);
+}
+
+/**
+ * Groups rows by (productionDate, originCode, destCode, productGroup) —
+ * collapsing the price-variant split back down to one entry per physical
+ * route/date/group. actualTotal is identical across every price-variant row
+ * sharing a route (see computeTracking's matchKey), so it must be counted
+ * once per group, never once per row, or a route with N price points gets
+ * its actual weight credited N times.
+ */
+function groupByRoute(results: TrackingResult[]): Map<string, TrackingResult[]> {
+  const groups = new Map<string, TrackingResult[]>();
+  for (const r of results) {
+    const key = routeKeyOf(r);
+    const list = groups.get(key);
+    if (list) list.push(r);
+    else groups.set(key, [r]);
+  }
+  return groups;
+}
+
 /**
  * Ratio-of-sums aggregation, matching Excel's SUBTOTAL(9,...) grand totals and
  * the Summary sheet's pivot calculated field IFERROR(SUM(X)/SUM(M),0).
  * Never average the per-row `pct` values directly — that would weight every
  * route equally regardless of volume, which is not what the workbook does.
+ *
+ * Recomputes capped/toleranceAdj per physical route (summing plan across its
+ * price variants, but taking actual once) rather than summing the stored
+ * per-row values — otherwise a route with N price points would have its
+ * actual credited N times, inflating the aggregate % (Excel has this same
+ * defect at the grand-total level; this engine deliberately does not
+ * reproduce it there, even though each row's own stored figures still do,
+ * since they're independently meaningful per price segment).
  */
 export function aggregateChannel(results: TrackingResult[], channel: Channel): ChannelAggregate {
   const planKey = channel === 'weekly' ? 'planWeekly' : channel === 'daily' ? 'planDaily' : 'planTotal';
-  const planSum = sum(results.map((r) => r[planKey]));
-  const cappedSum = sum(results.map((r) => r[channel].capped));
-  const toleranceAdjSum = sum(results.map((r) => r[channel].toleranceAdj));
+  let planSum = 0;
+  let cappedSum = 0;
+  let toleranceAdjSum = 0;
+  for (const routeRows of groupByRoute(results).values()) {
+    const plan = sum(routeRows.map((r) => r[planKey]));
+    const actual = routeRows[0].actualTotal; // identical across every price variant of this route
+    const { capped, toleranceAdj } = computeChannel(actual, plan);
+    planSum += plan;
+    cappedSum += capped;
+    toleranceAdjSum += toleranceAdj;
+  }
   return {
     planSum,
     capped: cappedSum,
@@ -223,6 +262,21 @@ export function aggregateChannel(results: TrackingResult[], channel: Channel): C
     diff: toleranceAdjSum - planSum,
     pct: planSum > 0 ? toleranceAdjSum / planSum : null,
   };
+}
+
+/**
+ * Total actual-transfer weight across the given rows, counted once per
+ * physical route (date/origin/dest/productGroup) — never once per
+ * price-variant row, since those rows deliberately share the same actual
+ * pool (see computeTracking's matchKey).
+ */
+export function dedupedActualTotal(results: TrackingResult[]): number {
+  const seen = new Map<string, number>();
+  for (const r of results) {
+    const key = routeKeyOf(r);
+    if (!seen.has(key)) seen.set(key, r.actualTotal);
+  }
+  return sum(Array.from(seen.values()));
 }
 
 export interface RejectAggregate {

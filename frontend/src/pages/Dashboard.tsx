@@ -5,7 +5,7 @@ import TrendChart from '../components/TrendChart';
 import WeekSelector from '../components/WeekSelector';
 import { useWeeks } from '../hooks/useWeeks';
 import { useTrackingResults, useUnmatchedActual } from '../hooks/useTrackingResults';
-import { aggregateChannel, aggregateReject, buildDailyTrend, sum } from '../lib/aggregate';
+import { aggregateChannel, aggregateReject, buildDailyTrend, dedupedActualTotal, sum } from '../lib/aggregate';
 import { exportWeekToExcel } from '../lib/exportExcel';
 
 export default function Dashboard() {
@@ -32,7 +32,7 @@ export default function Dashboard() {
   const daily = aggregateChannel(rows, 'daily');
   const total = aggregateChannel(rows, 'total');
   const reject = aggregateReject(rows, 'total');
-  const actualTotal = sum(rows.map((r) => Number(r.actual_total)));
+  const actualTotal = dedupedActualTotal(rows);
   const lossTotal = sum(rows.map((r) => Number(r.profit_lost)));
   const trend = buildDailyTrend(rows);
   const unmatchedTotal = sum((unmatched ?? []).map((u) => Number(u.total_weight_kg)));
