@@ -23,6 +23,9 @@ export default function Layout() {
               <NavLink to="/upload" className={navLinkClass}>
                 Upload Data
               </NavLink>
+              <NavLink to="/raw-data" className={navLinkClass}>
+                ข้อมูลดิบ
+              </NavLink>
               <NavLink to="/settings" className={navLinkClass}>
                 Settings
               </NavLink>

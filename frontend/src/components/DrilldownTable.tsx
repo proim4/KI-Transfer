@@ -1,15 +1,17 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useActualBreakdown } from '../hooks/useActualBreakdown';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
+import RouteFilterBar, {
+  EMPTY_ROUTE_FILTER,
+  matchesRouteFilter,
+  routeFilterOptions,
+  type RouteFilterValue,
+} from './RouteFilterBar';
 import type { TrackingResultRow } from '../types/db';
 
 interface DrilldownTableProps {
   weekId: string;
   rows: TrackingResultRow[];
-}
-
-function uniqueSorted(values: string[]): string[] {
-  return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
 }
 
 type SortKey =
@@ -35,11 +37,12 @@ function compareValues(a: string | number | null, b: string | number | null): nu
   return an - bn;
 }
 
+function pickRoute(r: TrackingResultRow) {
+  return { date: r.production_date, origin: r.origin_name, dest: r.dest_name, productGroup: r.product_group };
+}
+
 export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
-  const [date, setDate] = useState('');
-  const [origin, setOrigin] = useState('');
-  const [dest, setDest] = useState('');
-  const [productGroup, setProductGroup] = useState('');
+  const [filter, setFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('production_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -53,18 +56,8 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
     }
   }
 
-  const dates = useMemo(() => uniqueSorted(rows.map((r) => r.production_date)), [rows]);
-  const origins = useMemo(() => uniqueSorted(rows.map((r) => r.origin_name)), [rows]);
-  const dests = useMemo(() => uniqueSorted(rows.map((r) => r.dest_name)), [rows]);
-  const productGroups = useMemo(() => uniqueSorted(rows.map((r) => r.product_group)), [rows]);
-
-  const filtered = rows.filter(
-    (r) =>
-      (!date || r.production_date === date) &&
-      (!origin || r.origin_name === origin) &&
-      (!dest || r.dest_name === dest) &&
-      (!productGroup || r.product_group === productGroup),
-  );
+  const options = useMemo(() => routeFilterOptions(rows, pickRoute), [rows]);
+  const filtered = rows.filter((r) => matchesRouteFilter(filter, pickRoute(r)));
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
@@ -97,45 +90,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-2">
-        <select value={date} onChange={(e) => setDate(e.target.value)} className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900">
-          <option value="">ทุกวันที่</option>
-          {dates.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        <select value={origin} onChange={(e) => setOrigin(e.target.value)} className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900">
-          <option value="">ทุกโรงงานต้นทาง</option>
-          {origins.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-        <select value={dest} onChange={(e) => setDest(e.target.value)} className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900">
-          <option value="">ทุกโรงงานปลายทาง</option>
-          {dests.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        <select
-          value={productGroup}
-          onChange={(e) => setProductGroup(e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
-        >
-          <option value="">ทุกกลุ่มสินค้า</option>
-          {productGroups.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-        <span className="self-center text-xs text-gray-400">{filtered.length} รายการ</span>
-      </div>
+      <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
 
       <div className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">
         <table className="w-full min-w-[900px] text-left text-sm">
