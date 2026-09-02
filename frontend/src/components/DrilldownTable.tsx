@@ -12,12 +12,46 @@ function uniqueSorted(values: string[]): string[] {
   return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
 }
 
+type SortKey =
+  | 'production_date'
+  | 'origin_name'
+  | 'dest_name'
+  | 'product_group'
+  | 'plan_total'
+  | 'actual_total'
+  | 'total_pct'
+  | 'overage'
+  | 'profit_lost';
+type SortDirection = 'asc' | 'desc';
+
+function compareValues(a: string | number | null, b: string | number | null): number {
+  if (typeof a === 'string' || typeof b === 'string') {
+    return String(a ?? '').localeCompare(String(b ?? ''));
+  }
+  // Nulls (e.g. total_pct with a zero plan, displayed as "-") sort last in
+  // ascending order, first in descending — never silently dropped.
+  const an = a === null ? -Infinity : a;
+  const bn = b === null ? -Infinity : b;
+  return an - bn;
+}
+
 export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   const [date, setDate] = useState('');
   const [origin, setOrigin] = useState('');
   const [dest, setDest] = useState('');
   const [productGroup, setProductGroup] = useState('');
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('production_date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  function handleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  }
 
   const dates = useMemo(() => uniqueSorted(rows.map((r) => r.production_date)), [rows]);
   const origins = useMemo(() => uniqueSorted(rows.map((r) => r.origin_name)), [rows]);
@@ -32,8 +66,34 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
       (!productGroup || r.product_group === productGroup),
   );
 
-  const expandedRow = filtered.find((r) => r.id === expandedId) ?? null;
+  const sorted = useMemo(() => {
+    const copy = [...filtered];
+    copy.sort((a, b) => {
+      const cmp = compareValues(a[sortKey], b[sortKey]);
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+    return copy;
+  }, [filtered, sortKey, sortDirection]);
+
+  const expandedRow = sorted.find((r) => r.id === expandedId) ?? null;
   const breakdown = useActualBreakdown(weekId, expandedRow);
+
+  function sortHeader(label: string, key: SortKey, align?: 'right') {
+    const active = sortKey === key;
+    return (
+      <th
+        onClick={() => handleSort(key)}
+        className={`cursor-pointer select-none px-3 py-2 hover:text-gray-700 ${align === 'right' ? 'text-right' : 'text-left'}`}
+      >
+        <span className={`inline-flex items-center gap-1 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
+          {label}
+          <span className={active ? 'text-gray-600' : 'text-gray-300'}>
+            {active ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+          </span>
+        </span>
+      </th>
+    );
+  }
 
   return (
     <div>
@@ -81,19 +141,19 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="sticky top-0 bg-gray-50 text-xs uppercase text-gray-500">
             <tr>
-              <th className="px-3 py-2">วันที่</th>
-              <th className="px-3 py-2">ต้นทาง</th>
-              <th className="px-3 py-2">ปลายทาง</th>
-              <th className="px-3 py-2">กลุ่มสินค้า</th>
-              <th className="px-3 py-2 text-right">แผน (kg)</th>
-              <th className="px-3 py-2 text-right">จริง (kg)</th>
-              <th className="px-3 py-2 text-right">% เทียบแผน</th>
-              <th className="px-3 py-2 text-right">โอนเกินแผน</th>
-              <th className="px-3 py-2 text-right">สูญเสีย (บาท)</th>
+              {sortHeader('วันที่', 'production_date')}
+              {sortHeader('ต้นทาง', 'origin_name')}
+              {sortHeader('ปลายทาง', 'dest_name')}
+              {sortHeader('กลุ่มสินค้า', 'product_group')}
+              {sortHeader('แผน (kg)', 'plan_total', 'right')}
+              {sortHeader('จริง (kg)', 'actual_total', 'right')}
+              {sortHeader('% เทียบแผน', 'total_pct', 'right')}
+              {sortHeader('โอนเกินแผน', 'overage', 'right')}
+              {sortHeader('สูญเสีย (บาท)', 'profit_lost', 'right')}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filtered.map((r) => (
+            {sorted.map((r) => (
               <Fragment key={r.id}>
                 <tr
                   onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
