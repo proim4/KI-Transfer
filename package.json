@@ -1,0 +1,14 @@
+{
+  "name": "ki-transfer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Root workspace for the transfer-vs-plan calculation engine tests (Supabase Edge Function code under supabase/functions runs on Deno; this package only exists to unit-test the pure calc logic with Vitest).",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}
