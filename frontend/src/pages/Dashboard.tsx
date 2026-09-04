@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import DrilldownTable from '../components/DrilldownTable';
 import KpiCard, { formatBaht, formatKg, formatPct } from '../components/KpiCard';
-import TrendChart from '../components/TrendChart';
 import WeekSelector from '../components/WeekSelector';
 import { useStatusThresholds } from '../hooks/useAppSettings';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useUploads } from '../hooks/useUploads';
 import { useWeeks } from '../hooks/useWeeks';
 import { useTrackingResults, useUnmatchedActual } from '../hooks/useTrackingResults';
-import { aggregateChannel, aggregateReject, buildDailyTrend, dedupedActualTotal, sum } from '../lib/aggregate';
+import { aggregateChannel, aggregateReject, dedupedActualTotal, sum } from '../lib/aggregate';
 import { exportWeekToExcel } from '../lib/exportExcel';
 import { formatDate, formatDateTime, formatTime } from '../lib/formatDateTime';
 import { computeStatus } from '../lib/statusBadge';
@@ -41,7 +40,6 @@ export default function Dashboard() {
   const reject = aggregateReject(rows, 'total');
   const actualTotal = dedupedActualTotal(rows);
   const lossTotal = sum(rows.map((r) => Number(r.profit_lost)));
-  const trend = buildDailyTrend(rows);
   const unmatchedTotal = sum((unmatched ?? []).map((u) => Number(u.total_weight_kg)));
 
   const lastUpdatedAt = (uploads ?? [])
@@ -115,11 +113,6 @@ export default function Dashboard() {
             <KpiCard label="ปริมาณ Reject" value={formatKg(reject.rejectSum)} sub={`% Reject: ${formatPct(reject.pct)}`} />
             <KpiCard label="มูลค่าสูญเสีย" value={formatBaht(lossTotal)} tone={lossTotal < 0 ? 'bad' : 'default'} />
             <KpiCard label="โอนไม่ตรงแผนเลย" value={formatKg(unmatchedTotal)} sub="สินค้า/เส้นทางที่ไม่มีในแผน" />
-          </div>
-
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <h2 className="mb-3 text-sm font-semibold text-gray-700">Trend รายวัน</h2>
-            <TrendChart data={trend} />
           </div>
 
           <div className="rounded-lg border border-gray-200 bg-white p-4">
