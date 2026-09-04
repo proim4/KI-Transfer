@@ -168,7 +168,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                     key={c.key}
                     className={`sticky top-7 overflow-hidden px-3 text-xs font-bold normal-case ${
                       c.align === 'right' ? 'text-right' : 'text-left'
-                    } ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.tintClassName} ${
+                    } ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.totalsTintClassName} ${
                       total?.tone ? TOTAL_TONE_CLASS[total.tone] : 'text-gray-900'
                     }`}
                   >
@@ -185,10 +185,20 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   align={c.align}
                   onClick={() => handleSort(c.key)}
                   onMouseDownResize={startResize(c.key)}
-                  className={`sticky top-14 ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.tintClassName}`}
+                  className={`sticky top-14 ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.labelClassName}`}
                 >
                   {c.label}
-                  <span className={c.key === sortKey ? 'text-gray-600' : 'text-gray-300'}>
+                  <span
+                    className={
+                      c.key === sortKey
+                        ? c.group.dark
+                          ? 'text-white'
+                          : 'text-gray-600'
+                        : c.group.dark
+                          ? 'text-white/50'
+                          : 'text-gray-300'
+                    }
+                  >
                     {c.key === sortKey ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
                   </span>
                 </ResizableTh>

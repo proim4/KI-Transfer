@@ -6,10 +6,14 @@ import ResizableTh from './ResizableTh';
 export interface ColumnGroup {
   key: string;
   label: string;
-  /** Solid band styling for the top header row. */
+  /** Solid band styling for the group-name row (row 1). */
   bandClassName: string;
-  /** Light tint for the per-column header row underneath the band. */
-  tintClassName: string;
+  /** Styling for the column-name row (row 3) — normally the same solid color as the band, not a pastel tint. */
+  labelClassName: string;
+  /** Light tint for the grand-total row (row 2) — kept light so the total's own colored text (black/green/red) stays legible. */
+  totalsTintClassName: string;
+  /** True when labelClassName has light/white text — swaps the sort arrow to a light color so it stays visible on a dark band. */
+  dark?: boolean;
 }
 
 export interface Column<T> {
@@ -145,9 +149,9 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
                   key={column.key}
                   className={`sticky ${totalsTop} overflow-hidden px-3 text-xs font-bold normal-case ${
                     column.align === 'right' ? 'text-right' : 'text-left'
-                  } ${column.pin ? 'left-0 z-30' : 'z-10'} ${column.group ? column.group.tintClassName : 'bg-gray-50'} ${
-                    column.totalTone ? TOTAL_TONE_CLASS[column.totalTone] : 'text-gray-900'
-                  }`}
+                  } ${column.pin ? 'left-0 z-30' : 'z-10'} ${
+                    column.group ? column.group.totalsTintClassName : 'bg-gray-50'
+                  } ${column.totalTone ? TOTAL_TONE_CLASS[column.totalTone] : 'text-gray-900'}`}
                 >
                   {column.total ?? ''}
                 </th>
@@ -163,11 +167,21 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
                 onClick={() => handleSort(column.key)}
                 onMouseDownResize={startResize(column.key)}
                 className={`sticky ${labelTop} ${column.pin ? 'left-0 z-30' : 'z-10'} ${
-                  column.group ? column.group.tintClassName : 'bg-gray-50'
+                  column.group ? column.group.labelClassName : 'bg-gray-50'
                 }`}
               >
                 {column.label}
-                <span className={column.key === sortKey ? 'text-gray-600' : 'text-gray-300'}>
+                <span
+                  className={
+                    column.key === sortKey
+                      ? column.group?.dark
+                        ? 'text-white'
+                        : 'text-gray-600'
+                      : column.group?.dark
+                        ? 'text-white/50'
+                        : 'text-gray-300'
+                  }
+                >
                   {column.key === sortKey ? (direction === 'asc' ? '▲' : '▼') : '↕'}
                 </span>
               </ResizableTh>
