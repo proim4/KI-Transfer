@@ -16,7 +16,6 @@ import RouteFilterBar, {
 } from './RouteFilterBar';
 import { groupRuns, type ColumnGroup } from './SortableTable';
 import StatusBadge from './StatusBadge';
-import TotalSummaryBar from './TotalSummaryBar';
 import type { TrackingResultRow } from '../types/db';
 
 interface DrilldownTableProps {
@@ -53,6 +52,7 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; gr
 ];
 
 const RUNS = groupRuns(COLUMNS);
+const TOTAL_TONE_CLASS: Record<'good' | 'bad', string> = { good: 'text-green-700', bad: 'text-red-700' };
 
 function sortValue(row: TrackingResultRow, key: SortKey): string | number | null {
   return key === 'status' ? row.total_pct : row[key];
@@ -116,19 +116,20 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
     return copy;
   }, [filtered, sortKey, sortDirection]);
 
-  const summary = useMemo(() => {
+  // Grand totals for the currently filtered rows, shown pinned above each
+  // metric's own column (like the source workbook's PivotTable grand-total
+  // row) rather than in a separate strip that would drift out of alignment
+  // once the table scrolls horizontally.
+  const totalsByKey: Partial<Record<SortKey, { value: string; tone?: 'good' | 'bad' }>> = useMemo(() => {
     const agg = aggregateChannel(filtered, 'total');
-    const actualTotal = dedupedActualTotal(filtered);
-    const overageSum = sum(filtered.map((r) => Number(r.overage)));
     const lossSum = sum(filtered.map((r) => Number(r.profit_lost)));
-    return [
-      { label: 'Total Plan', value: formatKg(agg.planSum) },
-      { label: 'Total Actual', value: formatKg(actualTotal) },
-      { label: 'Total Diff', value: formatKg(agg.diff), tone: agg.diff < 0 ? ('bad' as const) : agg.diff > 0 ? ('good' as const) : undefined },
-      { label: 'Total %', value: formatPct(agg.pct) },
-      { label: 'Total โอนเกินแผน', value: formatKg(overageSum) },
-      { label: 'Total สูญเสียกำไร', value: formatBaht(lossSum), tone: lossSum < 0 ? ('bad' as const) : undefined },
-    ];
+    return {
+      plan_total: { value: formatKg(agg.planSum) },
+      actual_total: { value: formatKg(dedupedActualTotal(filtered)) },
+      total_pct: { value: formatPct(agg.pct) },
+      overage: { value: formatKg(sum(filtered.map((r) => Number(r.overage)))) },
+      profit_lost: { value: formatBaht(lossSum), tone: lossSum < 0 ? 'bad' : undefined },
+    };
   }, [filtered]);
 
   const expandedRow = sorted.find((r) => r.id === expandedId) ?? null;
@@ -137,7 +138,6 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   return (
     <div>
       <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
-      <TotalSummaryBar items={summary} />
 
       <div className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">
         <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>
@@ -160,7 +160,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                 </th>
               ))}
             </tr>
-            <tr>
+            <tr className="h-9">
               {COLUMNS.map((c) => (
                 <ResizableTh
                   key={c.key}
@@ -176,6 +176,23 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   </span>
                 </ResizableTh>
               ))}
+            </tr>
+            <tr className="h-7">
+              {COLUMNS.map((c) => {
+                const total = totalsByKey[c.key];
+                return (
+                  <th
+                    key={c.key}
+                    className={`sticky top-16 overflow-hidden px-3 text-xs font-bold normal-case ${
+                      c.align === 'right' ? 'text-right' : 'text-left'
+                    } ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.tintClassName} ${
+                      total?.tone ? TOTAL_TONE_CLASS[total.tone] : 'text-gray-900'
+                    }`}
+                  >
+                    {total?.value ?? ''}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">

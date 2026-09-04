@@ -12,7 +12,6 @@ import RouteFilterBar, {
   type RouteFilterValue,
 } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
-import TotalSummaryBar from '../components/TotalSummaryBar';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useTrackingResults } from '../hooks/useTrackingResults';
@@ -108,6 +107,29 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
   const diffField = DIFF_FIELD[channel];
   const pctField = PCT_FIELD[channel];
 
+  const options = useMemo(() => routeFilterOptions(rows, pickRoute), [rows]);
+  const filtered = rows.filter((r) => matchesRouteFilter(filter, pickRoute(r)));
+
+  // Grand totals for whatever rows are currently filtered/visible — shown
+  // pinned to the top of each metric's own column, like the source
+  // workbook's PivotTable grand-total row, instead of a separate strip that
+  // would drift out of alignment once the table scrolls horizontally.
+  const totals = useMemo(() => {
+    const agg = aggregateChannel(filtered, channel);
+    return {
+      plan: formatKg(agg.planSum),
+      actual: formatKg(dedupedActualTotal(filtered)),
+      diff: formatKg(agg.diff),
+      diffTone: agg.diff < 0 ? ('bad' as const) : agg.diff > 0 ? ('good' as const) : undefined,
+      pct: formatPct(agg.pct),
+      profitRealized: formatBaht(sum(filtered.map((r) => Number(r.profit_realized)))),
+      profitLost: (() => {
+        const value = sum(filtered.map((r) => Number(r.profit_lost)));
+        return { text: formatBaht(value), tone: value < 0 ? ('bad' as const) : undefined };
+      })(),
+    };
+  }, [filtered, channel]);
+
   const columns: Column<TrackingResultRow>[] = useMemo(
     () => [
       {
@@ -168,6 +190,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         label: PLAN_LABEL[channel],
         align: 'right',
         group: PLAN_GROUP,
+        total: totals.plan,
         sortValue: (r) => Number(r[planField]),
         render: (r) => formatKg(Number(r[planField])),
       },
@@ -176,6 +199,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         label: 'โอนจริงทั้งหมด (kg)',
         align: 'right',
         group: ACTUAL_GROUP,
+        total: totals.actual,
         sortValue: (r) => r.actual_total,
         render: (r) => formatKg(r.actual_total),
       },
@@ -184,6 +208,8 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         label: 'Diff แผนโอน (kg)',
         align: 'right',
         group: DIFF_GROUP,
+        total: totals.diff,
+        totalTone: totals.diffTone,
         sortValue: (r) => Number(r[diffField]),
         render: (r) => {
           const diff = Number(r[diffField]);
@@ -195,6 +221,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         label: '% โอนเทียบแผน',
         align: 'right',
         group: DIFF_GROUP,
+        total: totals.pct,
         sortValue: (r) => r[pctField] as number | null,
         render: (r) => (thresholds ? <PctBar pct={r[pctField] as number | null} thresholds={thresholds} /> : formatPct(r[pctField] as number | null)),
       },
@@ -203,6 +230,8 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         label: 'กำไรที่ได้ (บาท)',
         align: 'right',
         group: PROFIT_GROUP,
+        total: totals.profitRealized,
+        totalTone: 'good',
         sortValue: (r) => r.profit_realized,
         render: (r) => formatBaht(r.profit_realized),
       },
@@ -211,6 +240,8 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         label: 'สูญเสียกำไร (บาท)',
         align: 'right',
         group: LOSS_GROUP,
+        total: totals.profitLost.text,
+        totalTone: totals.profitLost.tone,
         sortValue: (r) => r.profit_lost,
         render: (r) => <span className={r.profit_lost < 0 ? 'text-red-600' : ''}>{formatBaht(r.profit_lost)}</span>,
       },
@@ -222,26 +253,8 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         render: (r) => <RemarkCell id={r.id} value={r.remark} />,
       },
     ],
-    [channel, planField, diffField, pctField, thresholds],
+    [channel, planField, diffField, pctField, thresholds, totals],
   );
-
-  const options = useMemo(() => routeFilterOptions(rows, pickRoute), [rows]);
-  const filtered = rows.filter((r) => matchesRouteFilter(filter, pickRoute(r)));
-
-  const summary = useMemo(() => {
-    const agg = aggregateChannel(filtered, channel);
-    const actualTotal = dedupedActualTotal(filtered);
-    const profitRealized = sum(filtered.map((r) => Number(r.profit_realized)));
-    const profitLost = sum(filtered.map((r) => Number(r.profit_lost)));
-    return [
-      { label: 'Total Plan', value: formatKg(agg.planSum) },
-      { label: 'Total Actual', value: formatKg(actualTotal) },
-      { label: 'Total Diff', value: formatKg(agg.diff), tone: agg.diff < 0 ? ('bad' as const) : agg.diff > 0 ? ('good' as const) : undefined },
-      { label: 'Total %', value: formatPct(agg.pct) },
-      { label: 'Total กำไรที่ได้', value: formatBaht(profitRealized), tone: 'good' as const },
-      { label: 'Total สูญเสียกำไร', value: formatBaht(profitLost), tone: profitLost < 0 ? ('bad' as const) : undefined },
-    ];
-  }, [filtered, channel]);
 
   return (
     <div className="space-y-4">
@@ -271,7 +284,6 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
       {weekId && rows.length > 0 && (
         <>
           <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
-          <TotalSummaryBar items={summary} />
           <SortableTable rows={filtered} columns={columns} rowKey={(r) => r.id} defaultSortKey="production_date" />
         </>
       )}

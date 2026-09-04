@@ -3,94 +3,12 @@ import CodeName from '../components/CodeName';
 import { formatKg } from '../components/KpiCard';
 import RouteFilterBar, { EMPTY_ROUTE_FILTER, matchesRouteFilter, routeFilterOptions, type RouteFilterValue } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
-import TotalSummaryBar from '../components/TotalSummaryBar';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useRawActualRows, useRawPlanRows, type RawActualRow, type RawPlanRow } from '../hooks/useRawRows';
 import { sum } from '../lib/aggregate';
 
 type Tab = 'actual' | 'plan';
-
-const actualColumns: Column<RawActualRow>[] = [
-  { key: 'transfer_date', label: 'วันที่โอน', sortValue: (r) => r.transfer_date, render: (r) => r.transfer_date },
-  {
-    key: 'origin',
-    label: 'ต้นทาง',
-    sortValue: (r) => r.origin_name,
-    render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
-  },
-  {
-    key: 'dest',
-    label: 'ปลายทาง',
-    sortValue: (r) => r.dest_name,
-    render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
-  },
-  {
-    key: 'sku',
-    label: 'สินค้า',
-    sortValue: (r) => r.sku_name,
-    render: (r) => <CodeName code={r.sku_code} name={r.sku_name} />,
-  },
-  { key: 'product_group', label: 'กลุ่มสินค้า (P19)', sortValue: (r) => r.product_group, render: (r) => r.product_group },
-  {
-    key: 'weight_kg',
-    label: 'น้ำหนัก (KG)',
-    align: 'right',
-    sortValue: (r) => r.weight_kg,
-    render: (r) => r.weight_kg.toLocaleString('en-US'),
-  },
-];
-
-const planColumns: Column<RawPlanRow>[] = [
-  {
-    key: 'source_file',
-    label: 'ประเภท',
-    sortValue: (r) => r.source_file,
-    render: (r) => (r.source_file === 'weekly' ? 'Weekly' : 'Daily'),
-  },
-  { key: 'production_date', label: 'วันที่', sortValue: (r) => r.production_date, render: (r) => r.production_date },
-  {
-    key: 'origin',
-    label: 'ต้นทาง',
-    sortValue: (r) => r.origin_name,
-    render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
-  },
-  {
-    key: 'dest',
-    label: 'ปลายทาง',
-    sortValue: (r) => r.dest_name,
-    render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
-  },
-  { key: 'product_group', label: 'กลุ่มสินค้า', sortValue: (r) => r.product_group, render: (r) => r.product_group },
-  {
-    key: 'origin_price',
-    label: 'ราคาต้นทาง',
-    align: 'right',
-    sortValue: (r) => r.origin_price,
-    render: (r) => r.origin_price.toLocaleString('en-US'),
-  },
-  {
-    key: 'dest_price',
-    label: 'ราคาปลายทาง',
-    align: 'right',
-    sortValue: (r) => r.dest_price,
-    render: (r) => r.dest_price.toLocaleString('en-US'),
-  },
-  {
-    key: 'suggest',
-    label: 'Suggest',
-    align: 'right',
-    sortValue: (r) => r.suggest,
-    render: (r) => r.suggest.toLocaleString('en-US'),
-  },
-  {
-    key: 'supply_after',
-    label: 'แผนสุดท้าย',
-    align: 'right',
-    sortValue: (r) => r.supply_after,
-    render: (r) => r.supply_after.toLocaleString('en-US'),
-  },
-];
 
 function pickActualRoute(r: RawActualRow) {
   return {
@@ -135,14 +53,93 @@ export default function RawData() {
   const filteredActual = actualRows.filter((r) => matchesRouteFilter(actualFilter, pickActualRoute(r)));
   const filteredPlan = planRows.filter((r) => matchesRouteFilter(planFilter, pickPlanRoute(r)));
 
-  const actualSummary = useMemo(
-    () => [{ label: 'Total น้ำหนัก (kg)', value: formatKg(sum(filteredActual.map((r) => r.weight_kg))) }],
+  // Grand totals pinned above their own column (see DrilldownTable/TrackingChannel for the same pattern) instead of a separate strip that would drift out of alignment on horizontal scroll.
+  const actualColumns: Column<RawActualRow>[] = useMemo(
+    () => [
+      { key: 'transfer_date', label: 'วันที่โอน', sortValue: (r) => r.transfer_date, render: (r) => r.transfer_date },
+      {
+        key: 'origin',
+        label: 'ต้นทาง',
+        sortValue: (r) => r.origin_name,
+        render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
+      },
+      {
+        key: 'dest',
+        label: 'ปลายทาง',
+        sortValue: (r) => r.dest_name,
+        render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
+      },
+      {
+        key: 'sku',
+        label: 'สินค้า',
+        sortValue: (r) => r.sku_name,
+        render: (r) => <CodeName code={r.sku_code} name={r.sku_name} />,
+      },
+      { key: 'product_group', label: 'กลุ่มสินค้า (P19)', sortValue: (r) => r.product_group, render: (r) => r.product_group },
+      {
+        key: 'weight_kg',
+        label: 'น้ำหนัก (KG)',
+        align: 'right',
+        total: formatKg(sum(filteredActual.map((r) => r.weight_kg))),
+        sortValue: (r) => r.weight_kg,
+        render: (r) => r.weight_kg.toLocaleString('en-US'),
+      },
+    ],
     [filteredActual],
   );
-  const planSummary = useMemo(
+
+  const planColumns: Column<RawPlanRow>[] = useMemo(
     () => [
-      { label: 'Total Suggest', value: formatKg(sum(filteredPlan.map((r) => r.suggest))) },
-      { label: 'Total แผนสุดท้าย', value: formatKg(sum(filteredPlan.map((r) => r.supply_after))) },
+      {
+        key: 'source_file',
+        label: 'ประเภท',
+        sortValue: (r) => r.source_file,
+        render: (r) => (r.source_file === 'weekly' ? 'Weekly' : 'Daily'),
+      },
+      { key: 'production_date', label: 'วันที่', sortValue: (r) => r.production_date, render: (r) => r.production_date },
+      {
+        key: 'origin',
+        label: 'ต้นทาง',
+        sortValue: (r) => r.origin_name,
+        render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
+      },
+      {
+        key: 'dest',
+        label: 'ปลายทาง',
+        sortValue: (r) => r.dest_name,
+        render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
+      },
+      { key: 'product_group', label: 'กลุ่มสินค้า', sortValue: (r) => r.product_group, render: (r) => r.product_group },
+      {
+        key: 'origin_price',
+        label: 'ราคาต้นทาง',
+        align: 'right',
+        sortValue: (r) => r.origin_price,
+        render: (r) => r.origin_price.toLocaleString('en-US'),
+      },
+      {
+        key: 'dest_price',
+        label: 'ราคาปลายทาง',
+        align: 'right',
+        sortValue: (r) => r.dest_price,
+        render: (r) => r.dest_price.toLocaleString('en-US'),
+      },
+      {
+        key: 'suggest',
+        label: 'Suggest',
+        align: 'right',
+        total: formatKg(sum(filteredPlan.map((r) => r.suggest))),
+        sortValue: (r) => r.suggest,
+        render: (r) => r.suggest.toLocaleString('en-US'),
+      },
+      {
+        key: 'supply_after',
+        label: 'แผนสุดท้าย',
+        align: 'right',
+        total: formatKg(sum(filteredPlan.map((r) => r.supply_after))),
+        sortValue: (r) => r.supply_after,
+        render: (r) => r.supply_after.toLocaleString('en-US'),
+      },
     ],
     [filteredPlan],
   );
@@ -178,7 +175,6 @@ export default function RawData() {
                   options={actualOptions}
                   resultCount={filteredActual.length}
                 />
-                <TotalSummaryBar items={actualSummary} />
                 <SortableTable rows={filteredActual} columns={actualColumns} rowKey={(r) => r.id} defaultSortKey="transfer_date" />
               </>
             ))}
@@ -194,7 +190,6 @@ export default function RawData() {
                   options={planOptions}
                   resultCount={filteredPlan.length}
                 />
-                <TotalSummaryBar items={planSummary} />
                 <SortableTable rows={filteredPlan} columns={planColumns} rowKey={(r) => r.id} defaultSortKey="production_date" />
               </>
             ))}

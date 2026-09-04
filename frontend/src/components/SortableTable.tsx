@@ -20,11 +20,15 @@ export interface Column<T> {
   pin?: boolean;
   /** When set on every column, renders a colored 2-tier header (group band + column names); omit entirely for a plain single-row header. */
   group?: ColumnGroup;
+  /** Pre-formatted grand-total for this column (of whatever rows are currently passed in, i.e. already filtered) — shown in its own row right under the column label, aligned with the column like in the source workbook. Omit/blank for columns with nothing to total (identity columns, remarks). */
+  total?: string;
+  totalTone?: 'good' | 'bad';
   sortValue: (row: T) => string | number | null;
   render: (row: T) => ReactNode;
 }
 
 const PIN_CLASS = 'sticky left-0 z-10 bg-white';
+const TOTAL_TONE_CLASS: Record<'good' | 'bad', string> = { good: 'text-green-700', bad: 'text-red-700' };
 
 interface SortableTableProps<T> {
   rows: T[];
@@ -79,7 +83,15 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
   const { widths, startResize } = useColumnWidths(initialWidths);
   const totalWidth = columns.reduce((a, c) => a + (widths[c.key] ?? defaultColumnWidth(c.label)), 0);
   const hasGroups = columns.length > 0 && columns.every((c) => c.group);
+  const hasTotals = columns.some((c) => c.total !== undefined);
   const runs = useMemo(() => (hasGroups ? groupRuns(columns) : []), [columns, hasGroups]);
+
+  // Fixed row heights so each sticky row's offset is exact without measuring
+  // — only applied once there's a second/third row to stack, so a plain
+  // single-row table (no groups, no totals) renders exactly as it always has.
+  const labelRowClass = hasTotals || hasGroups ? 'h-9' : '';
+  const labelTop = hasGroups ? 'top-7' : 'top-0';
+  const totalsTop = hasGroups ? 'top-16' : 'top-9';
 
   function handleSort(key: string) {
     if (key === sortKey) {
@@ -125,7 +137,7 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
               ))}
             </tr>
           )}
-          <tr>
+          <tr className={labelRowClass}>
             {columns.map((column) => (
               <ResizableTh
                 key={column.key}
@@ -133,7 +145,7 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
                 align={column.align}
                 onClick={() => handleSort(column.key)}
                 onMouseDownResize={startResize(column.key)}
-                className={`sticky ${hasGroups ? 'top-7' : 'top-0'} ${column.pin ? 'left-0 z-30' : 'z-10'} ${
+                className={`sticky ${labelTop} ${column.pin ? 'left-0 z-30' : 'z-10'} ${
                   column.group ? column.group.tintClassName : 'bg-gray-50'
                 }`}
               >
@@ -144,6 +156,22 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
               </ResizableTh>
             ))}
           </tr>
+          {hasTotals && (
+            <tr className="h-7">
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  className={`sticky ${totalsTop} overflow-hidden px-3 text-xs font-bold normal-case ${
+                    column.align === 'right' ? 'text-right' : 'text-left'
+                  } ${column.pin ? 'left-0 z-30' : 'z-10'} ${column.group ? column.group.tintClassName : 'bg-gray-50'} ${
+                    column.totalTone ? TOTAL_TONE_CLASS[column.totalTone] : 'text-gray-900'
+                  }`}
+                >
+                  {column.total ?? ''}
+                </th>
+              ))}
+            </tr>
+          )}
         </thead>
         <tbody className="divide-y divide-gray-100">
           {sorted.map((row) => (
