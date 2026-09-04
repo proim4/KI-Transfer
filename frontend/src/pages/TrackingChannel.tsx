@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import CodeName from '../components/CodeName';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
 import PctBar from '../components/PctBar';
+import RefreshPivotBox from '../components/RefreshPivotBox';
 import RemarkCell from '../components/RemarkCell';
 import StatusBadge from '../components/StatusBadge';
 import { useStatusThresholds } from '../hooks/useAppSettings';
@@ -22,6 +23,7 @@ import {
   ACTUAL_GROUP,
   DIFF_GROUP,
   LOSS_GROUP,
+  PCT_GROUP,
   PLAN_GROUP,
   PROFIT_GROUP,
   REMARK_GROUP,
@@ -220,7 +222,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         key: 'pct',
         label: '% โอนเทียบแผน',
         align: 'right',
-        group: DIFF_GROUP,
+        group: PCT_GROUP,
         total: totals.pct,
         sortValue: (r) => r[pctField] as number | null,
         render: (r) => (thresholds ? <PctBar pct={r[pctField] as number | null} thresholds={thresholds} /> : formatPct(r[pctField] as number | null)),
@@ -283,6 +285,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
 
       {weekId && rows.length > 0 && (
         <>
+          <RefreshPivotBox />
           <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
           <SortableTable rows={filtered} columns={columns} rowKey={(r) => r.id} defaultSortKey="production_date" />
         </>

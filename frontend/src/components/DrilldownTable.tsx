@@ -3,7 +3,8 @@ import { defaultColumnWidth, useColumnWidths } from '../hooks/useColumnWidths';
 import { useActualBreakdown } from '../hooks/useActualBreakdown';
 import { useStatusThresholds } from '../hooks/useAppSettings';
 import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
-import { ACTUAL_GROUP, DIFF_GROUP, LOSS_GROUP, PLAN_GROUP, REMARK_GROUP, ROUTE_GROUP } from '../lib/trackingColumnGroups';
+import { ACTUAL_GROUP, DIFF_GROUP, LOSS_GROUP, PCT_GROUP, PLAN_GROUP, REMARK_GROUP, ROUTE_GROUP } from '../lib/trackingColumnGroups';
+import RefreshPivotBox from './RefreshPivotBox';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
 import PctBar from './PctBar';
 import ResizableTh from './ResizableTh';
@@ -45,7 +46,7 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; gr
   { key: 'product_group', label: 'กลุ่มสินค้า', group: ROUTE_GROUP },
   { key: 'plan_total', label: 'แผน (kg)', align: 'right', group: PLAN_GROUP },
   { key: 'actual_total', label: 'จริง (kg)', align: 'right', group: ACTUAL_GROUP },
-  { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: DIFF_GROUP },
+  { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: PCT_GROUP },
   { key: 'overage', label: 'โอนเกินแผน', align: 'right', group: DIFF_GROUP },
   { key: 'profit_lost', label: 'สูญเสีย (บาท)', align: 'right', group: LOSS_GROUP },
   { key: 'remark', label: 'หมายเหตุ', group: REMARK_GROUP },
@@ -137,6 +138,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
 
   return (
     <div>
+      <RefreshPivotBox />
       <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
 
       <div className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">
@@ -147,16 +149,17 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
             ))}
           </colgroup>
           <thead className="text-xs uppercase text-gray-500">
-            <tr className="h-7">
+            <tr className="h-14">
               {RUNS.map((run, i) => (
                 <th
                   key={`${run.group.key}-${i}`}
                   colSpan={run.span}
-                  className={`sticky top-0 overflow-hidden px-3 text-left text-[11px] font-semibold normal-case tracking-wide ${
+                  className={`sticky top-0 overflow-hidden px-2 text-center text-[11px] font-semibold normal-case leading-tight tracking-wide ${
                     run.pin ? 'left-0 z-30' : 'z-20'
                   } ${run.group.bandClassName}`}
                 >
-                  {run.group.label}
+                  {run.group.bandTop && <div className="opacity-90">{run.group.bandTop}</div>}
+                  <div className="font-bold">{run.group.bandBottom}</div>
                 </th>
               ))}
             </tr>
@@ -166,7 +169,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                 return (
                   <th
                     key={c.key}
-                    className={`sticky top-7 overflow-hidden px-3 text-xs font-bold normal-case ${
+                    className={`sticky top-14 overflow-hidden px-3 text-xs font-bold normal-case ${
                       c.align === 'right' ? 'text-right' : 'text-left'
                     } ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.totalsTintClassName} ${
                       total?.tone ? TOTAL_TONE_CLASS[total.tone] : 'text-gray-900'
@@ -185,7 +188,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   align={c.align}
                   onClick={() => handleSort(c.key)}
                   onMouseDownResize={startResize(c.key)}
-                  className={`sticky top-14 ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.labelClassName}`}
+                  className={`sticky top-[84px] ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.labelClassName}`}
                 >
                   {c.label}
                   <span

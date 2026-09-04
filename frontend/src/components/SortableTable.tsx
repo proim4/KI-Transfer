@@ -5,7 +5,10 @@ import ResizableTh from './ResizableTh';
 
 export interface ColumnGroup {
   key: string;
-  label: string;
+  /** Small top line of the group band (e.g. the source report code "BDR130"/"ABS0000") — omit for a single-line band. */
+  bandTop?: string;
+  /** Main/bottom line of the group band — always shown. */
+  bandBottom: string;
   /** Solid band styling for the group-name row (row 1). */
   bandClassName: string;
   /** Styling for the column-name row (row 3) — normally the same solid color as the band, not a pastel tint. */
@@ -94,9 +97,10 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
   // — only applied once there's a second/third row to stack, so a plain
   // single-row table (no groups, no totals) renders exactly as it always has.
   // Row order (top to bottom): group band -> totals -> column labels -> data.
+  // The group band is taller (h-14) than before to fit its two stacked lines.
   const labelRowClass = hasTotals || hasGroups ? 'h-9' : '';
-  const totalsTop = hasGroups ? 'top-7' : 'top-0';
-  const labelTop = hasTotals ? (hasGroups ? 'top-14' : 'top-7') : hasGroups ? 'top-7' : 'top-0';
+  const totalsTop = hasGroups ? 'top-14' : 'top-0';
+  const labelTop = hasTotals ? (hasGroups ? 'top-[84px]' : 'top-7') : hasGroups ? 'top-14' : 'top-0';
 
   function handleSort(key: string) {
     if (key === sortKey) {
@@ -128,16 +132,17 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
         </colgroup>
         <thead className="text-xs uppercase text-gray-500">
           {hasGroups && (
-            <tr className="h-7">
+            <tr className="h-14">
               {runs.map((run, i) => (
                 <th
                   key={`${run.group.key}-${i}`}
                   colSpan={run.span}
-                  className={`sticky top-0 overflow-hidden px-3 text-left text-[11px] font-semibold normal-case tracking-wide ${
+                  className={`sticky top-0 overflow-hidden px-2 text-center text-[11px] font-semibold normal-case leading-tight tracking-wide ${
                     run.pin ? 'left-0 z-30' : 'z-20'
                   } ${run.group.bandClassName}`}
                 >
-                  {run.group.label}
+                  {run.group.bandTop && <div className="opacity-90">{run.group.bandTop}</div>}
+                  <div className="font-bold">{run.group.bandBottom}</div>
                 </th>
               ))}
             </tr>
