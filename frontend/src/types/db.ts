@@ -115,6 +115,7 @@ export interface TrackingResultRow {
   reject_daily: number;
   reject_total: number;
   reject_pct: number | null;
+  remark: string | null;
 
   created_at: string;
 }

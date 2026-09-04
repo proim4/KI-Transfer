@@ -51,6 +51,7 @@ function trackingSheetRow(r: TrackingResultRow) {
     'แนะนำ (Suggest) รวม (kg)': r.suggest_total,
     'Reject รวม (kg)': r.reject_total,
     '% Reject': r.reject_pct,
+    'หมายเหตุ': r.remark ?? '',
   };
 }
 

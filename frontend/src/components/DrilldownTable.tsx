@@ -4,6 +4,7 @@ import { useActualBreakdown } from '../hooks/useActualBreakdown';
 import { useStatusThresholds } from '../hooks/useAppSettings';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
 import ResizableTh from './ResizableTh';
+import RemarkCell from './RemarkCell';
 import RouteFilterBar, {
   EMPTY_ROUTE_FILTER,
   matchesRouteFilter,
@@ -28,7 +29,8 @@ type SortKey =
   | 'actual_total'
   | 'total_pct'
   | 'overage'
-  | 'profit_lost';
+  | 'profit_lost'
+  | 'remark';
 type SortDirection = 'asc' | 'desc';
 
 const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean }[] = [
@@ -42,6 +44,7 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean }[]
   { key: 'total_pct', label: '% เทียบแผน', align: 'right' },
   { key: 'overage', label: 'โอนเกินแผน', align: 'right' },
   { key: 'profit_lost', label: 'สูญเสีย (บาท)', align: 'right' },
+  { key: 'remark', label: 'หมายเหตุ' },
 ];
 
 function sortValue(row: TrackingResultRow, key: SortKey): string | number | null {
@@ -174,6 +177,9 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                     }`}
                   >
                     {formatBaht(r.profit_lost)}
+                  </td>
+                  <td className="px-1 py-1">
+                    <RemarkCell id={r.id} value={r.remark} />
                   </td>
                 </tr>
                 {expandedId === r.id && (

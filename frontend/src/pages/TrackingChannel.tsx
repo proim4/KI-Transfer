@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import CodeName from '../components/CodeName';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
+import RemarkCell from '../components/RemarkCell';
 import StatusBadge from '../components/StatusBadge';
 import { useStatusThresholds } from '../hooks/useAppSettings';
 import RouteFilterBar, {
@@ -13,6 +14,8 @@ import SortableTable, { type Column } from '../components/SortableTable';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useTrackingResults } from '../hooks/useTrackingResults';
+import { useWeeks } from '../hooks/useWeeks';
+import { exportWeekToExcel } from '../lib/exportExcel';
 import type { TrackingResultRow } from '../types/db';
 
 export type Channel = 'weekly' | 'daily' | 'total';
@@ -65,8 +68,22 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
   const [weekId, setWeekId] = useDefaultedWeekId();
   const [filter, setFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const { data, isLoading } = useTrackingResults(weekId);
+  const { data: weeks } = useWeeks();
   const thresholds = useStatusThresholds();
   const rows = data ?? [];
+  const [exporting, setExporting] = useState(false);
+
+  const week = weeks?.find((w) => w.id === weekId);
+
+  async function handleExport() {
+    if (!weekId || !week) return;
+    setExporting(true);
+    try {
+      await exportWeekToExcel(weekId, week.label, rows);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const planField = PLAN_FIELD[channel];
   const diffField = DIFF_FIELD[channel];
@@ -157,6 +174,12 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         sortValue: (r) => r.profit_lost,
         render: (r) => <span className={r.profit_lost < 0 ? 'text-red-600' : ''}>{formatBaht(r.profit_lost)}</span>,
       },
+      {
+        key: 'remark',
+        label: 'หมายเหตุ',
+        sortValue: (r) => r.remark,
+        render: (r) => <RemarkCell id={r.id} value={r.remark} />,
+      },
     ],
     [channel, planField, diffField, pctField, thresholds],
   );
@@ -166,9 +189,21 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="mb-2 text-xl font-semibold text-gray-900">{title}</h1>
-        <WeekSelector value={weekId} onChange={setWeekId} />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="mb-2 text-xl font-semibold text-gray-900">{title}</h1>
+          <WeekSelector value={weekId} onChange={setWeekId} />
+        </div>
+        {weekId && rows.length > 0 && (
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+          >
+            {exporting ? 'กำลังสร้างไฟล์...' : 'Export Excel'}
+          </button>
+        )}
       </div>
 
       {!weekId && <p className="text-sm text-gray-500">เลือก Week เพื่อดูข้อมูล</p>}
