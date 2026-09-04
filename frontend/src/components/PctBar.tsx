@@ -31,7 +31,12 @@ export default function PctBar({ pct, thresholds }: PctBarProps) {
   const barWidth = pct === null ? 0 : Math.min(100, Math.max(0, pct * 100));
 
   return (
-    <div className="relative overflow-hidden rounded">
+    // isolate contains this cell's own z-10 text span to a local stacking
+    // context — without it, the span's z-index compares against the sticky
+    // header rows' z-index at the same (table-wide) level instead of staying
+    // scoped to this cell, and — being later in DOM order — visibly paints
+    // on top of the sticky group/total/label header rows while scrolling.
+    <div className="relative isolate overflow-hidden rounded">
       <div className={`absolute inset-y-0 left-0 ${BAR_CLASS[status.color]}`} style={{ width: `${barWidth}%` }} />
       <span className={`relative z-10 block px-1.5 py-0.5 text-right font-medium ${TEXT_CLASS[status.color]}`}>
         {formatPct(pct)}
