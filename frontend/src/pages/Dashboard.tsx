@@ -48,9 +48,10 @@ export default function Dashboard() {
     .map((u) => u.updated_at)
     .sort()
     .at(-1);
-  const achievementStatus = thresholds && computeStatus(total.pct, sum(rows.map((r) => Number(r.overage))), thresholds);
+  const achievementStatus = thresholds && computeStatus(total.pct, thresholds);
   const achievementTone =
     achievementStatus?.color === 'green' ? 'good' : achievementStatus?.color === 'red' ? 'bad' : achievementStatus?.color === 'amber' ? 'warn' : 'default';
+  const anyOverage = rows.some((r) => Number(r.overage) > 0);
 
   return (
     <div className="space-y-6">
@@ -97,7 +98,7 @@ export default function Dashboard() {
               label="Achievement %"
               value={formatPct(total.pct)}
               tone={achievementTone}
-              sub={achievementStatus?.isOverage ? 'มีการโอนเกินแผนบางเส้นทาง' : undefined}
+              sub={anyOverage ? 'มีการโอนเกินแผนบางเส้นทาง' : undefined}
             />
             <KpiCard
               size="hero"

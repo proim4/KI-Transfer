@@ -109,7 +109,6 @@ export default function Settings() {
           <div className="flex items-center gap-3">
             <StatusBadge
               pct={1}
-              overage={0}
               thresholds={{ highPct: highPct / 100, lowPct: lowPct / 100, highColor, midColor, lowColor }}
             />
             <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ≥</span>
@@ -126,7 +125,6 @@ export default function Settings() {
           <div className="flex items-center gap-3">
             <StatusBadge
               pct={lowPct / 100}
-              overage={0}
               thresholds={{ highPct: highPct / 100, lowPct: lowPct / 100, highColor, midColor, lowColor }}
             />
             <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ≥</span>
@@ -143,7 +141,6 @@ export default function Settings() {
           <div className="flex items-center gap-3">
             <StatusBadge
               pct={0}
-              overage={0}
               thresholds={{ highPct: highPct / 100, lowPct: lowPct / 100, highColor, midColor, lowColor }}
             />
             <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ต่ำกว่านั้น</span>

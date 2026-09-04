@@ -86,7 +86,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         label: 'สถานะ',
         sortValue: (r) => r[pctField] as number | null,
         render: (r) =>
-          thresholds ? <StatusBadge pct={r[pctField] as number | null} overage={r.overage} thresholds={thresholds} /> : null,
+          thresholds ? <StatusBadge pct={r[pctField] as number | null} thresholds={thresholds} /> : null,
       },
       {
         key: 'origin',

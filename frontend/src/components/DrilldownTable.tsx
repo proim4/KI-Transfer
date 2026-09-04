@@ -151,7 +151,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                     {r.production_date}
                   </td>
                   <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">
-                    {thresholds && <StatusBadge pct={r.total_pct} overage={r.overage} thresholds={thresholds} />}
+                    {thresholds && <StatusBadge pct={r.total_pct} thresholds={thresholds} />}
                   </td>
                   <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">{r.origin_name}</td>
                   <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">{r.dest_name}</td>

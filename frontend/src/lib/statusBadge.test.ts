@@ -11,33 +11,28 @@ const thresholds: StatusThresholds = {
 
 describe('computeStatus', () => {
   it('is "none"/gray when there is no plan (pct is null)', () => {
-    expect(computeStatus(null, 0, thresholds)).toEqual({ zone: 'none', color: 'gray', label: 'ไม่มีแผน', isOverage: false });
+    expect(computeStatus(null, thresholds)).toEqual({ zone: 'none', color: 'gray', label: 'ไม่มีแผน' });
   });
 
   it('is the high zone at or above the high threshold', () => {
-    expect(computeStatus(1, 0, thresholds).zone).toBe('high');
-    expect(computeStatus(1.5, 0, thresholds).zone).toBe('high'); // total_pct never actually exceeds 1 in practice, but the function shouldn't assume that
+    expect(computeStatus(1, thresholds).zone).toBe('high');
+    expect(computeStatus(1.5, thresholds).zone).toBe('high'); // total_pct never actually exceeds 1 in practice, but the function shouldn't assume that
   });
 
   it('is the mid zone between the two thresholds', () => {
-    expect(computeStatus(0.95, 0, thresholds).zone).toBe('mid');
-    expect(computeStatus(0.9, 0, thresholds).zone).toBe('mid');
+    expect(computeStatus(0.95, thresholds).zone).toBe('mid');
+    expect(computeStatus(0.9, thresholds).zone).toBe('mid');
   });
 
   it('is the low zone below the low threshold', () => {
-    expect(computeStatus(0.89, 0, thresholds).zone).toBe('low');
-    expect(computeStatus(0, 0, thresholds).zone).toBe('low');
-  });
-
-  it('reports overage independently of the pct zone', () => {
-    expect(computeStatus(1, 50, thresholds).isOverage).toBe(true);
-    expect(computeStatus(0.5, 0, thresholds).isOverage).toBe(false);
+    expect(computeStatus(0.89, thresholds).zone).toBe('low');
+    expect(computeStatus(0, thresholds).zone).toBe('low');
   });
 
   it('respects admin-configured colors, not hardcoded ones', () => {
     const custom: StatusThresholds = { ...thresholds, highColor: 'navy', midColor: 'blue', lowColor: 'gray' };
-    expect(computeStatus(1, 0, custom).color).toBe('navy');
-    expect(computeStatus(0.95, 0, custom).color).toBe('blue');
-    expect(computeStatus(0.5, 0, custom).color).toBe('gray');
+    expect(computeStatus(1, custom).color).toBe('navy');
+    expect(computeStatus(0.95, custom).color).toBe('blue');
+    expect(computeStatus(0.5, custom).color).toBe('gray');
   });
 });
