@@ -1,5 +1,19 @@
 @import 'tailwindcss';
 
+/* Navy primary scale — header, primary buttons, selected tab, hero KPIs. */
+@theme {
+  --color-navy-50: #eef2f7;
+  --color-navy-100: #dbe4ee;
+  --color-navy-200: #b7c9dd;
+  --color-navy-300: #93adcc;
+  --color-navy-400: #5f86af;
+  --color-navy-500: #3c6690;
+  --color-navy-600: #2a4d73;
+  --color-navy-700: #1e3a5c;
+  --color-navy-800: #152a44;
+  --color-navy-900: #0d1b2e;
+}
+
 /*
  * The app has no dark theme (every color is a fixed Tailwind light-mode
  * utility). Declaring "light dark" here lets the browser apply its native

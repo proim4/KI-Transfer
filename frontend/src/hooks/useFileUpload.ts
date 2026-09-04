@@ -8,8 +8,11 @@ import {
   validatePlanRows,
 } from '../lib/excelParser';
 import { insertInBatches } from '../lib/insertInBatches';
+import { nextVersion } from '../lib/uploadHistory';
 import { supabase } from '../lib/supabase';
-import type { UploadErrorEntry, UploadFileType } from '../types/db';
+import type { UploadErrorEntry, UploadFileType, UploadStatus } from '../types/db';
+import { LATEST_UPLOAD_STAMPS_QUERY_KEY } from './useLatestWeekId';
+import { uploadHistoryQueryKey } from './useUploadHistory';
 import { uploadsQueryKey } from './useUploads';
 
 export interface UploadFileArgs {
@@ -57,6 +60,38 @@ function actualRowToDb(weekId: string, row: ReturnType<typeof validateActualRows
     product_group: row.productGroup,
     raw: row,
   };
+}
+
+async function logHistory(
+  weekId: string,
+  fileType: UploadFileType,
+  originalFilename: string,
+  fileSize: number,
+  status: UploadStatus,
+  rowCount: number,
+  skippedCount: number,
+  errorReport: UploadErrorEntry[] | null,
+  storagePath?: string,
+) {
+  const { data: existing } = await supabase
+    .from('upload_history')
+    .select('version')
+    .eq('week_id', weekId)
+    .eq('file_type', fileType);
+  const version = nextVersion((existing ?? []).map((r) => r.version as number));
+
+  await supabase.from('upload_history').insert({
+    week_id: weekId,
+    file_type: fileType,
+    version,
+    original_filename: originalFilename,
+    file_size: fileSize,
+    storage_path: storagePath ?? null,
+    status,
+    row_count: rowCount,
+    skipped_count: skippedCount,
+    error_report: errorReport,
+  });
 }
 
 async function saveOutcome(
@@ -110,6 +145,7 @@ export function useFileUpload() {
       if (missing.length > 0) {
         const errors: UploadErrorEntry[] = [{ rowNumber: 1, reason: `ไฟล์ขาดคอลัมน์ที่จำเป็น: ${missing.join(', ')}` }];
         await saveOutcome(weekId, fileType, file.name, 'error', 0, 0, errors);
+        await logHistory(weekId, fileType, file.name, file.size, 'error', 0, 0, errors);
         return { status: 'error', rowCount: 0, skippedCount: 0, errors };
       }
 
@@ -126,6 +162,7 @@ export function useFileUpload() {
           // All-or-nothing: don't touch any previously-good data for this
           // slot on a failed re-validation, just report what's wrong.
           await saveOutcome(weekId, fileType, file.name, 'error', 0, skipped, errors);
+          await logHistory(weekId, fileType, file.name, file.size, 'error', 0, skipped, errors);
           return { status: 'error', rowCount: 0, skippedCount: skipped, errors };
         }
         dbRows = rows.map((r) => actualRowToDb(weekId, r));
@@ -135,6 +172,7 @@ export function useFileUpload() {
         const { rows, errors, skippedCount: skipped } = validatePlanRows(rawRows, sourceFile);
         if (errors.length > 0) {
           await saveOutcome(weekId, fileType, file.name, 'error', 0, skipped, errors);
+          await logHistory(weekId, fileType, file.name, file.size, 'error', 0, skipped, errors);
           return { status: 'error', rowCount: 0, skippedCount: skipped, errors };
         }
         dbRows = rows.map((r) => planRowToDb(weekId, r));
@@ -155,10 +193,14 @@ export function useFileUpload() {
       await insertInBatches(table, dbRows);
 
       await saveOutcome(weekId, fileType, file.name, 'validated', rowCount, skippedCount, null, storagePath);
+      await logHistory(weekId, fileType, file.name, file.size, 'validated', rowCount, skippedCount, null, storagePath);
       return { status: 'validated', rowCount, skippedCount, errors: [] };
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: uploadsQueryKey(variables.weekId) });
+      queryClient.invalidateQueries({ queryKey: uploadHistoryQueryKey(variables.weekId) });
+      queryClient.invalidateQueries({ queryKey: ['upload-history-all'] });
+      queryClient.invalidateQueries({ queryKey: LATEST_UPLOAD_STAMPS_QUERY_KEY });
     },
   });
 }

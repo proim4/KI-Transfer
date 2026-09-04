@@ -3,6 +3,7 @@ import CodeName from '../components/CodeName';
 import RouteFilterBar, { EMPTY_ROUTE_FILTER, matchesRouteFilter, routeFilterOptions, type RouteFilterValue } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
 import WeekSelector from '../components/WeekSelector';
+import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useRawActualRows, useRawPlanRows, type RawActualRow, type RawPlanRow } from '../hooks/useRawRows';
 
 type Tab = 'actual' | 'plan';
@@ -89,20 +90,32 @@ const planColumns: Column<RawPlanRow>[] = [
 ];
 
 function pickActualRoute(r: RawActualRow) {
-  return { date: r.transfer_date, origin: r.origin_name, dest: r.dest_name, productGroup: r.product_group };
+  return {
+    date: r.transfer_date,
+    origin: r.origin_name,
+    dest: r.dest_name,
+    productGroup: r.product_group,
+    searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.sku_code} ${r.sku_name}`,
+  };
 }
 
 function pickPlanRoute(r: RawPlanRow) {
-  return { date: r.production_date, origin: r.origin_name, dest: r.dest_name, productGroup: r.product_group };
+  return {
+    date: r.production_date,
+    origin: r.origin_name,
+    dest: r.dest_name,
+    productGroup: r.product_group,
+    searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group}`,
+  };
 }
 
 const tabClass = (active: boolean) =>
   `border-b-2 px-3 py-2 text-sm font-medium ${
-    active ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+    active ? 'border-navy-800 text-navy-800' : 'border-transparent text-gray-500 hover:text-gray-700'
   }`;
 
 export default function RawData() {
-  const [weekId, setWeekId] = useState<string | null>(null);
+  const [weekId, setWeekId] = useDefaultedWeekId();
   const [tab, setTab] = useState<Tab>('actual');
   const [actualFilter, setActualFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [planFilter, setPlanFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import CodeName from '../components/CodeName';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
+import StatusBadge from '../components/StatusBadge';
+import { useStatusThresholds } from '../hooks/useAppSettings';
 import RouteFilterBar, {
   EMPTY_ROUTE_FILTER,
   matchesRouteFilter,
@@ -9,6 +11,7 @@ import RouteFilterBar, {
 } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
 import WeekSelector from '../components/WeekSelector';
+import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useTrackingResults } from '../hooks/useTrackingResults';
 import type { TrackingResultRow } from '../types/db';
 
@@ -41,7 +44,13 @@ const PLAN_LABEL: Record<Channel, string> = {
 };
 
 function pickRoute(r: TrackingResultRow) {
-  return { date: r.production_date, origin: r.origin_name, dest: r.dest_name, productGroup: r.product_group };
+  return {
+    date: r.production_date,
+    origin: r.origin_name,
+    dest: r.dest_name,
+    productGroup: r.product_group,
+    searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group}`,
+  };
 }
 
 /**
@@ -53,9 +62,10 @@ function pickRoute(r: TrackingResultRow) {
  * table shape is identical and only which stored field it reads differs.
  */
 export default function TrackingChannel({ channel, title }: TrackingChannelProps) {
-  const [weekId, setWeekId] = useState<string | null>(null);
+  const [weekId, setWeekId] = useDefaultedWeekId();
   const [filter, setFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const { data, isLoading } = useTrackingResults(weekId);
+  const thresholds = useStatusThresholds();
   const rows = data ?? [];
 
   const planField = PLAN_FIELD[channel];
@@ -64,7 +74,20 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
 
   const columns: Column<TrackingResultRow>[] = useMemo(
     () => [
-      { key: 'production_date', label: 'วันที่', sortValue: (r) => r.production_date, render: (r) => r.production_date },
+      {
+        key: 'production_date',
+        label: 'วันที่',
+        pin: true,
+        sortValue: (r) => r.production_date,
+        render: (r) => r.production_date,
+      },
+      {
+        key: 'status',
+        label: 'สถานะ',
+        sortValue: (r) => r[pctField] as number | null,
+        render: (r) =>
+          thresholds ? <StatusBadge pct={r[pctField] as number | null} overage={r.overage} thresholds={thresholds} /> : null,
+      },
       {
         key: 'origin',
         label: 'ต้นทาง',
@@ -135,7 +158,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         render: (r) => <span className={r.profit_lost < 0 ? 'text-red-600' : ''}>{formatBaht(r.profit_lost)}</span>,
       },
     ],
-    [channel, planField, diffField, pctField],
+    [channel, planField, diffField, pctField, thresholds],
   );
 
   const options = useMemo(() => routeFilterOptions(rows, pickRoute), [rows]);

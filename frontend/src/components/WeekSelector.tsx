@@ -4,6 +4,10 @@ import { useCreateWeek, useWeeks } from '../hooks/useWeeks';
 interface WeekSelectorProps {
   value: string | null;
   onChange: (weekId: string) => void;
+  /** Shows the inline "+ สร้าง Week ใหม่" form. Off by default so read-only
+   * pages (Dashboard/Raw Data/Tracking) get a clean "Week: [ WK36 ▼ ]" —
+   * only the Upload page (where a new week's data actually gets created) needs it. */
+  allowCreate?: boolean;
 }
 
 function currentIsoWeek(): { yearNo: number; weekNo: number } {
@@ -16,7 +20,7 @@ function currentIsoWeek(): { yearNo: number; weekNo: number } {
   return { yearNo: target.getUTCFullYear(), weekNo };
 }
 
-export default function WeekSelector({ value, onChange }: WeekSelectorProps) {
+export default function WeekSelector({ value, onChange, allowCreate = false }: WeekSelectorProps) {
   const { data: weeks, isLoading } = useWeeks();
   const createWeek = useCreateWeek();
   const [showCreate, setShowCreate] = useState(false);
@@ -36,7 +40,7 @@ export default function WeekSelector({ value, onChange }: WeekSelectorProps) {
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         disabled={isLoading}
-        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900"
       >
         <option value="" disabled>
           เลือก Week
@@ -47,44 +51,45 @@ export default function WeekSelector({ value, onChange }: WeekSelectorProps) {
           </option>
         ))}
       </select>
-      {!showCreate ? (
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 hover:bg-gray-100"
-        >
-          + สร้าง Week ใหม่
-        </button>
-      ) : (
-        <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-white p-2">
-          <input
-            type="number"
-            value={yearNo}
-            onChange={(e) => setYearNo(Number(e.target.value))}
-            className="w-20 rounded border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
-            aria-label="ปี"
-          />
-          <span className="text-sm text-gray-500">WK</span>
-          <input
-            type="number"
-            value={weekNo}
-            onChange={(e) => setWeekNo(Number(e.target.value))}
-            className="w-16 rounded border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
-            aria-label="สัปดาห์ที่"
-          />
+      {allowCreate &&
+        (!showCreate ? (
           <button
             type="button"
-            onClick={handleCreate}
-            disabled={createWeek.isPending}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+            onClick={() => setShowCreate(true)}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 hover:bg-gray-100"
           >
-            สร้าง
+            + สร้าง Week ใหม่
           </button>
-          <button type="button" onClick={() => setShowCreate(false)} className="text-sm text-gray-500">
-            ยกเลิก
-          </button>
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-white p-2">
+            <input
+              type="number"
+              value={yearNo}
+              onChange={(e) => setYearNo(Number(e.target.value))}
+              className="w-20 rounded border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
+              aria-label="ปี"
+            />
+            <span className="text-sm text-gray-500">WK</span>
+            <input
+              type="number"
+              value={weekNo}
+              onChange={(e) => setWeekNo(Number(e.target.value))}
+              className="w-16 rounded border border-gray-300 bg-white px-2 py-1 text-sm text-gray-900"
+              aria-label="สัปดาห์ที่"
+            />
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={createWeek.isPending}
+              className="rounded-md bg-navy-800 px-3 py-1.5 text-sm text-white hover:bg-navy-900 disabled:opacity-50"
+            >
+              สร้าง
+            </button>
+            <button type="button" onClick={() => setShowCreate(false)} className="text-sm text-gray-500">
+              ยกเลิก
+            </button>
+          </div>
+        ))}
     </div>
   );
 }

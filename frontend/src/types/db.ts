@@ -1,8 +1,27 @@
 // Row shapes as returned by supabase-js, matching supabase/migrations/0001_init.sql exactly.
 
+export type StatusColor = 'green' | 'amber' | 'red' | 'navy' | 'blue' | 'gray';
+
 export interface AppSettingsRow {
   id: true;
   require_login: boolean;
+  status_high_pct: number;
+  status_low_pct: number;
+  status_high_color: StatusColor;
+  status_mid_color: StatusColor;
+  status_low_color: StatusColor;
+  updated_at: string;
+}
+
+export type UserRole = 'admin' | 'user';
+export type UserStatus = 'active' | 'inactive';
+
+export interface ProfileRow {
+  id: string;
+  username: string;
+  role: UserRole;
+  status: UserStatus;
+  created_at: string;
   updated_at: string;
 }
 
@@ -36,6 +55,21 @@ export interface UploadRow {
   uploaded_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface UploadHistoryRow {
+  id: string;
+  week_id: string;
+  file_type: UploadFileType;
+  version: number;
+  original_filename: string;
+  file_size: number | null;
+  storage_path: string | null;
+  row_count: number;
+  skipped_count: number;
+  status: UploadStatus;
+  error_report: UploadErrorEntry[] | null;
+  created_at: string;
 }
 
 export interface TrackingResultRow {

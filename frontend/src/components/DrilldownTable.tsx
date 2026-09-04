@@ -1,6 +1,7 @@
 import { Fragment, useMemo, useState } from 'react';
 import { defaultColumnWidth, useColumnWidths } from '../hooks/useColumnWidths';
 import { useActualBreakdown } from '../hooks/useActualBreakdown';
+import { useStatusThresholds } from '../hooks/useAppSettings';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
 import ResizableTh from './ResizableTh';
 import RouteFilterBar, {
@@ -9,6 +10,7 @@ import RouteFilterBar, {
   routeFilterOptions,
   type RouteFilterValue,
 } from './RouteFilterBar';
+import StatusBadge from './StatusBadge';
 import type { TrackingResultRow } from '../types/db';
 
 interface DrilldownTableProps {
@@ -18,6 +20,7 @@ interface DrilldownTableProps {
 
 type SortKey =
   | 'production_date'
+  | 'status'
   | 'origin_name'
   | 'dest_name'
   | 'product_group'
@@ -28,8 +31,9 @@ type SortKey =
   | 'profit_lost';
 type SortDirection = 'asc' | 'desc';
 
-const COLUMNS: { key: SortKey; label: string; align?: 'right' }[] = [
-  { key: 'production_date', label: 'วันที่' },
+const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean }[] = [
+  { key: 'production_date', label: 'วันที่', pin: true },
+  { key: 'status', label: 'สถานะ' },
   { key: 'origin_name', label: 'ต้นทาง' },
   { key: 'dest_name', label: 'ปลายทาง' },
   { key: 'product_group', label: 'กลุ่มสินค้า' },
@@ -39,6 +43,13 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right' }[] = [
   { key: 'overage', label: 'โอนเกินแผน', align: 'right' },
   { key: 'profit_lost', label: 'สูญเสีย (บาท)', align: 'right' },
 ];
+
+function sortValue(row: TrackingResultRow, key: SortKey): string | number | null {
+  return key === 'status' ? row.total_pct : row[key];
+}
+
+const PIN_CLASS = 'sticky left-0 z-10 bg-white';
+const PIN_HEADER_CLASS = 'sticky left-0 z-20 bg-gray-50';
 
 function compareValues(a: string | number | null, b: string | number | null): number {
   if (typeof a === 'string' || typeof b === 'string') {
@@ -52,10 +63,17 @@ function compareValues(a: string | number | null, b: string | number | null): nu
 }
 
 function pickRoute(r: TrackingResultRow) {
-  return { date: r.production_date, origin: r.origin_name, dest: r.dest_name, productGroup: r.product_group };
+  return {
+    date: r.production_date,
+    origin: r.origin_name,
+    dest: r.dest_name,
+    productGroup: r.product_group,
+    searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group}`,
+  };
 }
 
 export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
+  const thresholds = useStatusThresholds();
   const [filter, setFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('production_date');
@@ -83,7 +101,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   const sorted = useMemo(() => {
     const copy = [...filtered];
     copy.sort((a, b) => {
-      const cmp = compareValues(a[sortKey], b[sortKey]);
+      const cmp = compareValues(sortValue(a, sortKey), sortValue(b, sortKey));
       return sortDirection === 'asc' ? cmp : -cmp;
     });
     return copy;
@@ -112,6 +130,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   align={c.align}
                   onClick={() => handleSort(c.key)}
                   onMouseDownResize={startResize(c.key)}
+                  className={c.pin ? PIN_HEADER_CLASS : ''}
                 >
                   {c.label}
                   <span className={c.key === sortKey ? 'text-gray-600' : 'text-gray-300'}>
@@ -128,7 +147,12 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
                   className="cursor-pointer hover:bg-gray-50"
                 >
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">{r.production_date}</td>
+                  <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 ${PIN_CLASS}`}>
+                    {r.production_date}
+                  </td>
+                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">
+                    {thresholds && <StatusBadge pct={r.total_pct} overage={r.overage} thresholds={thresholds} />}
+                  </td>
                   <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">{r.origin_name}</td>
                   <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">{r.dest_name}</td>
                   <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">{r.product_group}</td>

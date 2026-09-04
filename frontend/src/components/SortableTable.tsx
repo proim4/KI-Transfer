@@ -7,9 +7,14 @@ export interface Column<T> {
   key: string;
   label: string;
   align?: 'right';
+  /** Freezes this column at the left edge while the rest of the table scrolls horizontally — use on the row's identity column. */
+  pin?: boolean;
   sortValue: (row: T) => string | number | null;
   render: (row: T) => ReactNode;
 }
+
+const PIN_CLASS = 'sticky left-0 z-10 bg-white';
+const PIN_HEADER_CLASS = 'sticky left-0 z-20 bg-gray-50';
 
 interface SortableTableProps<T> {
   rows: T[];
@@ -78,6 +83,7 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
                 align={column.align}
                 onClick={() => handleSort(column.key)}
                 onMouseDownResize={startResize(column.key)}
+                className={column.pin ? PIN_HEADER_CLASS : ''}
               >
                 {column.label}
                 <span className={column.key === sortKey ? 'text-gray-600' : 'text-gray-300'}>
@@ -95,7 +101,7 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
                   key={column.key}
                   className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 ${
                     column.align === 'right' ? 'text-right' : ''
-                  }`}
+                  } ${column.pin ? PIN_CLASS : ''}`}
                 >
                   {column.render(row)}
                 </td>

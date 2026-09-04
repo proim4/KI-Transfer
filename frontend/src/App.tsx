@@ -6,6 +6,7 @@ import RawData from './pages/RawData';
 import Settings from './pages/Settings';
 import TrackingChannel from './pages/TrackingChannel';
 import Upload from './pages/Upload';
+import AdminGuard from './routes/AdminGuard';
 import AuthGuard from './routes/AuthGuard';
 
 export default function App() {
@@ -30,7 +31,9 @@ export default function App() {
             path="/tracking/total"
             element={<TrackingChannel channel="total" title="ติดตามโอนรวม (Weekly + Daily) เทียบแผน" />}
           />
-          <Route path="/settings" element={<Settings />} />
+          <Route element={<AdminGuard />}>
+            <Route path="/settings" element={<Settings />} />
+          </Route>
         </Route>
       </Route>
     </Routes>

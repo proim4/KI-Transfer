@@ -5,9 +5,10 @@ export interface RouteFilterValue {
   origin: string;
   dest: string;
   productGroup: string;
+  search: string;
 }
 
-export const EMPTY_ROUTE_FILTER: RouteFilterValue = { date: '', origin: '', dest: '', productGroup: '' };
+export const EMPTY_ROUTE_FILTER: RouteFilterValue = { date: '', origin: '', dest: '', productGroup: '', search: '' };
 
 interface RouteFilterOptions {
   dates: string[];
@@ -32,13 +33,14 @@ export function routeFilterOptions<T>(
 
 export function matchesRouteFilter(
   filter: RouteFilterValue,
-  row: { date: string; origin: string; dest: string; productGroup: string },
+  row: { date: string; origin: string; dest: string; productGroup: string; searchText: string },
 ): boolean {
   return (
     (!filter.date || row.date === filter.date) &&
     (!filter.origin || row.origin === filter.origin) &&
     (!filter.dest || row.dest === filter.dest) &&
-    (!filter.productGroup || row.productGroup === filter.productGroup)
+    (!filter.productGroup || row.productGroup === filter.productGroup) &&
+    (!filter.search || row.searchText.toLowerCase().includes(filter.search.toLowerCase()))
   );
 }
 
@@ -55,6 +57,13 @@ const selectClass = 'rounded-md border border-gray-300 bg-white px-2 py-1.5 text
 export default function RouteFilterBar({ value, onChange, options, resultCount }: RouteFilterBarProps) {
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
+      <input
+        type="text"
+        value={value.search}
+        onChange={(e) => onChange({ ...value, search: e.target.value })}
+        placeholder="ค้นหา..."
+        className={`${selectClass} w-40`}
+      />
       <select
         value={value.date}
         onChange={(e) => onChange({ ...value, date: e.target.value })}
