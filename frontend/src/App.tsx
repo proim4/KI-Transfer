@@ -1,7 +1,8 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import ProductSelect from './pages/ProductSelect';
 import RawData from './pages/RawData';
 import Settings from './pages/Settings';
 import TrackingChannel from './pages/TrackingChannel';
@@ -15,7 +16,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route element={<AuthGuard />}>
         <Route element={<Layout />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<ProductSelect />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/raw-data" element={<RawData />} />

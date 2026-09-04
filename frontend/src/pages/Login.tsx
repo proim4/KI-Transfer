@@ -44,7 +44,7 @@ export default function Login() {
     }
 
     setLoading(false);
-    const from = (location.state as { from?: Location })?.from?.pathname ?? '/dashboard';
+    const from = (location.state as { from?: Location })?.from?.pathname ?? '/';
     navigate(from, { replace: true });
   }
 

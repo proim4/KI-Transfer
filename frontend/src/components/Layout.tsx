@@ -85,7 +85,9 @@ export default function Layout() {
       <header className="bg-navy-900">
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-6">
-            <span className="text-lg font-semibold text-white">ติดตามโอนเทียบแผน</span>
+            <NavLink to="/" className="text-lg font-semibold text-white">
+              ติดตามโอนเทียบแผน
+            </NavLink>
             <nav className="flex items-center gap-2">
               <NavLink to="/dashboard" className={navLinkClass}>
                 Dashboard
