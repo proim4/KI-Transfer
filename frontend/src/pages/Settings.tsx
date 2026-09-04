@@ -88,7 +88,7 @@ export default function Settings() {
           onClick={() => setRequireLogin.mutate(!settings.require_login)}
           disabled={setRequireLogin.isPending}
           className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-            settings.require_login ? 'bg-navy-800' : 'bg-gray-300'
+            settings.require_login ? 'bg-green-600' : 'bg-gray-300'
           }`}
         >
           <span
