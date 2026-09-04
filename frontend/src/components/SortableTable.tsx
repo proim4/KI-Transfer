@@ -31,7 +31,7 @@ export interface Column<T> {
   render: (row: T) => ReactNode;
 }
 
-const PIN_CLASS = 'sticky left-0 z-10 bg-white';
+const PIN_CLASS = 'sticky left-0 z-10 bg-[inherit]';
 const TOTAL_TONE_CLASS: Record<'good' | 'bad', string> = { good: 'text-green-700', bad: 'text-red-700' };
 
 interface SortableTableProps<T> {
@@ -189,8 +189,8 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {sorted.map((row) => (
-            <tr key={rowKey(row)} className="hover:bg-gray-50">
+          {sorted.map((row, i) => (
+            <tr key={rowKey(row)} className={`hover:bg-blue-50 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}>
               {columns.map((column) => (
                 <td
                   key={column.key}

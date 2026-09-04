@@ -58,7 +58,7 @@ function sortValue(row: TrackingResultRow, key: SortKey): string | number | null
   return key === 'status' ? row.total_pct : row[key];
 }
 
-const PIN_CLASS = 'sticky left-0 z-10 bg-white';
+const PIN_CLASS = 'sticky left-0 z-10 bg-[inherit]';
 
 function compareValues(a: string | number | null, b: string | number | null): number {
   if (typeof a === 'string' || typeof b === 'string') {
@@ -206,11 +206,11 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {sorted.map((r) => (
+            {sorted.map((r, i) => (
               <Fragment key={r.id}>
                 <tr
                   onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
-                  className="cursor-pointer hover:bg-gray-50"
+                  className={`cursor-pointer hover:bg-blue-50 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
                 >
                   <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 ${PIN_CLASS}`}>
                     {r.production_date}
