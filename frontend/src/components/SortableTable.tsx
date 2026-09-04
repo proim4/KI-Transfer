@@ -34,7 +34,7 @@ export interface Column<T> {
   render: (row: T) => ReactNode;
 }
 
-const PIN_CLASS = 'sticky left-0 z-10 bg-[inherit]';
+const PIN_CLASS = 'sticky z-10 bg-[inherit]';
 const TOTAL_TONE_CLASS: Record<'good' | 'bad', string> = { good: 'text-green-700', bad: 'text-red-700' };
 
 interface SortableTableProps<T> {
@@ -62,20 +62,38 @@ function compareValues(a: string | number | null, b: string | number | null): nu
  * "pinned for only part of its width", so the pinned column's own band cell
  * must be a standalone, independently-stickyable <th>.
  */
-export function groupRuns<C extends { group?: ColumnGroup; pin?: boolean }>(
+export function groupRuns<C extends { key: string; group?: ColumnGroup; pin?: boolean }>(
   columns: C[],
-): { group: ColumnGroup; span: number; pin: boolean }[] {
-  const runs: { group: ColumnGroup; span: number; pin: boolean }[] = [];
+): { group: ColumnGroup; span: number; pin: boolean; pinKey?: string }[] {
+  const runs: { group: ColumnGroup; span: number; pin: boolean; pinKey?: string }[] = [];
   for (const column of columns) {
     const last = runs[runs.length - 1];
     if (!column.group) continue;
     if (last && !last.pin && !column.pin && last.group.key === column.group.key) {
       last.span += 1;
     } else {
-      runs.push({ group: column.group, span: 1, pin: !!column.pin });
+      runs.push({ group: column.group, span: 1, pin: !!column.pin, pinKey: column.pin ? column.key : undefined });
     }
   }
   return runs;
+}
+
+/**
+ * Cumulative left-edge pixel offset for each pinned column, in column order,
+ * so several columns can freeze side by side (not all stacked at left:0).
+ */
+export function pinnedLeftOffsets<C extends { key: string; label: string; pin?: boolean }>(
+  columns: C[],
+  widths: Record<string, number>,
+): Record<string, number> {
+  const offsets: Record<string, number> = {};
+  let left = 0;
+  for (const column of columns) {
+    if (!column.pin) continue;
+    offsets[column.key] = left;
+    left += widths[column.key] ?? defaultColumnWidth(column.label);
+  }
+  return offsets;
 }
 
 /** A flat, click-to-sort, drag-to-resize table. Shared by every raw/tracking table in the app that isn't row-expandable. */
@@ -92,6 +110,7 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
   const hasGroups = columns.length > 0 && columns.every((c) => c.group);
   const hasTotals = columns.some((c) => c.total !== undefined);
   const runs = useMemo(() => (hasGroups ? groupRuns(columns) : []), [columns, hasGroups]);
+  const pinnedLeft = useMemo(() => pinnedLeftOffsets(columns, widths), [columns, widths]);
 
   // Fixed row heights so each sticky row's offset is exact without measuring
   // — only applied once there's a second/third row to stack, so a plain
@@ -137,8 +156,9 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
                 <th
                   key={`${run.group.key}-${i}`}
                   colSpan={run.span}
+                  style={run.pinKey !== undefined ? { left: pinnedLeft[run.pinKey] } : undefined}
                   className={`sticky top-0 overflow-hidden px-2 text-center text-[11px] font-semibold normal-case leading-tight tracking-wide ${
-                    run.pin ? 'left-0 z-30' : 'z-20'
+                    run.pin ? 'z-30' : 'z-20'
                   } ${run.group.bandClassName}`}
                 >
                   {run.group.bandTop && <div className="opacity-90">{run.group.bandTop}</div>}
@@ -152,9 +172,10 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
               {columns.map((column) => (
                 <th
                   key={column.key}
+                  style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
                   className={`sticky ${totalsTop} overflow-hidden px-3 text-sm font-bold normal-case ${
                     column.align === 'right' ? 'text-right' : 'text-left'
-                  } ${column.pin ? 'left-0 z-30' : 'z-10'} ${
+                  } ${column.pin ? 'z-30' : 'z-10'} ${
                     column.group ? column.group.totalsTintClassName : 'bg-gray-50'
                   } ${column.totalTone ? TOTAL_TONE_CLASS[column.totalTone] : 'text-gray-900'}`}
                 >
@@ -168,10 +189,11 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
               <ResizableTh
                 key={column.key}
                 width={widths[column.key] ?? defaultColumnWidth(column.label)}
+                left={column.pin ? pinnedLeft[column.key] : undefined}
                 align={column.align}
                 onClick={() => handleSort(column.key)}
                 onMouseDownResize={startResize(column.key)}
-                className={`sticky ${labelTop} ${column.pin ? 'left-0 z-30' : 'z-10'} ${
+                className={`sticky ${labelTop} ${column.pin ? 'z-30' : 'z-10'} ${
                   column.group ? column.group.labelClassName : 'bg-gray-50'
                 }`}
               >
@@ -199,6 +221,7 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
               {columns.map((column) => (
                 <td
                   key={column.key}
+                  style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
                   className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${
                     column.align === 'right' ? 'text-right' : ''
                   } ${column.pin ? PIN_CLASS : ''}`}

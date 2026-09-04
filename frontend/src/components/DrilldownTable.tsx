@@ -14,7 +14,7 @@ import RouteFilterBar, {
   routeFilterOptions,
   type RouteFilterValue,
 } from './RouteFilterBar';
-import { groupRuns, type ColumnGroup } from './SortableTable';
+import { groupRuns, pinnedLeftOffsets, type ColumnGroup } from './SortableTable';
 import StatusBadge from './StatusBadge';
 import type { TrackingResultRow } from '../types/db';
 
@@ -39,10 +39,10 @@ type SortDirection = 'asc' | 'desc';
 
 const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; group: ColumnGroup }[] = [
   { key: 'production_date', label: 'วันที่', pin: true, group: ROUTE_GROUP },
-  { key: 'status', label: 'สถานะ', group: ROUTE_GROUP },
-  { key: 'origin_name', label: 'ต้นทาง', group: ROUTE_GROUP },
-  { key: 'dest_name', label: 'ปลายทาง', group: ROUTE_GROUP },
-  { key: 'product_group', label: 'กลุ่มสินค้า', group: ROUTE_GROUP },
+  { key: 'status', label: 'สถานะ', pin: true, group: ROUTE_GROUP },
+  { key: 'origin_name', label: 'ต้นทาง', pin: true, group: ROUTE_GROUP },
+  { key: 'dest_name', label: 'ปลายทาง', pin: true, group: ROUTE_GROUP },
+  { key: 'product_group', label: 'กลุ่มสินค้า', pin: true, group: ROUTE_GROUP },
   { key: 'plan_total', label: 'แผน (kg)', align: 'right', group: PLAN_GROUP },
   { key: 'actual_total', label: 'จริง (kg)', align: 'right', group: ACTUAL_GROUP },
   { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: PCT_GROUP },
@@ -58,7 +58,7 @@ function sortValue(row: TrackingResultRow, key: SortKey): string | number | null
   return key === 'status' ? row.total_pct : row[key];
 }
 
-const PIN_CLASS = 'sticky left-0 z-10 bg-[inherit]';
+const PIN_CLASS = 'sticky z-10 bg-[inherit]';
 
 function compareValues(a: string | number | null, b: string | number | null): number {
   if (typeof a === 'string' || typeof b === 'string') {
@@ -94,6 +94,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   );
   const { widths, startResize } = useColumnWidths(initialWidths);
   const totalWidth = COLUMNS.reduce((a, c) => a + (widths[c.key] ?? defaultColumnWidth(c.label)), 0);
+  const pinnedLeft = useMemo(() => pinnedLeftOffsets(COLUMNS, widths), [widths]);
 
   function handleSort(key: SortKey) {
     if (key === sortKey) {
@@ -152,8 +153,9 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                 <th
                   key={`${run.group.key}-${i}`}
                   colSpan={run.span}
+                  style={run.pinKey !== undefined ? { left: pinnedLeft[run.pinKey] } : undefined}
                   className={`sticky top-0 overflow-hidden px-2 text-center text-[11px] font-semibold normal-case leading-tight tracking-wide ${
-                    run.pin ? 'left-0 z-30' : 'z-20'
+                    run.pin ? 'z-30' : 'z-20'
                   } ${run.group.bandClassName}`}
                 >
                   {run.group.bandTop && <div className="opacity-90">{run.group.bandTop}</div>}
@@ -167,9 +169,10 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                 return (
                   <th
                     key={c.key}
+                    style={c.pin ? { left: pinnedLeft[c.key] } : undefined}
                     className={`sticky top-14 overflow-hidden px-3 text-sm font-bold normal-case ${
                       c.align === 'right' ? 'text-right' : 'text-left'
-                    } ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.totalsTintClassName} ${
+                    } ${c.pin ? 'z-30' : 'z-10'} ${c.group.totalsTintClassName} ${
                       total?.tone ? TOTAL_TONE_CLASS[total.tone] : 'text-gray-900'
                     }`}
                   >
@@ -183,10 +186,11 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                 <ResizableTh
                   key={c.key}
                   width={widths[c.key] ?? defaultColumnWidth(c.label)}
+                  left={c.pin ? pinnedLeft[c.key] : undefined}
                   align={c.align}
                   onClick={() => handleSort(c.key)}
                   onMouseDownResize={startResize(c.key)}
-                  className={`sticky top-[88px] ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.labelClassName}`}
+                  className={`sticky top-[88px] ${c.pin ? 'z-30' : 'z-10'} ${c.group.labelClassName}`}
                 >
                   {c.label}
                   <span
@@ -213,15 +217,36 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
                   className={`cursor-pointer hover:bg-blue-50 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
                 >
-                  <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}>
+                  <td
+                    style={{ left: pinnedLeft.production_date }}
+                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                  >
                     {r.production_date}
                   </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">
+                  <td
+                    style={{ left: pinnedLeft.status }}
+                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                  >
                     {thresholds && <StatusBadge pct={r.total_pct} thresholds={thresholds} />}
                   </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.origin_name}</td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.dest_name}</td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.product_group}</td>
+                  <td
+                    style={{ left: pinnedLeft.origin_name }}
+                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                  >
+                    {r.origin_name}
+                  </td>
+                  <td
+                    style={{ left: pinnedLeft.dest_name }}
+                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                  >
+                    {r.dest_name}
+                  </td>
+                  <td
+                    style={{ left: pinnedLeft.product_group }}
+                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                  >
+                    {r.product_group}
+                  </td>
                   <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
                     {formatKg(r.plan_total)}
                   </td>

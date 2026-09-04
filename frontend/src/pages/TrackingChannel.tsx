@@ -144,6 +144,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
       {
         key: 'status',
         label: 'สถานะ',
+        pin: true,
         group: ROUTE_GROUP,
         sortValue: (r) => r[pctField] as number | null,
         render: (r) =>
@@ -152,6 +153,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
       {
         key: 'origin',
         label: 'ต้นทาง',
+        pin: true,
         group: ROUTE_GROUP,
         sortValue: (r) => r.origin_name,
         render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
@@ -159,6 +161,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
       {
         key: 'dest',
         label: 'ปลายทาง',
+        pin: true,
         group: ROUTE_GROUP,
         sortValue: (r) => r.dest_name,
         render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
@@ -166,6 +169,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
       {
         key: 'product_group',
         label: 'กลุ่มสินค้า',
+        pin: true,
         group: ROUTE_GROUP,
         sortValue: (r) => r.product_group,
         render: (r) => r.product_group,
