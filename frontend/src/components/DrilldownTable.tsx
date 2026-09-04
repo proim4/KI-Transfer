@@ -160,30 +160,13 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                 </th>
               ))}
             </tr>
-            <tr className="h-9">
-              {COLUMNS.map((c) => (
-                <ResizableTh
-                  key={c.key}
-                  width={widths[c.key] ?? defaultColumnWidth(c.label)}
-                  align={c.align}
-                  onClick={() => handleSort(c.key)}
-                  onMouseDownResize={startResize(c.key)}
-                  className={`sticky top-7 ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.tintClassName}`}
-                >
-                  {c.label}
-                  <span className={c.key === sortKey ? 'text-gray-600' : 'text-gray-300'}>
-                    {c.key === sortKey ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
-                  </span>
-                </ResizableTh>
-              ))}
-            </tr>
             <tr className="h-7">
               {COLUMNS.map((c) => {
                 const total = totalsByKey[c.key];
                 return (
                   <th
                     key={c.key}
-                    className={`sticky top-16 overflow-hidden px-3 text-xs font-bold normal-case ${
+                    className={`sticky top-7 overflow-hidden px-3 text-xs font-bold normal-case ${
                       c.align === 'right' ? 'text-right' : 'text-left'
                     } ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.tintClassName} ${
                       total?.tone ? TOTAL_TONE_CLASS[total.tone] : 'text-gray-900'
@@ -193,6 +176,23 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   </th>
                 );
               })}
+            </tr>
+            <tr className="h-9">
+              {COLUMNS.map((c) => (
+                <ResizableTh
+                  key={c.key}
+                  width={widths[c.key] ?? defaultColumnWidth(c.label)}
+                  align={c.align}
+                  onClick={() => handleSort(c.key)}
+                  onMouseDownResize={startResize(c.key)}
+                  className={`sticky top-14 ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.tintClassName}`}
+                >
+                  {c.label}
+                  <span className={c.key === sortKey ? 'text-gray-600' : 'text-gray-300'}>
+                    {c.key === sortKey ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+                  </span>
+                </ResizableTh>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">

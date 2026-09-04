@@ -4,22 +4,22 @@ import type { ColumnGroup } from '../components/SortableTable';
 export const ROUTE_GROUP: ColumnGroup = {
   key: 'route',
   label: 'ข้อมูลเส้นทาง',
-  bandClassName: 'bg-amber-500 text-amber-950',
-  tintClassName: 'bg-amber-50',
+  bandClassName: 'bg-gray-100 text-gray-700',
+  tintClassName: 'bg-gray-50',
 };
 
 export const PLAN_GROUP: ColumnGroup = {
   key: 'plan',
   label: 'แผนโอน',
-  bandClassName: 'bg-green-600 text-white',
-  tintClassName: 'bg-green-50',
+  bandClassName: 'bg-amber-500 text-amber-950',
+  tintClassName: 'bg-amber-50',
 };
 
 export const ACTUAL_GROUP: ColumnGroup = {
   key: 'actual',
   label: 'โอนจริง',
-  bandClassName: 'bg-slate-700 text-white',
-  tintClassName: 'bg-slate-100',
+  bandClassName: 'bg-green-800 text-white',
+  tintClassName: 'bg-green-50',
 };
 
 export const DIFF_GROUP: ColumnGroup = {

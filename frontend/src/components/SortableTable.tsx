@@ -89,9 +89,10 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
   // Fixed row heights so each sticky row's offset is exact without measuring
   // — only applied once there's a second/third row to stack, so a plain
   // single-row table (no groups, no totals) renders exactly as it always has.
+  // Row order (top to bottom): group band -> totals -> column labels -> data.
   const labelRowClass = hasTotals || hasGroups ? 'h-9' : '';
-  const labelTop = hasGroups ? 'top-7' : 'top-0';
-  const totalsTop = hasGroups ? 'top-16' : 'top-9';
+  const totalsTop = hasGroups ? 'top-7' : 'top-0';
+  const labelTop = hasTotals ? (hasGroups ? 'top-14' : 'top-7') : hasGroups ? 'top-7' : 'top-0';
 
   function handleSort(key: string) {
     if (key === sortKey) {
@@ -137,6 +138,22 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
               ))}
             </tr>
           )}
+          {hasTotals && (
+            <tr className="h-7">
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  className={`sticky ${totalsTop} overflow-hidden px-3 text-xs font-bold normal-case ${
+                    column.align === 'right' ? 'text-right' : 'text-left'
+                  } ${column.pin ? 'left-0 z-30' : 'z-10'} ${column.group ? column.group.tintClassName : 'bg-gray-50'} ${
+                    column.totalTone ? TOTAL_TONE_CLASS[column.totalTone] : 'text-gray-900'
+                  }`}
+                >
+                  {column.total ?? ''}
+                </th>
+              ))}
+            </tr>
+          )}
           <tr className={labelRowClass}>
             {columns.map((column) => (
               <ResizableTh
@@ -156,22 +173,6 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
               </ResizableTh>
             ))}
           </tr>
-          {hasTotals && (
-            <tr className="h-7">
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  className={`sticky ${totalsTop} overflow-hidden px-3 text-xs font-bold normal-case ${
-                    column.align === 'right' ? 'text-right' : 'text-left'
-                  } ${column.pin ? 'left-0 z-30' : 'z-10'} ${column.group ? column.group.tintClassName : 'bg-gray-50'} ${
-                    column.totalTone ? TOTAL_TONE_CLASS[column.totalTone] : 'text-gray-900'
-                  }`}
-                >
-                  {column.total ?? ''}
-                </th>
-              ))}
-            </tr>
-          )}
         </thead>
         <tbody className="divide-y divide-gray-100">
           {sorted.map((row) => (
