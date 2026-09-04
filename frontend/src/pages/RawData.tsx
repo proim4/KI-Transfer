@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import CodeName from '../components/CodeName';
+import { formatKg } from '../components/KpiCard';
 import RouteFilterBar, { EMPTY_ROUTE_FILTER, matchesRouteFilter, routeFilterOptions, type RouteFilterValue } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
+import TotalSummaryBar from '../components/TotalSummaryBar';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useRawActualRows, useRawPlanRows, type RawActualRow, type RawPlanRow } from '../hooks/useRawRows';
+import { sum } from '../lib/aggregate';
 
 type Tab = 'actual' | 'plan';
 
@@ -132,6 +135,18 @@ export default function RawData() {
   const filteredActual = actualRows.filter((r) => matchesRouteFilter(actualFilter, pickActualRoute(r)));
   const filteredPlan = planRows.filter((r) => matchesRouteFilter(planFilter, pickPlanRoute(r)));
 
+  const actualSummary = useMemo(
+    () => [{ label: 'Total น้ำหนัก (kg)', value: formatKg(sum(filteredActual.map((r) => r.weight_kg))) }],
+    [filteredActual],
+  );
+  const planSummary = useMemo(
+    () => [
+      { label: 'Total Suggest', value: formatKg(sum(filteredPlan.map((r) => r.suggest))) },
+      { label: 'Total แผนสุดท้าย', value: formatKg(sum(filteredPlan.map((r) => r.supply_after))) },
+    ],
+    [filteredPlan],
+  );
+
   return (
     <div className="space-y-4">
       <div>
@@ -163,6 +178,7 @@ export default function RawData() {
                   options={actualOptions}
                   resultCount={filteredActual.length}
                 />
+                <TotalSummaryBar items={actualSummary} />
                 <SortableTable rows={filteredActual} columns={actualColumns} rowKey={(r) => r.id} defaultSortKey="transfer_date" />
               </>
             ))}
@@ -178,6 +194,7 @@ export default function RawData() {
                   options={planOptions}
                   resultCount={filteredPlan.length}
                 />
+                <TotalSummaryBar items={planSummary} />
                 <SortableTable rows={filteredPlan} columns={planColumns} rowKey={(r) => r.id} defaultSortKey="production_date" />
               </>
             ))}

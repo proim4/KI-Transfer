@@ -3,18 +3,28 @@ import { useMemo, useState } from 'react';
 import { defaultColumnWidth, useColumnWidths } from '../hooks/useColumnWidths';
 import ResizableTh from './ResizableTh';
 
+export interface ColumnGroup {
+  key: string;
+  label: string;
+  /** Solid band styling for the top header row. */
+  bandClassName: string;
+  /** Light tint for the per-column header row underneath the band. */
+  tintClassName: string;
+}
+
 export interface Column<T> {
   key: string;
   label: string;
   align?: 'right';
   /** Freezes this column at the left edge while the rest of the table scrolls horizontally — use on the row's identity column. */
   pin?: boolean;
+  /** When set on every column, renders a colored 2-tier header (group band + column names); omit entirely for a plain single-row header. */
+  group?: ColumnGroup;
   sortValue: (row: T) => string | number | null;
   render: (row: T) => ReactNode;
 }
 
 const PIN_CLASS = 'sticky left-0 z-10 bg-white';
-const PIN_HEADER_CLASS = 'sticky left-0 z-20 bg-gray-50';
 
 interface SortableTableProps<T> {
   rows: T[];
@@ -34,6 +44,29 @@ function compareValues(a: string | number | null, b: string | number | null): nu
   return an - bn;
 }
 
+/**
+ * Collapses consecutive columns sharing the same group.key into one run, for
+ * the group band's colSpan. A pinned column always starts its own run (even
+ * if it shares a group.key with its neighbor) — a colSpan cell can't be
+ * "pinned for only part of its width", so the pinned column's own band cell
+ * must be a standalone, independently-stickyable <th>.
+ */
+export function groupRuns<C extends { group?: ColumnGroup; pin?: boolean }>(
+  columns: C[],
+): { group: ColumnGroup; span: number; pin: boolean }[] {
+  const runs: { group: ColumnGroup; span: number; pin: boolean }[] = [];
+  for (const column of columns) {
+    const last = runs[runs.length - 1];
+    if (!column.group) continue;
+    if (last && !last.pin && !column.pin && last.group.key === column.group.key) {
+      last.span += 1;
+    } else {
+      runs.push({ group: column.group, span: 1, pin: !!column.pin });
+    }
+  }
+  return runs;
+}
+
 /** A flat, click-to-sort, drag-to-resize table. Shared by every raw/tracking table in the app that isn't row-expandable. */
 export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey, maxHeight = '32rem' }: SortableTableProps<T>) {
   const [sortKey, setSortKey] = useState(defaultSortKey);
@@ -45,6 +78,8 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
   );
   const { widths, startResize } = useColumnWidths(initialWidths);
   const totalWidth = columns.reduce((a, c) => a + (widths[c.key] ?? defaultColumnWidth(c.label)), 0);
+  const hasGroups = columns.length > 0 && columns.every((c) => c.group);
+  const runs = useMemo(() => (hasGroups ? groupRuns(columns) : []), [columns, hasGroups]);
 
   function handleSort(key: string) {
     if (key === sortKey) {
@@ -74,7 +109,22 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
             <col key={c.key} style={{ width: widths[c.key] ?? defaultColumnWidth(c.label) }} />
           ))}
         </colgroup>
-        <thead className="sticky top-0 bg-gray-50 text-xs uppercase text-gray-500">
+        <thead className="text-xs uppercase text-gray-500">
+          {hasGroups && (
+            <tr className="h-7">
+              {runs.map((run, i) => (
+                <th
+                  key={`${run.group.key}-${i}`}
+                  colSpan={run.span}
+                  className={`sticky top-0 overflow-hidden px-3 text-left text-[11px] font-semibold normal-case tracking-wide ${
+                    run.pin ? 'left-0 z-30' : 'z-20'
+                  } ${run.group.bandClassName}`}
+                >
+                  {run.group.label}
+                </th>
+              ))}
+            </tr>
+          )}
           <tr>
             {columns.map((column) => (
               <ResizableTh
@@ -83,7 +133,9 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
                 align={column.align}
                 onClick={() => handleSort(column.key)}
                 onMouseDownResize={startResize(column.key)}
-                className={column.pin ? PIN_HEADER_CLASS : ''}
+                className={`sticky ${hasGroups ? 'top-7' : 'top-0'} ${column.pin ? 'left-0 z-30' : 'z-10'} ${
+                  column.group ? column.group.tintClassName : 'bg-gray-50'
+                }`}
               >
                 {column.label}
                 <span className={column.key === sortKey ? 'text-gray-600' : 'text-gray-300'}>

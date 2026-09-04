@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import CodeName from '../components/CodeName';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
+import PctBar from '../components/PctBar';
 import RemarkCell from '../components/RemarkCell';
 import StatusBadge from '../components/StatusBadge';
 import { useStatusThresholds } from '../hooks/useAppSettings';
@@ -11,11 +12,22 @@ import RouteFilterBar, {
   type RouteFilterValue,
 } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
+import TotalSummaryBar from '../components/TotalSummaryBar';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useTrackingResults } from '../hooks/useTrackingResults';
 import { useWeeks } from '../hooks/useWeeks';
+import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
 import { exportWeekToExcel } from '../lib/exportExcel';
+import {
+  ACTUAL_GROUP,
+  DIFF_GROUP,
+  LOSS_GROUP,
+  PLAN_GROUP,
+  PROFIT_GROUP,
+  REMARK_GROUP,
+  ROUTE_GROUP,
+} from '../lib/trackingColumnGroups';
 import type { TrackingResultRow } from '../types/db';
 
 export type Channel = 'weekly' | 'daily' | 'total';
@@ -54,6 +66,13 @@ function pickRoute(r: TrackingResultRow) {
     productGroup: r.product_group,
     searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group}`,
   };
+}
+
+/** Diff (kg) text tinted red for a shortfall, green for a surplus — matches the profit_lost convention already used elsewhere in this table. */
+function diffToneClass(diff: number): string {
+  if (diff < 0) return 'text-red-600';
+  if (diff > 0) return 'text-green-700';
+  return '';
 }
 
 /**
@@ -95,12 +114,14 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         key: 'production_date',
         label: 'วันที่',
         pin: true,
+        group: ROUTE_GROUP,
         sortValue: (r) => r.production_date,
         render: (r) => r.production_date,
       },
       {
         key: 'status',
         label: 'สถานะ',
+        group: ROUTE_GROUP,
         sortValue: (r) => r[pctField] as number | null,
         render: (r) =>
           thresholds ? <StatusBadge pct={r[pctField] as number | null} thresholds={thresholds} /> : null,
@@ -108,20 +129,29 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
       {
         key: 'origin',
         label: 'ต้นทาง',
+        group: ROUTE_GROUP,
         sortValue: (r) => r.origin_name,
         render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
       },
       {
         key: 'dest',
         label: 'ปลายทาง',
+        group: ROUTE_GROUP,
         sortValue: (r) => r.dest_name,
         render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
       },
-      { key: 'product_group', label: 'กลุ่มสินค้า', sortValue: (r) => r.product_group, render: (r) => r.product_group },
+      {
+        key: 'product_group',
+        label: 'กลุ่มสินค้า',
+        group: ROUTE_GROUP,
+        sortValue: (r) => r.product_group,
+        render: (r) => r.product_group,
+      },
       {
         key: 'origin_price',
         label: 'ราคาต้นทาง',
         align: 'right',
+        group: ROUTE_GROUP,
         sortValue: (r) => r.origin_price,
         render: (r) => r.origin_price.toLocaleString('en-US'),
       },
@@ -129,6 +159,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         key: 'dest_price',
         label: 'ราคาปลายทาง',
         align: 'right',
+        group: ROUTE_GROUP,
         sortValue: (r) => r.dest_price,
         render: (r) => r.dest_price.toLocaleString('en-US'),
       },
@@ -136,6 +167,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         key: 'plan',
         label: PLAN_LABEL[channel],
         align: 'right',
+        group: PLAN_GROUP,
         sortValue: (r) => Number(r[planField]),
         render: (r) => formatKg(Number(r[planField])),
       },
@@ -143,6 +175,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         key: 'actual_total',
         label: 'โอนจริงทั้งหมด (kg)',
         align: 'right',
+        group: ACTUAL_GROUP,
         sortValue: (r) => r.actual_total,
         render: (r) => formatKg(r.actual_total),
       },
@@ -150,20 +183,26 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         key: 'diff',
         label: 'Diff แผนโอน (kg)',
         align: 'right',
+        group: DIFF_GROUP,
         sortValue: (r) => Number(r[diffField]),
-        render: (r) => formatKg(Number(r[diffField])),
+        render: (r) => {
+          const diff = Number(r[diffField]);
+          return <span className={diffToneClass(diff)}>{formatKg(diff)}</span>;
+        },
       },
       {
         key: 'pct',
         label: '% โอนเทียบแผน',
         align: 'right',
+        group: DIFF_GROUP,
         sortValue: (r) => r[pctField] as number | null,
-        render: (r) => formatPct(r[pctField] as number | null),
+        render: (r) => (thresholds ? <PctBar pct={r[pctField] as number | null} thresholds={thresholds} /> : formatPct(r[pctField] as number | null)),
       },
       {
         key: 'profit_realized',
         label: 'กำไรที่ได้ (บาท)',
         align: 'right',
+        group: PROFIT_GROUP,
         sortValue: (r) => r.profit_realized,
         render: (r) => formatBaht(r.profit_realized),
       },
@@ -171,12 +210,14 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
         key: 'profit_lost',
         label: 'สูญเสียกำไร (บาท)',
         align: 'right',
+        group: LOSS_GROUP,
         sortValue: (r) => r.profit_lost,
         render: (r) => <span className={r.profit_lost < 0 ? 'text-red-600' : ''}>{formatBaht(r.profit_lost)}</span>,
       },
       {
         key: 'remark',
         label: 'หมายเหตุ',
+        group: REMARK_GROUP,
         sortValue: (r) => r.remark,
         render: (r) => <RemarkCell id={r.id} value={r.remark} />,
       },
@@ -186,6 +227,21 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
 
   const options = useMemo(() => routeFilterOptions(rows, pickRoute), [rows]);
   const filtered = rows.filter((r) => matchesRouteFilter(filter, pickRoute(r)));
+
+  const summary = useMemo(() => {
+    const agg = aggregateChannel(filtered, channel);
+    const actualTotal = dedupedActualTotal(filtered);
+    const profitRealized = sum(filtered.map((r) => Number(r.profit_realized)));
+    const profitLost = sum(filtered.map((r) => Number(r.profit_lost)));
+    return [
+      { label: 'Total Plan', value: formatKg(agg.planSum) },
+      { label: 'Total Actual', value: formatKg(actualTotal) },
+      { label: 'Total Diff', value: formatKg(agg.diff), tone: agg.diff < 0 ? ('bad' as const) : agg.diff > 0 ? ('good' as const) : undefined },
+      { label: 'Total %', value: formatPct(agg.pct) },
+      { label: 'Total กำไรที่ได้', value: formatBaht(profitRealized), tone: 'good' as const },
+      { label: 'Total สูญเสียกำไร', value: formatBaht(profitLost), tone: profitLost < 0 ? ('bad' as const) : undefined },
+    ];
+  }, [filtered, channel]);
 
   return (
     <div className="space-y-4">
@@ -215,6 +271,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
       {weekId && rows.length > 0 && (
         <>
           <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
+          <TotalSummaryBar items={summary} />
           <SortableTable rows={filtered} columns={columns} rowKey={(r) => r.id} defaultSortKey="production_date" />
         </>
       )}

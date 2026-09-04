@@ -2,7 +2,10 @@ import { Fragment, useMemo, useState } from 'react';
 import { defaultColumnWidth, useColumnWidths } from '../hooks/useColumnWidths';
 import { useActualBreakdown } from '../hooks/useActualBreakdown';
 import { useStatusThresholds } from '../hooks/useAppSettings';
+import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
+import { ACTUAL_GROUP, DIFF_GROUP, LOSS_GROUP, PLAN_GROUP, REMARK_GROUP, ROUTE_GROUP } from '../lib/trackingColumnGroups';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
+import PctBar from './PctBar';
 import ResizableTh from './ResizableTh';
 import RemarkCell from './RemarkCell';
 import RouteFilterBar, {
@@ -11,7 +14,9 @@ import RouteFilterBar, {
   routeFilterOptions,
   type RouteFilterValue,
 } from './RouteFilterBar';
+import { groupRuns, type ColumnGroup } from './SortableTable';
 import StatusBadge from './StatusBadge';
+import TotalSummaryBar from './TotalSummaryBar';
 import type { TrackingResultRow } from '../types/db';
 
 interface DrilldownTableProps {
@@ -33,26 +38,27 @@ type SortKey =
   | 'remark';
 type SortDirection = 'asc' | 'desc';
 
-const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean }[] = [
-  { key: 'production_date', label: 'วันที่', pin: true },
-  { key: 'status', label: 'สถานะ' },
-  { key: 'origin_name', label: 'ต้นทาง' },
-  { key: 'dest_name', label: 'ปลายทาง' },
-  { key: 'product_group', label: 'กลุ่มสินค้า' },
-  { key: 'plan_total', label: 'แผน (kg)', align: 'right' },
-  { key: 'actual_total', label: 'จริง (kg)', align: 'right' },
-  { key: 'total_pct', label: '% เทียบแผน', align: 'right' },
-  { key: 'overage', label: 'โอนเกินแผน', align: 'right' },
-  { key: 'profit_lost', label: 'สูญเสีย (บาท)', align: 'right' },
-  { key: 'remark', label: 'หมายเหตุ' },
+const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; group: ColumnGroup }[] = [
+  { key: 'production_date', label: 'วันที่', pin: true, group: ROUTE_GROUP },
+  { key: 'status', label: 'สถานะ', group: ROUTE_GROUP },
+  { key: 'origin_name', label: 'ต้นทาง', group: ROUTE_GROUP },
+  { key: 'dest_name', label: 'ปลายทาง', group: ROUTE_GROUP },
+  { key: 'product_group', label: 'กลุ่มสินค้า', group: ROUTE_GROUP },
+  { key: 'plan_total', label: 'แผน (kg)', align: 'right', group: PLAN_GROUP },
+  { key: 'actual_total', label: 'จริง (kg)', align: 'right', group: ACTUAL_GROUP },
+  { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: DIFF_GROUP },
+  { key: 'overage', label: 'โอนเกินแผน', align: 'right', group: DIFF_GROUP },
+  { key: 'profit_lost', label: 'สูญเสีย (บาท)', align: 'right', group: LOSS_GROUP },
+  { key: 'remark', label: 'หมายเหตุ', group: REMARK_GROUP },
 ];
+
+const RUNS = groupRuns(COLUMNS);
 
 function sortValue(row: TrackingResultRow, key: SortKey): string | number | null {
   return key === 'status' ? row.total_pct : row[key];
 }
 
 const PIN_CLASS = 'sticky left-0 z-10 bg-white';
-const PIN_HEADER_CLASS = 'sticky left-0 z-20 bg-gray-50';
 
 function compareValues(a: string | number | null, b: string | number | null): number {
   if (typeof a === 'string' || typeof b === 'string') {
@@ -110,12 +116,28 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
     return copy;
   }, [filtered, sortKey, sortDirection]);
 
+  const summary = useMemo(() => {
+    const agg = aggregateChannel(filtered, 'total');
+    const actualTotal = dedupedActualTotal(filtered);
+    const overageSum = sum(filtered.map((r) => Number(r.overage)));
+    const lossSum = sum(filtered.map((r) => Number(r.profit_lost)));
+    return [
+      { label: 'Total Plan', value: formatKg(agg.planSum) },
+      { label: 'Total Actual', value: formatKg(actualTotal) },
+      { label: 'Total Diff', value: formatKg(agg.diff), tone: agg.diff < 0 ? ('bad' as const) : agg.diff > 0 ? ('good' as const) : undefined },
+      { label: 'Total %', value: formatPct(agg.pct) },
+      { label: 'Total โอนเกินแผน', value: formatKg(overageSum) },
+      { label: 'Total สูญเสียกำไร', value: formatBaht(lossSum), tone: lossSum < 0 ? ('bad' as const) : undefined },
+    ];
+  }, [filtered]);
+
   const expandedRow = sorted.find((r) => r.id === expandedId) ?? null;
   const breakdown = useActualBreakdown(weekId, expandedRow);
 
   return (
     <div>
       <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
+      <TotalSummaryBar items={summary} />
 
       <div className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">
         <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>
@@ -124,7 +146,20 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
               <col key={c.key} style={{ width: widths[c.key] ?? defaultColumnWidth(c.label) }} />
             ))}
           </colgroup>
-          <thead className="sticky top-0 bg-gray-50 text-xs uppercase text-gray-500">
+          <thead className="text-xs uppercase text-gray-500">
+            <tr className="h-7">
+              {RUNS.map((run, i) => (
+                <th
+                  key={`${run.group.key}-${i}`}
+                  colSpan={run.span}
+                  className={`sticky top-0 overflow-hidden px-3 text-left text-[11px] font-semibold normal-case tracking-wide ${
+                    run.pin ? 'left-0 z-30' : 'z-20'
+                  } ${run.group.bandClassName}`}
+                >
+                  {run.group.label}
+                </th>
+              ))}
+            </tr>
             <tr>
               {COLUMNS.map((c) => (
                 <ResizableTh
@@ -133,7 +168,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   align={c.align}
                   onClick={() => handleSort(c.key)}
                   onMouseDownResize={startResize(c.key)}
-                  className={c.pin ? PIN_HEADER_CLASS : ''}
+                  className={`sticky top-7 ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.tintClassName}`}
                 >
                   {c.label}
                   <span className={c.key === sortKey ? 'text-gray-600' : 'text-gray-300'}>
@@ -166,7 +201,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                     {formatKg(r.actual_total)}
                   </td>
                   <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-right font-medium">
-                    {formatPct(r.total_pct)}
+                    {thresholds ? <PctBar pct={r.total_pct} thresholds={thresholds} /> : formatPct(r.total_pct)}
                   </td>
                   <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-right">
                     {formatKg(r.overage)}

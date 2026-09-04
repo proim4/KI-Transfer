@@ -28,10 +28,19 @@ function useLatestActivityStamps() {
   });
 }
 
-/** The week to default to when a page first loads — see lib/latestWeek.ts. */
+/**
+ * The week to default to when a page first loads — see lib/latestWeek.ts.
+ * Returns null until *both* underlying queries have actually settled — an
+ * empty `stamps` array only means "no activity yet" when the query truly
+ * succeeded with zero rows, never "hasn't loaded yet". Treating the two the
+ * same (e.g. via `stamps ?? []`) races: if `weeks` resolves before `stamps`,
+ * it looks like there's no activity at all and falls back to weeks[0] (the
+ * newest by year/week number) — permanently, since useDefaultedWeekId locks
+ * in the first non-null value it sees and never reconsiders.
+ */
 export function useLatestWeekId(): string | null {
-  const { data: weeks } = useWeeks();
-  const { data: stamps } = useLatestActivityStamps();
-  if (!weeks) return null;
-  return pickLatestWeekId(weeks, stamps ?? []);
+  const weeksQuery = useWeeks();
+  const stampsQuery = useLatestActivityStamps();
+  if (!weeksQuery.isSuccess || !stampsQuery.isSuccess) return null;
+  return pickLatestWeekId(weeksQuery.data, stampsQuery.data);
 }
