@@ -8,6 +8,7 @@ function week(overrides: Partial<WeekRow>): WeekRow {
     year_no: 2026,
     week_no: 36,
     label: 'WK36',
+    product_line: 'chicken',
     created_at: '2026-09-01T00:00:00Z',
     updated_at: '2026-09-01T00:00:00Z',
     ...overrides,
@@ -40,5 +41,18 @@ describe('pickLatestWeekId', () => {
     const weeks = [week({ id: 'empty', year_no: 2029, week_no: 34 }), week({ id: 'real', year_no: 2026, week_no: 36 })];
     const stamps = [{ week_id: 'real', timestamp: '2026-09-02T20:56:54Z' }];
     expect(pickLatestWeekId(weeks, stamps)).toBe('real');
+  });
+
+  it('ignores a stamp for a week outside the given list (e.g. a different product line)', () => {
+    // activityStamps is fetched globally across every product line; a chicken
+    // week's very recent upload must not outrank a pork week just because its
+    // stamp happens to be newer — only stamps for ids actually in `weeks`
+    // (already scoped to one product line) may be considered.
+    const weeks = [week({ id: 'pork-w1', product_line: 'pork' })];
+    const stamps = [
+      { week_id: 'chicken-w9', timestamp: '2026-09-04T23:59:00Z' },
+      { week_id: 'pork-w1', timestamp: '2026-09-01T00:00:00Z' },
+    ];
+    expect(pickLatestWeekId(weeks, stamps)).toBe('pork-w1');
   });
 });

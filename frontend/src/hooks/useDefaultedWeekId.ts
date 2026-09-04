@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ProductLine } from '../types/db';
 import { useLatestWeekId } from './useLatestWeekId';
 
 /**
@@ -7,9 +8,9 @@ import { useLatestWeekId } from './useLatestWeekId';
  * never has to pick a week just to see data. Once the user has picked one
  * themselves (via the returned setter), auto-defaulting stops for good.
  */
-export function useDefaultedWeekId(): [string | null, (weekId: string) => void] {
+export function useDefaultedWeekId(productLine: ProductLine = 'chicken'): [string | null, (weekId: string) => void] {
   const [weekId, setWeekId] = useState<string | null>(null);
-  const latestWeekId = useLatestWeekId();
+  const latestWeekId = useLatestWeekId(productLine);
   const userPicked = useRef(false);
 
   useEffect(() => {

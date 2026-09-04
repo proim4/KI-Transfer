@@ -28,13 +28,14 @@ import {
   REMARK_GROUP,
   ROUTE_GROUP,
 } from '../lib/trackingColumnGroups';
-import type { TrackingResultRow } from '../types/db';
+import type { ProductLine, TrackingResultRow } from '../types/db';
 
 export type Channel = 'weekly' | 'daily' | 'total';
 
 interface TrackingChannelProps {
   channel: Channel;
   title: string;
+  productLine?: ProductLine;
 }
 
 const PLAN_FIELD: Record<Channel, keyof TrackingResultRow> = {
@@ -83,11 +84,11 @@ function diffToneClass(diff: number): string {
  * `channel` (weekly/daily/total) rather than 3 separate files, since the
  * table shape is identical and only which stored field it reads differs.
  */
-export default function TrackingChannel({ channel, title }: TrackingChannelProps) {
-  const [weekId, setWeekId] = useDefaultedWeekId();
+export default function TrackingChannel({ channel, title, productLine = 'chicken' }: TrackingChannelProps) {
+  const [weekId, setWeekId] = useDefaultedWeekId(productLine);
   const [filter, setFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const { data, isLoading } = useTrackingResults(weekId);
-  const { data: weeks } = useWeeks();
+  const { data: weeks } = useWeeks(productLine);
   const thresholds = useStatusThresholds();
   const rows = data ?? [];
   const [exporting, setExporting] = useState(false);
@@ -266,7 +267,7 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="mb-2 text-xl font-semibold text-gray-900">{title}</h1>
-          <WeekSelector value={weekId} onChange={setWeekId} />
+          <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
         </div>
         {weekId && rows.length > 0 && (
           <button

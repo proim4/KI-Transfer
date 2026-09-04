@@ -11,10 +11,17 @@ import { aggregateChannel, aggregateReject, dedupedActualTotal, sum } from '../l
 import { exportWeekToExcel } from '../lib/exportExcel';
 import { formatDate, formatDateTime, formatTime } from '../lib/formatDateTime';
 import { computeStatus } from '../lib/statusBadge';
+import type { ProductLine } from '../types/db';
 
-export default function Dashboard() {
-  const [weekId, setWeekId] = useDefaultedWeekId();
-  const { data: weeks } = useWeeks();
+const REQUIRED_FILE_COUNT: Record<ProductLine, number> = { chicken: 3, pork: 2 };
+
+interface DashboardProps {
+  productLine?: ProductLine;
+}
+
+export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
+  const [weekId, setWeekId] = useDefaultedWeekId(productLine);
+  const { data: weeks } = useWeeks(productLine);
   const { data: results, isLoading } = useTrackingResults(weekId);
   const { data: unmatched } = useUnmatchedActual(weekId);
   const { data: uploads } = useUploads(weekId);
@@ -61,12 +68,17 @@ export default function Dashboard() {
             <p className="mt-1 text-sm text-gray-500">
               📅 {week.label}
               {lastUpdatedAt && <> · อัปเดตล่าสุด {formatDateTime(lastUpdatedAt)}</>}
-              {uploads && <> · {uploads.length}/3 ไฟล์</>}
+              {uploads && (
+                <>
+                  {' '}
+                  · {uploads.length}/{REQUIRED_FILE_COUNT[productLine]} ไฟล์
+                </>
+              )}
             </p>
           )}
         </div>
         <div className="flex items-center gap-3">
-          <WeekSelector value={weekId} onChange={setWeekId} />
+          <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
           {weekId && rows.length > 0 && (
             <button
               type="button"
@@ -107,7 +119,7 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-            <KpiCard label="% โอนเทียบแผน Weekly" value={formatPct(weekly.pct)} />
+            {productLine === 'chicken' && <KpiCard label="% โอนเทียบแผน Weekly" value={formatPct(weekly.pct)} />}
             <KpiCard label="% โอนเทียบแผน Daily" value={formatPct(daily.pct)} />
             <KpiCard label="ปริมาณโอนจริงตามแผน" value={formatKg(total.toleranceAdjSum)} />
             <KpiCard label="ปริมาณ Reject" value={formatKg(reject.rejectSum)} sub={`% Reject: ${formatPct(reject.pct)}`} />

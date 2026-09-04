@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { pickLatestWeekId, type ActivityStamp } from '../lib/latestWeek';
 import { supabase } from '../lib/supabase';
+import type { ProductLine } from '../types/db';
 import { useWeeks } from './useWeeks';
 
 export const LATEST_UPLOAD_STAMPS_QUERY_KEY = ['upload-activity-latest-stamps'];
@@ -38,8 +39,8 @@ function useLatestActivityStamps() {
  * newest by year/week number) — permanently, since useDefaultedWeekId locks
  * in the first non-null value it sees and never reconsiders.
  */
-export function useLatestWeekId(): string | null {
-  const weeksQuery = useWeeks();
+export function useLatestWeekId(productLine: ProductLine): string | null {
+  const weeksQuery = useWeeks(productLine);
   const stampsQuery = useLatestActivityStamps();
   if (!weeksQuery.isSuccess || !stampsQuery.isSuccess) return null;
   return pickLatestWeekId(weeksQuery.data, stampsQuery.data);

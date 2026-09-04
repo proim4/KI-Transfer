@@ -31,6 +31,13 @@ export default function App() {
             path="/tracking/total"
             element={<TrackingChannel channel="total" title="ติดตามโอนรวม (Weekly + Daily) เทียบแผน" />}
           />
+          <Route path="/pork/dashboard" element={<Dashboard productLine="pork" />} />
+          <Route path="/pork/upload" element={<Upload productLine="pork" />} />
+          <Route path="/pork/raw-data" element={<RawData productLine="pork" />} />
+          <Route
+            path="/pork/tracking/daily"
+            element={<TrackingChannel channel="daily" title="ติดตามโอน (หมู) เทียบแผน" productLine="pork" />}
+          />
           <Route element={<AdminGuard />}>
             <Route path="/settings" element={<Settings />} />
           </Route>

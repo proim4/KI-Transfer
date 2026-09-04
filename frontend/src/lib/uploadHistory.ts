@@ -34,6 +34,10 @@ export function groupHistoryByWeek(rows: UploadHistoryRow[], weeks: WeekRow[]): 
   const weekLabelById = new Map(weeks.map((w) => [w.id, w.label]));
   const byWeek = new Map<string, UploadHistoryRow[]>();
   for (const row of rows) {
+    // rows is fetched globally across every product line, but weeks is
+    // already scoped to one — skip history for weeks outside that scope so
+    // e.g. the pork Upload page never shows chicken weeks' history.
+    if (!weekLabelById.has(row.week_id)) continue;
     const bucket = byWeek.get(row.week_id) ?? [];
     bucket.push(row);
     byWeek.set(row.week_id, bucket);

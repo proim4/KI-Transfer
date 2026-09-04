@@ -3,7 +3,7 @@ import { useDeleteUploadHistory, useUploadHistory, useAllUploadHistory } from '.
 import { useWeeks } from '../hooks/useWeeks';
 import { formatDate, formatDateTime, formatTime } from '../lib/formatDateTime';
 import { formatFileSize, groupHistoryByWeek, isCurrentVersion } from '../lib/uploadHistory';
-import type { UploadHistoryRow } from '../types/db';
+import type { ProductLine, UploadHistoryRow } from '../types/db';
 import ConfirmDialog from './ConfirmDialog';
 
 const FILE_TYPE_LABEL: Record<string, string> = {
@@ -119,9 +119,9 @@ function WeekHistoryDetail({ weekId }: { weekId: string }) {
  * for attention — opens to a one-line-per-week summary, each week itself
  * expandable to the full file table (WeekHistoryDetail), lazily fetched.
  */
-export default function UploadHistoryPanel() {
+export default function UploadHistoryPanel({ productLine }: { productLine: ProductLine }) {
   const { data: allHistory } = useAllUploadHistory();
-  const { data: weeks } = useWeeks();
+  const { data: weeks } = useWeeks(productLine);
 
   const summaries = groupHistoryByWeek(allHistory ?? [], weeks ?? []);
 

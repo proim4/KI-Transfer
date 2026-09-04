@@ -7,6 +7,7 @@ import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useRawActualRows, useRawPlanRows, type RawActualRow, type RawPlanRow } from '../hooks/useRawRows';
 import { sum } from '../lib/aggregate';
+import type { ProductLine } from '../types/db';
 
 type Tab = 'actual' | 'plan';
 
@@ -35,8 +36,12 @@ const tabClass = (active: boolean) =>
     active ? 'border-navy-800 text-navy-800' : 'border-transparent text-gray-500 hover:text-gray-700'
   }`;
 
-export default function RawData() {
-  const [weekId, setWeekId] = useDefaultedWeekId();
+interface RawDataProps {
+  productLine?: ProductLine;
+}
+
+export default function RawData({ productLine = 'chicken' }: RawDataProps) {
+  const [weekId, setWeekId] = useDefaultedWeekId(productLine);
   const [tab, setTab] = useState<Tab>('actual');
   const [actualFilter, setActualFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [planFilter, setPlanFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
@@ -148,7 +153,7 @@ export default function RawData() {
     <div className="space-y-4">
       <div>
         <h1 className="mb-2 text-xl font-semibold text-gray-900">ข้อมูลดิบ</h1>
-        <WeekSelector value={weekId} onChange={setWeekId} />
+        <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
       </div>
 
       {!weekId && <p className="text-sm text-gray-500">เลือก Week เพื่อดูข้อมูล</p>}

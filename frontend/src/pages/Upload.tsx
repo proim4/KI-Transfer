@@ -5,17 +5,25 @@ import UploadHistoryPanel from '../components/UploadHistoryPanel';
 import WeekSelector from '../components/WeekSelector';
 import { useProcessWeek } from '../hooks/useProcessWeek';
 import { useUploads } from '../hooks/useUploads';
+import type { ProductLine, UploadFileType } from '../types/db';
 
-export default function Upload() {
+const REQUIRED_FILE_TYPES: Record<ProductLine, UploadFileType[]> = {
+  chicken: ['actual_abs0000', 'plan_weekly_bsr030', 'plan_daily_bdr130'],
+  pork: ['actual_abs0000', 'plan_daily_bdr130'],
+};
+
+interface UploadProps {
+  productLine?: ProductLine;
+}
+
+export default function Upload({ productLine = 'chicken' }: UploadProps) {
   const [weekId, setWeekId] = useState<string | null>(null);
   const { data: uploads } = useUploads(weekId);
   const navigate = useNavigate();
 
+  const requiredFileTypes = REQUIRED_FILE_TYPES[productLine];
   const allValidated =
-    !!weekId &&
-    (['actual_abs0000', 'plan_weekly_bsr030', 'plan_daily_bdr130'] as const).every(
-      (t) => uploads?.find((u) => u.file_type === t)?.status === 'validated',
-    );
+    !!weekId && requiredFileTypes.every((t) => uploads?.find((u) => u.file_type === t)?.status === 'validated');
 
   const processMutation = useProcessWeek();
 
@@ -23,7 +31,7 @@ export default function Upload() {
     <div className="max-w-3xl space-y-6">
       <div>
         <h1 className="mb-2 text-xl font-semibold text-gray-900">Upload Data</h1>
-        <WeekSelector value={weekId} onChange={setWeekId} allowCreate />
+        <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} allowCreate />
       </div>
 
       {weekId && (
@@ -38,12 +46,14 @@ export default function Upload() {
                 label="โอนจริง (ABS0000)"
                 hint="ไฟล์ Export จาก Smart Sales: ABS0000_StockTransfers"
               />
-              <UploadDropzone
-                weekId={weekId}
-                fileType="plan_weekly_bsr030"
-                label="แผนโอนรายสัปดาห์ (BSR030 Weekly)"
-                hint="ไฟล์ Export จาก Smart Sales: BSR030_BsTransferReport"
-              />
+              {productLine === 'chicken' && (
+                <UploadDropzone
+                  weekId={weekId}
+                  fileType="plan_weekly_bsr030"
+                  label="แผนโอนรายสัปดาห์ (BSR030 Weekly)"
+                  hint="ไฟล์ Export จาก Smart Sales: BSR030_BsTransferReport"
+                />
+              )}
               <UploadDropzone
                 weekId={weekId}
                 fileType="plan_daily_bdr130"
@@ -62,7 +72,9 @@ export default function Upload() {
             >
               {processMutation.isPending ? 'กำลังประมวลผล...' : 'ประมวลผล'}
             </button>
-            {!allValidated && <p className="mt-2 text-xs text-gray-500">อัพโหลดและตรวจสอบให้ผ่านครบทั้ง 3 ไฟล์ก่อน</p>}
+            {!allValidated && (
+              <p className="mt-2 text-xs text-gray-500">อัพโหลดและตรวจสอบให้ผ่านครบทั้ง {requiredFileTypes.length} ไฟล์ก่อน</p>
+            )}
             {processMutation.isSuccess && (
               <div className="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700">
                 ประมวลผลสำเร็จ: {processMutation.data.trackingRowCount} แถว
@@ -70,7 +82,7 @@ export default function Upload() {
                   ` (พบการโอนที่ไม่ตรงกับแผน ${processMutation.data.unmatchedRowCount} กลุ่ม)`}
                 <button
                   type="button"
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate(productLine === 'pork' ? '/pork/dashboard' : '/dashboard')}
                   className="ml-2 font-medium underline"
                 >
                   ไปที่ Dashboard
@@ -84,7 +96,7 @@ export default function Upload() {
             )}
           </div>
 
-          <UploadHistoryPanel />
+          <UploadHistoryPanel productLine={productLine} />
         </>
       )}
     </div>

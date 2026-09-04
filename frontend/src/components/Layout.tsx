@@ -45,6 +45,33 @@ function MoreMenu({ showSettings }: { showSettings: boolean }) {
   );
 }
 
+/** สินค้าหมู เป็นชุดข้อมูลคู่ขนานแยกจากไก่ทั้งหมด (weeks.product_line) — อยู่คนละเมนูหลัก
+ * ไปเลยแทนที่จะปนกับเมนูไก่เดิม เพื่อไม่ให้กระทบ Nav/Function เดิมของไก่แม้แต่นิดเดียว. */
+function PorkMenu() {
+  return (
+    <details className="group relative">
+      <summary className="flex cursor-pointer list-none items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-navy-100 hover:bg-navy-800 [&::-webkit-details-marker]:hidden">
+        หมู
+        <span className="text-xs">▾</span>
+      </summary>
+      <nav className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white p-1 shadow-lg">
+        <NavLink to="/pork/dashboard" className={moreLinkClass}>
+          Dashboard (หมู)
+        </NavLink>
+        <NavLink to="/pork/upload" className={moreLinkClass}>
+          Upload Data (หมู)
+        </NavLink>
+        <NavLink to="/pork/tracking/daily" className={moreLinkClass}>
+          ติดตามโอน (หมู)
+        </NavLink>
+        <NavLink to="/pork/raw-data" className={moreLinkClass}>
+          ข้อมูลดิบ (หมู)
+        </NavLink>
+      </nav>
+    </details>
+  );
+}
+
 export default function Layout() {
   const { session, profile, isAdmin } = useCurrentUser();
   const { data: settings } = useAppSettings();
@@ -67,6 +94,7 @@ export default function Layout() {
                 Upload Data
               </NavLink>
               <MoreMenu showSettings={showSettings} />
+              <PorkMenu />
             </nav>
           </div>
           <div className="flex items-center gap-4">

@@ -50,6 +50,7 @@ function week(overrides: Partial<WeekRow>): WeekRow {
     year_no: 2026,
     week_no: 36,
     label: 'WK36',
+    product_line: 'chicken',
     created_at: '2026-08-01T00:00:00Z',
     updated_at: '2026-08-01T00:00:00Z',
     ...overrides,
@@ -84,6 +85,17 @@ describe('groupHistoryByWeek', () => {
     ];
     const summaries = groupHistoryByWeek(rows, weeks);
     expect(summaries.map((s) => s.weekId)).toEqual(['w2', 'w1']);
+  });
+
+  it('excludes history for a week outside the given list (e.g. a different product line)', () => {
+    // rows is fetched globally across every product line; a pork-only weeks
+    // list must not surface a chicken week's history.
+    const rows = [
+      historyRow({ id: 'a', week_id: 'w1' }),
+      historyRow({ id: 'b', week_id: 'chicken-only-week' }),
+    ];
+    const summaries = groupHistoryByWeek(rows, weeks);
+    expect(summaries.map((s) => s.weekId)).toEqual(['w1']);
   });
 });
 

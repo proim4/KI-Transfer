@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useCreateWeek, useWeeks } from '../hooks/useWeeks';
+import type { ProductLine } from '../types/db';
 
 interface WeekSelectorProps {
   value: string | null;
   onChange: (weekId: string) => void;
+  productLine: ProductLine;
   /** Shows the inline "+ สร้าง Week ใหม่" form. Off by default so read-only
    * pages (Dashboard/Raw Data/Tracking) get a clean "Week: [ WK36 ▼ ]" —
    * only the Upload page (where a new week's data actually gets created) needs it. */
@@ -20,9 +22,9 @@ function currentIsoWeek(): { yearNo: number; weekNo: number } {
   return { yearNo: target.getUTCFullYear(), weekNo };
 }
 
-export default function WeekSelector({ value, onChange, allowCreate = false }: WeekSelectorProps) {
-  const { data: weeks, isLoading } = useWeeks();
-  const createWeek = useCreateWeek();
+export default function WeekSelector({ value, onChange, productLine, allowCreate = false }: WeekSelectorProps) {
+  const { data: weeks, isLoading } = useWeeks(productLine);
+  const createWeek = useCreateWeek(productLine);
   const [showCreate, setShowCreate] = useState(false);
   const defaults = currentIsoWeek();
   const [yearNo, setYearNo] = useState(defaults.yearNo);

@@ -26,11 +26,14 @@ export interface ProfileRow {
   updated_at: string;
 }
 
+export type ProductLine = 'chicken' | 'pork';
+
 export interface WeekRow {
   id: string;
   year_no: number;
   week_no: number;
   label: string;
+  product_line: ProductLine;
   created_at: string;
   updated_at: string;
 }
