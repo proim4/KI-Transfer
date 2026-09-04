@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { supabase } from '../lib/supabase';
+import LiveClock from './LiveClock';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `rounded-md px-3 py-2 text-sm font-medium ${
@@ -68,18 +69,21 @@ export default function Layout() {
               <MoreMenu showSettings={showSettings} />
             </nav>
           </div>
-          {session && (
-            <div className="flex items-center gap-3 text-sm text-navy-200">
-              <span>👤 {profile?.username ?? session.user.email}</span>
-              <button
-                type="button"
-                onClick={() => supabase.auth.signOut()}
-                className="rounded-md border border-navy-600 bg-navy-800 px-3 py-1.5 text-white hover:bg-navy-700"
-              >
-                ออกจากระบบ
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            <LiveClock />
+            {session && (
+              <div className="flex items-center gap-3 text-sm text-navy-200">
+                <span>👤 {profile?.username ?? session.user.email}</span>
+                <button
+                  type="button"
+                  onClick={() => supabase.auth.signOut()}
+                  className="rounded-md border border-navy-600 bg-navy-800 px-3 py-1.5 text-white hover:bg-navy-700"
+                >
+                  ออกจากระบบ
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-screen-2xl px-4 py-6">
