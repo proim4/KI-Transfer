@@ -4,7 +4,6 @@ import { useActualBreakdown } from '../hooks/useActualBreakdown';
 import { useStatusThresholds } from '../hooks/useAppSettings';
 import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
 import { ACTUAL_GROUP, DIFF_GROUP, LOSS_GROUP, PCT_GROUP, PLAN_GROUP, REMARK_GROUP, ROUTE_GROUP } from '../lib/trackingColumnGroups';
-import RefreshPivotBox from './RefreshPivotBox';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
 import PctBar from './PctBar';
 import ResizableTh from './ResizableTh';
@@ -138,7 +137,6 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
 
   return (
     <div>
-      <RefreshPivotBox />
       <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
 
       <div className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">

@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import CodeName from '../components/CodeName';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
 import PctBar from '../components/PctBar';
-import RefreshPivotBox from '../components/RefreshPivotBox';
 import RemarkCell from '../components/RemarkCell';
 import StatusBadge from '../components/StatusBadge';
 import { useStatusThresholds } from '../hooks/useAppSettings';
@@ -285,7 +284,6 @@ export default function TrackingChannel({ channel, title }: TrackingChannelProps
 
       {weekId && rows.length > 0 && (
         <>
-          <RefreshPivotBox />
           <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
           <SortableTable rows={filtered} columns={columns} rowKey={(r) => r.id} defaultSortKey="production_date" />
         </>
