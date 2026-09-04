@@ -92,7 +92,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
     () => Object.fromEntries(COLUMNS.map((c) => [c.key, defaultColumnWidth(c.label)])),
     [],
   );
-  const { widths, startResize } = useColumnWidths(initialWidths);
+  const { widths, startResize } = useColumnWidths(initialWidths, 'columnWidths:dashboard-tracking');
   const totalWidth = COLUMNS.reduce((a, c) => a + (widths[c.key] ?? defaultColumnWidth(c.label)), 0);
   const pinnedLeft = useMemo(() => pinnedLeftOffsets(COLUMNS, widths), [widths]);
 

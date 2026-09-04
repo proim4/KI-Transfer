@@ -5,13 +5,40 @@ export function defaultColumnWidth(label: string): number {
   return Math.min(260, Math.max(90, label.length * 9 + 32));
 }
 
+function loadStoredWidths(storageKey: string | undefined): Record<string, number> | null {
+  if (!storageKey) return null;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredWidths(storageKey: string | undefined, widths: Record<string, number>) {
+  if (!storageKey) return;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(widths));
+  } catch {
+    // localStorage unavailable (private browsing, quota, etc.) — resizing still works for this session, just isn't remembered.
+  }
+}
+
 /**
- * Drag-to-resize column widths, shared by every data table in the app.
- * Registers the mousemove/mouseup listeners once (not per drag-start) and
- * gates on a ref so there's no listener churn while dragging.
+ * Drag-to-resize column widths, shared by every data table in the app. When
+ * `storageKey` is given, the widths a user drags to are remembered in
+ * localStorage (per browser) and restored on the next visit — until the user
+ * drags again, they stay exactly where left. Registers the mousemove/mouseup
+ * listeners once (not per drag-start) and gates on a ref so there's no
+ * listener churn while dragging.
  */
-export function useColumnWidths(initialWidths: Record<string, number>, minWidth = 60) {
-  const [widths, setWidths] = useState(initialWidths);
+export function useColumnWidths(initialWidths: Record<string, number>, storageKey?: string, minWidth = 60) {
+  const [widths, setWidths] = useState(() => {
+    const stored = loadStoredWidths(storageKey);
+    return stored ? { ...initialWidths, ...stored } : initialWidths;
+  });
+  const widthsRef = useRef(widths);
+  widthsRef.current = widths;
   const dragRef = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
 
   // New columns (e.g. switching tabs to a different column set) get a width; existing ones keep whatever the user dragged them to.
@@ -38,6 +65,9 @@ export function useColumnWidths(initialWidths: Record<string, number>, minWidth 
       setWidths((w) => ({ ...w, [drag.key]: newWidth }));
     }
     function onUp() {
+      // Persist once, at drag end, rather than on every mousemove — a resize
+      // drag can fire dozens of moves, and only the final width matters.
+      if (dragRef.current) saveStoredWidths(storageKey, widthsRef.current);
       dragRef.current = null;
     }
     window.addEventListener('mousemove', onMove);
@@ -46,7 +76,7 @@ export function useColumnWidths(initialWidths: Record<string, number>, minWidth 
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [minWidth]);
+  }, [minWidth, storageKey]);
 
   const startResize = useCallback(
     (key: string) => (e: React.MouseEvent) => {

@@ -43,6 +43,8 @@ interface SortableTableProps<T> {
   rowKey: (row: T) => string | number;
   defaultSortKey: string;
   maxHeight?: string;
+  /** When given, column widths a user drags to are remembered (localStorage) and restored next visit — use a key unique to this table's column set. */
+  storageKey?: string;
 }
 
 function compareValues(a: string | number | null, b: string | number | null): number {
@@ -97,7 +99,7 @@ export function pinnedLeftOffsets<C extends { key: string; label: string; pin?: 
 }
 
 /** A flat, click-to-sort, drag-to-resize table. Shared by every raw/tracking table in the app that isn't row-expandable. */
-export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey, maxHeight = '32rem' }: SortableTableProps<T>) {
+export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey, maxHeight = '32rem', storageKey }: SortableTableProps<T>) {
   const [sortKey, setSortKey] = useState(defaultSortKey);
   const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -105,7 +107,7 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
     () => Object.fromEntries(columns.map((c) => [c.key, defaultColumnWidth(c.label)])),
     [columns],
   );
-  const { widths, startResize } = useColumnWidths(initialWidths);
+  const { widths, startResize } = useColumnWidths(initialWidths, storageKey);
   const totalWidth = columns.reduce((a, c) => a + (widths[c.key] ?? defaultColumnWidth(c.label)), 0);
   const hasGroups = columns.length > 0 && columns.every((c) => c.group);
   const hasTotals = columns.some((c) => c.total !== undefined);

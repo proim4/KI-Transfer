@@ -290,7 +290,13 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
       {weekId && rows.length > 0 && (
         <>
           <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
-          <SortableTable rows={filtered} columns={columns} rowKey={(r) => r.id} defaultSortKey="production_date" />
+          <SortableTable
+            rows={filtered}
+            columns={columns}
+            rowKey={(r) => r.id}
+            defaultSortKey="production_date"
+            storageKey={`columnWidths:tracking-${productLine}-${channel}`}
+          />
         </>
       )}
     </div>
