@@ -97,10 +97,10 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
   // — only applied once there's a second/third row to stack, so a plain
   // single-row table (no groups, no totals) renders exactly as it always has.
   // Row order (top to bottom): group band -> totals -> column labels -> data.
-  // The group band is taller (h-14) than before to fit its two stacked lines.
+  // Heights (h-14/h-8/h-9) track the reference workbook's own row heights.
   const labelRowClass = hasTotals || hasGroups ? 'h-9' : '';
   const totalsTop = hasGroups ? 'top-14' : 'top-0';
-  const labelTop = hasTotals ? (hasGroups ? 'top-[84px]' : 'top-7') : hasGroups ? 'top-14' : 'top-0';
+  const labelTop = hasTotals ? (hasGroups ? 'top-[88px]' : 'top-8') : hasGroups ? 'top-14' : 'top-0';
 
   function handleSort(key: string) {
     if (key === sortKey) {
@@ -148,11 +148,11 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
             </tr>
           )}
           {hasTotals && (
-            <tr className="h-7">
+            <tr className="h-8">
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className={`sticky ${totalsTop} overflow-hidden px-3 text-xs font-bold normal-case ${
+                  className={`sticky ${totalsTop} overflow-hidden px-3 text-sm font-bold normal-case ${
                     column.align === 'right' ? 'text-right' : 'text-left'
                   } ${column.pin ? 'left-0 z-30' : 'z-10'} ${
                     column.group ? column.group.totalsTintClassName : 'bg-gray-50'
@@ -199,7 +199,7 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
               {columns.map((column) => (
                 <td
                   key={column.key}
-                  className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 ${
+                  className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${
                     column.align === 'right' ? 'text-right' : ''
                   } ${column.pin ? PIN_CLASS : ''}`}
                 >

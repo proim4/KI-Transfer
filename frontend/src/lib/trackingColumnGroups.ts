@@ -46,7 +46,7 @@ export const DIFF_GROUP: ColumnGroup = {
   bandBottom: 'Diff แผนโอน',
   bandClassName: 'bg-green-700 text-white',
   labelClassName: 'bg-green-700 text-white',
-  totalsTintClassName: 'bg-gray-50',
+  totalsTintClassName: 'bg-green-50',
   dark: true,
 };
 
@@ -56,7 +56,7 @@ export const PCT_GROUP: ColumnGroup = {
   bandBottom: '%โอนเทียบแผน',
   bandClassName: 'bg-green-700 text-white',
   labelClassName: 'bg-green-700 text-white',
-  totalsTintClassName: 'bg-gray-50',
+  totalsTintClassName: 'bg-green-50',
   dark: true,
 };
 

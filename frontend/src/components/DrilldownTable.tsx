@@ -161,13 +161,13 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                 </th>
               ))}
             </tr>
-            <tr className="h-7">
+            <tr className="h-8">
               {COLUMNS.map((c) => {
                 const total = totalsByKey[c.key];
                 return (
                   <th
                     key={c.key}
-                    className={`sticky top-14 overflow-hidden px-3 text-xs font-bold normal-case ${
+                    className={`sticky top-14 overflow-hidden px-3 text-sm font-bold normal-case ${
                       c.align === 'right' ? 'text-right' : 'text-left'
                     } ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.totalsTintClassName} ${
                       total?.tone ? TOTAL_TONE_CLASS[total.tone] : 'text-gray-900'
@@ -186,7 +186,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   align={c.align}
                   onClick={() => handleSort(c.key)}
                   onMouseDownResize={startResize(c.key)}
-                  className={`sticky top-[84px] ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.labelClassName}`}
+                  className={`sticky top-[88px] ${c.pin ? 'left-0 z-30' : 'z-10'} ${c.group.labelClassName}`}
                 >
                   {c.label}
                   <span
@@ -213,29 +213,29 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
                   className={`cursor-pointer hover:bg-blue-50 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
                 >
-                  <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 ${PIN_CLASS}`}>
+                  <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}>
                     {r.production_date}
                   </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">
+                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">
                     {thresholds && <StatusBadge pct={r.total_pct} thresholds={thresholds} />}
                   </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">{r.origin_name}</td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">{r.dest_name}</td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">{r.product_group}</td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-right">
+                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.origin_name}</td>
+                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.dest_name}</td>
+                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.product_group}</td>
+                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
                     {formatKg(r.plan_total)}
                   </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-right">
+                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
                     {formatKg(r.actual_total)}
                   </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-right font-medium">
+                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right font-medium">
                     {thresholds ? <PctBar pct={r.total_pct} thresholds={thresholds} /> : formatPct(r.total_pct)}
                   </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-right">
+                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
                     {formatKg(r.overage)}
                   </td>
                   <td
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2 text-right ${
+                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right ${
                       r.profit_lost < 0 ? 'text-red-600' : ''
                     }`}
                   >
