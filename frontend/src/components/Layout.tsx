@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useCurrentUser } from '../hooks/useCurrentUser';
@@ -12,36 +14,76 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 const moreLinkClass = ({ isActive }: { isActive: boolean }) =>
   `block rounded-md px-3 py-2 text-sm ${isActive ? 'bg-navy-50 text-navy-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`;
 
-/** ข้อมูลดิบ / 3 หน้า Tracking / Settings live under one "เพิ่มเติม" menu so the
- * primary nav only ever shows the 2 things most people need (Dashboard, Upload) —
- * a <details> menu needs no outside-click JS to close itself (native behavior). */
-function MoreMenu({ showSettings }: { showSettings: boolean }) {
+/**
+ * A <details>-based nav dropdown, fully controlled so it actually closes —
+ * native <details> has no built-in "close on outside click" or "close when a
+ * link inside it is clicked" behavior (despite what an earlier comment here
+ * assumed), so without this every navigation via the menu left it stuck open,
+ * overlapping the new page. Closes on: picking any link inside, clicking
+ * anywhere else on the page, or Escape.
+ */
+function NavDropdown({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
   return (
-    <details className="group relative">
-      <summary className="flex cursor-pointer list-none items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-navy-100 hover:bg-navy-800 [&::-webkit-details-marker]:hidden">
-        เพิ่มเติม
+    <details ref={ref} open={open} className="group relative">
+      <summary
+        onClick={(e) => {
+          e.preventDefault();
+          setOpen((o) => !o);
+        }}
+        className="flex cursor-pointer list-none items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-navy-100 hover:bg-navy-800 [&::-webkit-details-marker]:hidden"
+      >
+        {label}
         <span className="text-xs">▾</span>
       </summary>
-      <nav className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white p-1 shadow-lg">
-        <NavLink to="/raw-data" className={moreLinkClass}>
-          ข้อมูลดิบ
-        </NavLink>
-        <NavLink to="/tracking/weekly" className={moreLinkClass}>
-          ติดตามโอน Weekly
-        </NavLink>
-        <NavLink to="/tracking/daily" className={moreLinkClass}>
-          ติดตามโอน Daily
-        </NavLink>
-        <NavLink to="/tracking/total" className={moreLinkClass}>
-          ติดตามโอนรวม
-        </NavLink>
-        {showSettings && (
-          <NavLink to="/settings" className={moreLinkClass}>
-            Settings
-          </NavLink>
-        )}
+      <nav onClick={() => setOpen(false)} className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white p-1 shadow-lg">
+        {children}
       </nav>
     </details>
+  );
+}
+
+/** ข้อมูลดิบ / 3 หน้า Tracking / Settings live under one "เพิ่มเติม" menu so the
+ * primary nav only ever shows the 2 things most people need (Dashboard, Upload). */
+function MoreMenu({ showSettings }: { showSettings: boolean }) {
+  return (
+    <NavDropdown label="เพิ่มเติม">
+      <NavLink to="/raw-data" className={moreLinkClass}>
+        ข้อมูลดิบ
+      </NavLink>
+      <NavLink to="/tracking/weekly" className={moreLinkClass}>
+        ติดตามโอน Weekly
+      </NavLink>
+      <NavLink to="/tracking/daily" className={moreLinkClass}>
+        ติดตามโอน Daily
+      </NavLink>
+      <NavLink to="/tracking/total" className={moreLinkClass}>
+        ติดตามโอนรวม
+      </NavLink>
+      {showSettings && (
+        <NavLink to="/settings" className={moreLinkClass}>
+          Settings
+        </NavLink>
+      )}
+    </NavDropdown>
   );
 }
 
@@ -49,26 +91,20 @@ function MoreMenu({ showSettings }: { showSettings: boolean }) {
  * ไปเลยแทนที่จะปนกับเมนูไก่เดิม เพื่อไม่ให้กระทบ Nav/Function เดิมของไก่แม้แต่นิดเดียว. */
 function PorkMenu() {
   return (
-    <details className="group relative">
-      <summary className="flex cursor-pointer list-none items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-navy-100 hover:bg-navy-800 [&::-webkit-details-marker]:hidden">
-        หมู
-        <span className="text-xs">▾</span>
-      </summary>
-      <nav className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white p-1 shadow-lg">
-        <NavLink to="/pork/dashboard" className={moreLinkClass}>
-          Dashboard (หมู)
-        </NavLink>
-        <NavLink to="/pork/upload" className={moreLinkClass}>
-          Upload Data (หมู)
-        </NavLink>
-        <NavLink to="/pork/tracking/daily" className={moreLinkClass}>
-          ติดตามโอน (หมู)
-        </NavLink>
-        <NavLink to="/pork/raw-data" className={moreLinkClass}>
-          ข้อมูลดิบ (หมู)
-        </NavLink>
-      </nav>
-    </details>
+    <NavDropdown label="หมู">
+      <NavLink to="/pork/dashboard" className={moreLinkClass}>
+        Dashboard (หมู)
+      </NavLink>
+      <NavLink to="/pork/upload" className={moreLinkClass}>
+        Upload Data (หมู)
+      </NavLink>
+      <NavLink to="/pork/tracking/daily" className={moreLinkClass}>
+        ติดตามโอน (หมู)
+      </NavLink>
+      <NavLink to="/pork/raw-data" className={moreLinkClass}>
+        ข้อมูลดิบ (หมู)
+      </NavLink>
+    </NavDropdown>
   );
 }
 

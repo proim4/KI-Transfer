@@ -165,7 +165,8 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
               โอนจริง (ABS0000){actual.data ? ` — ${actual.data.length} แถว` : ''}
             </button>
             <button type="button" onClick={() => setTab('plan')} className={tabClass(tab === 'plan')}>
-              แผนโอน Weekly-Daily{plan.data ? ` — ${plan.data.length} แถว` : ''}
+              {productLine === 'pork' ? 'แผนโอน Daily' : 'แผนโอน Weekly-Daily'}
+              {plan.data ? ` — ${plan.data.length} แถว` : ''}
             </button>
           </div>
 

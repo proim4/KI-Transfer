@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -42,6 +42,8 @@ export default function App() {
           <Route element={<AdminGuard />}>
             <Route path="/settings" element={<Settings />} />
           </Route>
+          {/* Any unmatched path (typo, a URL that doesn't exist like /pork/tracking/weekly) previously rendered a blank page with no feedback at all. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Route>
     </Routes>
