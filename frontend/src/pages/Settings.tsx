@@ -39,6 +39,7 @@ export default function Settings() {
   const [highColor, setHighColor] = useState<StatusColor>('green');
   const [midColor, setMidColor] = useState<StatusColor>('amber');
   const [lowColor, setLowColor] = useState<StatusColor>('red');
+  const [zeroColor, setZeroColor] = useState<StatusColor>('navy');
 
   useEffect(() => {
     if (!settings) return;
@@ -47,6 +48,7 @@ export default function Settings() {
     setHighColor(settings.status_high_color);
     setMidColor(settings.status_mid_color);
     setLowColor(settings.status_low_color);
+    setZeroColor(settings.status_zero_color);
   }, [settings]);
 
   if (isLoading || !settings) {
@@ -62,8 +64,11 @@ export default function Settings() {
       status_high_color: highColor,
       status_mid_color: midColor,
       status_low_color: lowColor,
+      status_zero_color: zeroColor,
     });
   }
+
+  const previewThresholds = { highPct: highPct / 100, lowPct: lowPct / 100, highColor, midColor, lowColor, zeroColor };
 
   return (
     <div className="max-w-xl space-y-6">
@@ -107,10 +112,7 @@ export default function Settings() {
 
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <StatusBadge
-              pct={1}
-              thresholds={{ highPct: highPct / 100, lowPct: lowPct / 100, highColor, midColor, lowColor }}
-            />
+            <StatusBadge pct={1} thresholds={previewThresholds} />
             <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ≥</span>
             <input
               type="number"
@@ -123,10 +125,7 @@ export default function Settings() {
           </div>
 
           <div className="flex items-center gap-3">
-            <StatusBadge
-              pct={lowPct / 100}
-              thresholds={{ highPct: highPct / 100, lowPct: lowPct / 100, highColor, midColor, lowColor }}
-            />
+            <StatusBadge pct={lowPct / 100} thresholds={previewThresholds} />
             <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ≥</span>
             <input
               type="number"
@@ -139,12 +138,15 @@ export default function Settings() {
           </div>
 
           <div className="flex items-center gap-3">
-            <StatusBadge
-              pct={0}
-              thresholds={{ highPct: highPct / 100, lowPct: lowPct / 100, highColor, midColor, lowColor }}
-            />
-            <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ต่ำกว่านั้น</span>
+            <StatusBadge pct={0.001} thresholds={previewThresholds} />
+            <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ต่ำกว่านั้น (แต่ยังโอนอยู่บ้าง)</span>
             <ColorSelect value={lowColor} onChange={setLowColor} />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <StatusBadge pct={0} thresholds={previewThresholds} />
+            <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน = 0% (ไม่โอนเลย)</span>
+            <ColorSelect value={zeroColor} onChange={setZeroColor} />
           </div>
         </div>
 

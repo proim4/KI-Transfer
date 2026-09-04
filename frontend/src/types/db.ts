@@ -10,6 +10,7 @@ export interface AppSettingsRow {
   status_high_color: StatusColor;
   status_mid_color: StatusColor;
   status_low_color: StatusColor;
+  status_zero_color: StatusColor;
   updated_at: string;
 }
 

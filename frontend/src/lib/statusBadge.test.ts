@@ -7,6 +7,7 @@ const thresholds: StatusThresholds = {
   highColor: 'green',
   midColor: 'amber',
   lowColor: 'red',
+  zeroColor: 'navy',
 };
 
 describe('computeStatus', () => {
@@ -24,15 +25,20 @@ describe('computeStatus', () => {
     expect(computeStatus(0.9, thresholds).zone).toBe('mid');
   });
 
-  it('is the low zone below the low threshold', () => {
+  it('is the low zone below the low threshold but above zero', () => {
     expect(computeStatus(0.89, thresholds).zone).toBe('low');
-    expect(computeStatus(0, thresholds).zone).toBe('low');
+    expect(computeStatus(0.01, thresholds).zone).toBe('low');
+  });
+
+  it('is its own "zero" zone at exactly 0%, distinct from "low"', () => {
+    expect(computeStatus(0, thresholds)).toEqual({ zone: 'zero', color: 'navy', label: 'ไม่โอนตามแผน' });
   });
 
   it('respects admin-configured colors, not hardcoded ones', () => {
-    const custom: StatusThresholds = { ...thresholds, highColor: 'navy', midColor: 'blue', lowColor: 'gray' };
+    const custom: StatusThresholds = { ...thresholds, highColor: 'navy', midColor: 'blue', lowColor: 'gray', zeroColor: 'red' };
     expect(computeStatus(1, custom).color).toBe('navy');
     expect(computeStatus(0.95, custom).color).toBe('blue');
     expect(computeStatus(0.5, custom).color).toBe('gray');
+    expect(computeStatus(0, custom).color).toBe('red');
   });
 });

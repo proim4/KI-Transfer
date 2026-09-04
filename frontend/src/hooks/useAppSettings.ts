@@ -37,6 +37,7 @@ export interface StatusThresholdSettings {
   status_high_color: StatusColor;
   status_mid_color: StatusColor;
   status_low_color: StatusColor;
+  status_zero_color: StatusColor;
 }
 
 /** StatusBadge's threshold shape, derived from app_settings — shared by every table that shows a status column. */
@@ -50,6 +51,7 @@ export function useStatusThresholds(): StatusThresholds | undefined {
         highColor: settings.status_high_color,
         midColor: settings.status_mid_color,
         lowColor: settings.status_low_color,
+        zeroColor: settings.status_zero_color,
       },
     [settings],
   );
