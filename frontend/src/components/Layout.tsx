@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { supabase } from '../lib/supabase';
+import Dropdown from './Dropdown';
 import LiveClock from './LiveClock';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -14,50 +14,19 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 const moreLinkClass = ({ isActive }: { isActive: boolean }) =>
   `block rounded-md px-3 py-2 text-sm ${isActive ? 'bg-navy-50 text-navy-900 font-medium' : 'text-gray-700 hover:bg-gray-100'}`;
 
-/**
- * A <details>-based nav dropdown, fully controlled so it actually closes —
- * native <details> has no built-in "close on outside click" or "close when a
- * link inside it is clicked" behavior (despite what an earlier comment here
- * assumed), so without this every navigation via the menu left it stuck open,
- * overlapping the new page. Closes on: picking any link inside, clicking
- * anywhere else on the page, or Escape.
- */
 function NavDropdown({ label, children }: { label: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDetailsElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handlePointerDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [open]);
-
   return (
-    <details ref={ref} open={open} className="group relative">
-      <summary
-        onClick={(e) => {
-          e.preventDefault();
-          setOpen((o) => !o);
-        }}
-        className="flex cursor-pointer list-none items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-navy-100 hover:bg-navy-800 [&::-webkit-details-marker]:hidden"
-      >
-        {label}
-        <span className="text-xs">▾</span>
-      </summary>
-      <nav onClick={() => setOpen(false)} className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white p-1 shadow-lg">
-        {children}
-      </nav>
-    </details>
+    <Dropdown
+      label={
+        <span className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-navy-100 hover:bg-navy-800">
+          {label}
+          <span className="text-xs">▾</span>
+        </span>
+      }
+      panelClassName="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white p-1 shadow-lg"
+    >
+      {children}
+    </Dropdown>
   );
 }
 

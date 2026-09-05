@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { defaultColumnWidth, useColumnWidths } from '../hooks/useColumnWidths';
+import { useColumnVisibility } from '../hooks/useColumnVisibility';
+import ColumnVisibilityMenu from './ColumnVisibilityMenu';
 import ResizableTh from './ResizableTh';
 
 export interface ColumnGroup {
@@ -46,6 +48,8 @@ interface SortableTableProps<T> {
   maxHeight?: string;
   /** When given, column widths a user drags to are remembered (localStorage) and restored next visit — use a key unique to this table's column set. */
   storageKey?: string;
+  /** When given, which columns a user hides via the "คอลัม" menu are remembered (localStorage) and restored next visit — use a key unique to this table's column set. */
+  columnVisibilityKey?: string;
 }
 
 function compareValues(a: string | number | null, b: string | number | null): number {
@@ -100,7 +104,15 @@ export function pinnedLeftOffsets<C extends { key: string; label: string; pin?: 
 }
 
 /** A flat, click-to-sort, drag-to-resize table. Shared by every raw/tracking table in the app that isn't row-expandable. */
-export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey, maxHeight = '32rem', storageKey }: SortableTableProps<T>) {
+export default function SortableTable<T>({
+  rows,
+  columns,
+  rowKey,
+  defaultSortKey,
+  maxHeight = '32rem',
+  storageKey,
+  columnVisibilityKey,
+}: SortableTableProps<T>) {
   const [sortKey, setSortKey] = useState(defaultSortKey);
   const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -109,11 +121,13 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
     [columns],
   );
   const { widths, startResize } = useColumnWidths(initialWidths, storageKey);
-  const totalWidth = columns.reduce((a, c) => a + (widths[c.key] ?? defaultColumnWidth(c.label)), 0);
-  const hasGroups = columns.length > 0 && columns.every((c) => c.group);
-  const hasTotals = columns.some((c) => c.total !== undefined);
-  const runs = useMemo(() => (hasGroups ? groupRuns(columns) : []), [columns, hasGroups]);
-  const pinnedLeft = useMemo(() => pinnedLeftOffsets(columns, widths), [columns, widths]);
+  const { hiddenKeys, toggle: toggleColumnVisibility } = useColumnVisibility(columnVisibilityKey);
+  const visibleColumns = useMemo(() => columns.filter((c) => !hiddenKeys.has(c.key)), [columns, hiddenKeys]);
+  const totalWidth = visibleColumns.reduce((a, c) => a + (widths[c.key] ?? defaultColumnWidth(c.label)), 0);
+  const hasGroups = visibleColumns.length > 0 && visibleColumns.every((c) => c.group);
+  const hasTotals = visibleColumns.some((c) => c.total !== undefined);
+  const runs = useMemo(() => (hasGroups ? groupRuns(visibleColumns) : []), [visibleColumns, hasGroups]);
+  const pinnedLeft = useMemo(() => pinnedLeftOffsets(visibleColumns, widths), [visibleColumns, widths]);
 
   // Fixed row heights so each sticky row's offset is exact without measuring
   // — only applied once there's a second/third row to stack, so a plain
@@ -161,115 +175,120 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
   const paddingBottom = virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end ?? 0);
 
   return (
-    <div ref={scrollRef} className="overflow-auto rounded-lg border border-gray-200" style={{ maxHeight }}>
-      <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>
-        <colgroup>
-          {columns.map((c) => (
-            <col key={c.key} style={{ width: widths[c.key] ?? defaultColumnWidth(c.label) }} />
-          ))}
-        </colgroup>
-        <thead className="text-xs uppercase text-gray-500">
-          {hasGroups && (
-            <tr className="h-14">
-              {runs.map((run, i) => (
-                <th
-                  key={`${run.group.key}-${i}`}
-                  colSpan={run.span}
-                  style={run.pinKey !== undefined ? { left: pinnedLeft[run.pinKey] } : undefined}
-                  className={`sticky top-0 overflow-hidden px-2 text-center text-[11px] font-semibold normal-case leading-tight tracking-wide ${
-                    run.pin ? 'z-30' : 'z-20'
-                  } ${run.group.bandClassName}`}
-                >
-                  {run.group.bandTop && <div className="opacity-90">{run.group.bandTop}</div>}
-                  <div className="font-bold">{run.group.bandBottom}</div>
-                </th>
-              ))}
-            </tr>
-          )}
-          {hasTotals && (
-            <tr className="h-8">
-              {columns.map((column) => (
-                <th
-                  key={column.key}
-                  style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
-                  className={`sticky ${totalsTop} overflow-hidden px-3 text-sm font-bold normal-case ${
-                    column.align === 'right' ? 'text-right' : 'text-left'
-                  } ${column.pin ? 'z-30' : 'z-10'} ${
-                    column.group ? column.group.totalsTintClassName : 'bg-gray-50'
-                  } ${column.totalTone ? TOTAL_TONE_CLASS[column.totalTone] : 'text-gray-900'}`}
-                >
-                  {column.total ?? ''}
-                </th>
-              ))}
-            </tr>
-          )}
-          <tr className={labelRowClass}>
-            {columns.map((column) => (
-              <ResizableTh
-                key={column.key}
-                width={widths[column.key] ?? defaultColumnWidth(column.label)}
-                left={column.pin ? pinnedLeft[column.key] : undefined}
-                align={column.align}
-                onClick={() => handleSort(column.key)}
-                onMouseDownResize={startResize(column.key)}
-                className={`sticky ${labelTop} ${column.pin ? 'z-30' : 'z-10'} ${
-                  column.group ? column.group.labelClassName : 'bg-gray-50'
-                }`}
-              >
-                {column.label}
-                <span
-                  className={
-                    column.key === sortKey
-                      ? column.group?.dark
-                        ? 'text-white'
-                        : 'text-gray-600'
-                      : column.group?.dark
-                        ? 'text-white/50'
-                        : 'text-gray-300'
-                  }
-                >
-                  {column.key === sortKey ? (direction === 'asc' ? '▲' : '▼') : '↕'}
-                </span>
-              </ResizableTh>
+    <div>
+      <div className="mb-2 flex justify-end">
+        <ColumnVisibilityMenu columns={columns} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />
+      </div>
+      <div ref={scrollRef} className="overflow-auto rounded-lg border border-gray-200" style={{ maxHeight }}>
+        <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>
+          <colgroup>
+            {visibleColumns.map((c) => (
+              <col key={c.key} style={{ width: widths[c.key] ?? defaultColumnWidth(c.label) }} />
             ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {paddingTop > 0 && (
-            <tr>
-              <td style={{ height: paddingTop }} colSpan={columns.length} />
-            </tr>
-          )}
-          {virtualRows.map((virtualRow) => {
-            const row = sorted[virtualRow.index];
-            return (
-              <tr
-                key={rowKey(row)}
-                data-index={virtualRow.index}
-                ref={virtualizer.measureElement}
-                className={`hover:bg-blue-50 ${virtualRow.index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
-              >
-                {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${
-                      column.align === 'right' ? 'text-right' : ''
-                    } ${column.pin ? PIN_CLASS : ''}`}
+          </colgroup>
+          <thead className="text-xs uppercase text-gray-500">
+            {hasGroups && (
+              <tr className="h-14">
+                {runs.map((run, i) => (
+                  <th
+                    key={`${run.group.key}-${i}`}
+                    colSpan={run.span}
+                    style={run.pinKey !== undefined ? { left: pinnedLeft[run.pinKey] } : undefined}
+                    className={`sticky top-0 overflow-hidden px-2 text-center text-[11px] font-semibold normal-case leading-tight tracking-wide ${
+                      run.pin ? 'z-30' : 'z-20'
+                    } ${run.group.bandClassName}`}
                   >
-                    {column.render(row)}
-                  </td>
+                    {run.group.bandTop && <div className="opacity-90">{run.group.bandTop}</div>}
+                    <div className="font-bold">{run.group.bandBottom}</div>
+                  </th>
                 ))}
               </tr>
-            );
-          })}
-          {paddingBottom > 0 && (
-            <tr>
-              <td style={{ height: paddingBottom }} colSpan={columns.length} />
+            )}
+            {hasTotals && (
+              <tr className="h-8">
+                {visibleColumns.map((column) => (
+                  <th
+                    key={column.key}
+                    style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
+                    className={`sticky ${totalsTop} overflow-hidden px-3 text-sm font-bold normal-case ${
+                      column.align === 'right' ? 'text-right' : 'text-left'
+                    } ${column.pin ? 'z-30' : 'z-10'} ${
+                      column.group ? column.group.totalsTintClassName : 'bg-gray-50'
+                    } ${column.totalTone ? TOTAL_TONE_CLASS[column.totalTone] : 'text-gray-900'}`}
+                  >
+                    {column.total ?? ''}
+                  </th>
+                ))}
+              </tr>
+            )}
+            <tr className={labelRowClass}>
+              {visibleColumns.map((column) => (
+                <ResizableTh
+                  key={column.key}
+                  width={widths[column.key] ?? defaultColumnWidth(column.label)}
+                  left={column.pin ? pinnedLeft[column.key] : undefined}
+                  align={column.align}
+                  onClick={() => handleSort(column.key)}
+                  onMouseDownResize={startResize(column.key)}
+                  className={`sticky ${labelTop} ${column.pin ? 'z-30' : 'z-10'} ${
+                    column.group ? column.group.labelClassName : 'bg-gray-50'
+                  }`}
+                >
+                  {column.label}
+                  <span
+                    className={
+                      column.key === sortKey
+                        ? column.group?.dark
+                          ? 'text-white'
+                          : 'text-gray-600'
+                        : column.group?.dark
+                          ? 'text-white/50'
+                          : 'text-gray-300'
+                    }
+                  >
+                    {column.key === sortKey ? (direction === 'asc' ? '▲' : '▼') : '↕'}
+                  </span>
+                </ResizableTh>
+              ))}
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {paddingTop > 0 && (
+              <tr>
+                <td style={{ height: paddingTop }} colSpan={visibleColumns.length} />
+              </tr>
+            )}
+            {virtualRows.map((virtualRow) => {
+              const row = sorted[virtualRow.index];
+              return (
+                <tr
+                  key={rowKey(row)}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  className={`hover:bg-blue-50 ${virtualRow.index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
+                >
+                  {visibleColumns.map((column) => (
+                    <td
+                      key={column.key}
+                      style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${
+                        column.align === 'right' ? 'text-right' : ''
+                      } ${column.pin ? PIN_CLASS : ''}`}
+                    >
+                      {column.render(row)}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+            {paddingBottom > 0 && (
+              <tr>
+                <td style={{ height: paddingBottom }} colSpan={visibleColumns.length} />
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

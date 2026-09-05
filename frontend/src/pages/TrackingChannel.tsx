@@ -186,6 +186,20 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         render: (r) => r.product_group,
       },
       {
+        key: 'origin_code',
+        label: 'รหัสต้นทาง',
+        group: ROUTE_GROUP,
+        sortValue: (r) => r.origin_code,
+        render: (r) => r.origin_code,
+      },
+      {
+        key: 'dest_code',
+        label: 'รหัสปลายทาง',
+        group: ROUTE_GROUP,
+        sortValue: (r) => r.dest_code,
+        render: (r) => r.dest_code,
+      },
+      {
         key: 'origin_price',
         label: 'ราคาต้นทาง',
         align: 'right',
@@ -306,6 +320,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
             rowKey={(r) => r.id}
             defaultSortKey="production_date"
             storageKey={`columnWidths:tracking-${productLine}-${channel}`}
+            columnVisibilityKey={`columnVisibility:tracking-${productLine}-${channel}`}
           />
         </>
       )}

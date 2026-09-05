@@ -1,10 +1,12 @@
 import { useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { defaultColumnWidth, useColumnWidths } from '../hooks/useColumnWidths';
+import { useColumnVisibility } from '../hooks/useColumnVisibility';
 import { useActualBreakdown } from '../hooks/useActualBreakdown';
 import { useStatusThresholds } from '../hooks/useAppSettings';
 import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
 import { ACTUAL_GROUP, DIFF_GROUP, LOSS_GROUP, PCT_GROUP, PLAN_GROUP, REMARK_GROUP, ROUTE_GROUP } from '../lib/trackingColumnGroups';
+import ColumnVisibilityMenu from './ColumnVisibilityMenu';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
 import PctBar from './PctBar';
 import ResizableTh from './ResizableTh';
@@ -30,6 +32,8 @@ type SortKey =
   | 'origin_name'
   | 'dest_name'
   | 'product_group'
+  | 'origin_code'
+  | 'dest_code'
   | 'plan_total'
   | 'actual_total'
   | 'total_pct'
@@ -44,6 +48,8 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; gr
   { key: 'origin_name', label: 'ต้นทาง', pin: true, group: ROUTE_GROUP },
   { key: 'dest_name', label: 'ปลายทาง', pin: true, group: ROUTE_GROUP },
   { key: 'product_group', label: 'กลุ่มสินค้า', pin: true, group: ROUTE_GROUP },
+  { key: 'origin_code', label: 'รหัสต้นทาง', group: ROUTE_GROUP },
+  { key: 'dest_code', label: 'รหัสปลายทาง', group: ROUTE_GROUP },
   { key: 'plan_total', label: 'แผน', align: 'right', group: PLAN_GROUP },
   { key: 'actual_total', label: 'จริง', align: 'right', group: ACTUAL_GROUP },
   { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: PCT_GROUP },
@@ -52,7 +58,6 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; gr
   { key: 'remark', label: 'หมายเหตุ', group: REMARK_GROUP },
 ];
 
-const RUNS = groupRuns(COLUMNS);
 const TOTAL_TONE_CLASS: Record<'good' | 'bad', string> = { good: 'text-green-700', bad: 'text-red-700' };
 
 function sortValue(row: TrackingResultRow, key: SortKey): string | number | null {
@@ -94,8 +99,12 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
     [],
   );
   const { widths, startResize } = useColumnWidths(initialWidths, 'columnWidths:dashboard-tracking');
-  const totalWidth = COLUMNS.reduce((a, c) => a + (widths[c.key] ?? defaultColumnWidth(c.label)), 0);
-  const pinnedLeft = useMemo(() => pinnedLeftOffsets(COLUMNS, widths), [widths]);
+  const { hiddenKeys, toggle: toggleColumnVisibility } = useColumnVisibility('columnVisibility:dashboard-tracking');
+  const visibleColumns = useMemo(() => COLUMNS.filter((c) => !hiddenKeys.has(c.key)), [hiddenKeys]);
+  const isVisible = (key: SortKey) => !hiddenKeys.has(key);
+  const totalWidth = visibleColumns.reduce((a, c) => a + (widths[c.key] ?? defaultColumnWidth(c.label)), 0);
+  const pinnedLeft = useMemo(() => pinnedLeftOffsets(visibleColumns, widths), [visibleColumns, widths]);
+  const runs = useMemo(() => groupRuns(visibleColumns), [visibleColumns]);
 
   function handleSort(key: SortKey) {
     if (key === sortKey) {
@@ -156,17 +165,20 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   return (
     <div>
       <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
+      <div className="mb-2 flex justify-end">
+        <ColumnVisibilityMenu columns={COLUMNS} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />
+      </div>
 
       <div ref={scrollRef} className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">
         <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>
           <colgroup>
-            {COLUMNS.map((c) => (
+            {visibleColumns.map((c) => (
               <col key={c.key} style={{ width: widths[c.key] ?? defaultColumnWidth(c.label) }} />
             ))}
           </colgroup>
           <thead className="text-xs uppercase text-gray-500">
             <tr className="h-14">
-              {RUNS.map((run, i) => (
+              {runs.map((run, i) => (
                 <th
                   key={`${run.group.key}-${i}`}
                   colSpan={run.span}
@@ -181,7 +193,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
               ))}
             </tr>
             <tr className="h-8">
-              {COLUMNS.map((c) => {
+              {visibleColumns.map((c) => {
                 const total = totalsByKey[c.key];
                 return (
                   <th
@@ -199,7 +211,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
               })}
             </tr>
             <tr className="h-9">
-              {COLUMNS.map((c) => (
+              {visibleColumns.map((c) => (
                 <ResizableTh
                   key={c.key}
                   width={widths[c.key] ?? defaultColumnWidth(c.label)}
@@ -230,7 +242,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
           <tbody>
             {paddingTop > 0 && (
               <tr>
-                <td style={{ height: paddingTop }} colSpan={COLUMNS.length} />
+                <td style={{ height: paddingTop }} colSpan={visibleColumns.length} />
               </tr>
             )}
           </tbody>
@@ -242,62 +254,90 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
                   className={`cursor-pointer border-b border-gray-100 hover:bg-blue-50 ${virtualRow.index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
                 >
-                  <td
-                    style={{ left: pinnedLeft.production_date }}
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
-                  >
-                    {r.production_date}
-                  </td>
-                  <td
-                    style={{ left: pinnedLeft.status }}
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
-                  >
-                    {thresholds && <StatusBadge pct={r.total_pct} thresholds={thresholds} />}
-                  </td>
-                  <td
-                    style={{ left: pinnedLeft.origin_name }}
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
-                  >
-                    {r.origin_name}
-                  </td>
-                  <td
-                    style={{ left: pinnedLeft.dest_name }}
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
-                  >
-                    {r.dest_name}
-                  </td>
-                  <td
-                    style={{ left: pinnedLeft.product_group }}
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
-                  >
-                    {r.product_group}
-                  </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
-                    {formatKg(r.plan_total)}
-                  </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
-                    {formatKg(r.actual_total)}
-                  </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right font-medium">
-                    {thresholds ? <PctBar pct={r.total_pct} thresholds={thresholds} /> : formatPct(r.total_pct)}
-                  </td>
-                  <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
-                    {formatKg(r.overage)}
-                  </td>
-                  <td
-                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right ${
-                      r.profit_lost < 0 ? 'text-red-600' : ''
-                    }`}
-                  >
-                    {formatBaht(r.profit_lost)}
-                  </td>
-                  <td className="px-1 py-1">
-                    <RemarkCell id={r.id} value={r.remark} />
-                  </td>
+                  {isVisible('production_date') && (
+                    <td
+                      style={{ left: pinnedLeft.production_date }}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                    >
+                      {r.production_date}
+                    </td>
+                  )}
+                  {isVisible('status') && (
+                    <td
+                      style={{ left: pinnedLeft.status }}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                    >
+                      {thresholds && <StatusBadge pct={r.total_pct} thresholds={thresholds} />}
+                    </td>
+                  )}
+                  {isVisible('origin_name') && (
+                    <td
+                      style={{ left: pinnedLeft.origin_name }}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                    >
+                      {r.origin_name}
+                    </td>
+                  )}
+                  {isVisible('dest_name') && (
+                    <td
+                      style={{ left: pinnedLeft.dest_name }}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                    >
+                      {r.dest_name}
+                    </td>
+                  )}
+                  {isVisible('product_group') && (
+                    <td
+                      style={{ left: pinnedLeft.product_group }}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                    >
+                      {r.product_group}
+                    </td>
+                  )}
+                  {isVisible('origin_code') && (
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.origin_code}</td>
+                  )}
+                  {isVisible('dest_code') && (
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.dest_code}</td>
+                  )}
+                  {isVisible('plan_total') && (
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
+                      {formatKg(r.plan_total)}
+                    </td>
+                  )}
+                  {isVisible('actual_total') && (
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
+                      {formatKg(r.actual_total)}
+                    </td>
+                  )}
+                  {isVisible('total_pct') && (
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right font-medium">
+                      {thresholds ? <PctBar pct={r.total_pct} thresholds={thresholds} /> : formatPct(r.total_pct)}
+                    </td>
+                  )}
+                  {isVisible('overage') && (
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
+                      {formatKg(r.overage)}
+                    </td>
+                  )}
+                  {isVisible('profit_lost') && (
+                    <td
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right ${
+                        r.profit_lost < 0 ? 'text-red-600' : ''
+                      }`}
+                    >
+                      {formatBaht(r.profit_lost)}
+                    </td>
+                  )}
+                  {isVisible('remark') && (
+                    <td className="px-1 py-1">
+                      <RemarkCell id={r.id} value={r.remark} />
+                    </td>
+                  )}
                 </tr>
                 {expandedId === r.id && (
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    <td colSpan={COLUMNS.length} className="px-3 py-3">
+                    <td colSpan={visibleColumns.length} className="px-3 py-3">
                       <p className="mb-2 text-xs font-medium uppercase text-gray-500">
                         รายละเอียด SKU ที่โอนจริงในกลุ่มนี้
                       </p>
@@ -334,7 +374,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
           <tbody>
             {paddingBottom > 0 && (
               <tr>
-                <td style={{ height: paddingBottom }} colSpan={COLUMNS.length} />
+                <td style={{ height: paddingBottom }} colSpan={visibleColumns.length} />
               </tr>
             )}
           </tbody>

@@ -187,6 +187,7 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
                   rowKey={(r) => r.id}
                   defaultSortKey="transfer_date"
                   storageKey={`columnWidths:rawdata-${productLine}-actual`}
+                  columnVisibilityKey={`columnVisibility:rawdata-${productLine}-actual`}
                 />
               </>
             ))}
@@ -208,6 +209,7 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
                   rowKey={(r) => r.id}
                   defaultSortKey="production_date"
                   storageKey={`columnWidths:rawdata-${productLine}-plan`}
+                  columnVisibilityKey={`columnVisibility:rawdata-${productLine}-plan`}
                 />
               </>
             ))}
