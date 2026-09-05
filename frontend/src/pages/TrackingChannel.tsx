@@ -109,8 +109,18 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
   const diffField = DIFF_FIELD[channel];
   const pctField = PCT_FIELD[channel];
 
-  const options = useMemo(() => routeFilterOptions(rows, pickRoute), [rows]);
-  const filtered = rows.filter((r) => matchesRouteFilter(filter, pickRoute(r)));
+  // Weekly/Daily scope the whole page to routes actually covered by that
+  // plan source — a route whose plan came entirely from the other file is
+  // irrelevant noise here, even though it's a real tracking_results row
+  // (the รวม/Total tab and Dashboard still show every row, combined).
+  const channelRows = useMemo(() => {
+    if (channel === 'weekly') return rows.filter((r) => Number(r.plan_weekly) > 0);
+    if (channel === 'daily') return rows.filter((r) => Number(r.plan_daily) > 0);
+    return rows;
+  }, [rows, channel]);
+
+  const options = useMemo(() => routeFilterOptions(channelRows, pickRoute), [channelRows]);
+  const filtered = channelRows.filter((r) => matchesRouteFilter(filter, pickRoute(r)));
 
   // Grand totals for whatever rows are currently filtered/visible — shown
   // pinned to the top of each metric's own column, like the source
