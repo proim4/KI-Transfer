@@ -45,11 +45,11 @@ type SortDirection = 'asc' | 'desc';
 const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; group: ColumnGroup }[] = [
   { key: 'production_date', label: 'วันที่', pin: true, group: ROUTE_GROUP },
   { key: 'status', label: 'สถานะ', pin: true, group: ROUTE_GROUP },
+  { key: 'origin_code', label: 'รหัสต้นทาง', pin: true, group: ROUTE_GROUP },
   { key: 'origin_name', label: 'ต้นทาง', pin: true, group: ROUTE_GROUP },
+  { key: 'dest_code', label: 'รหัสปลายทาง', pin: true, group: ROUTE_GROUP },
   { key: 'dest_name', label: 'ปลายทาง', pin: true, group: ROUTE_GROUP },
   { key: 'product_group', label: 'กลุ่มสินค้า', pin: true, group: ROUTE_GROUP },
-  { key: 'origin_code', label: 'รหัสต้นทาง', group: ROUTE_GROUP },
-  { key: 'dest_code', label: 'รหัสปลายทาง', group: ROUTE_GROUP },
   { key: 'plan_total', label: 'แผน', align: 'right', group: PLAN_GROUP },
   { key: 'actual_total', label: 'จริง', align: 'right', group: ACTUAL_GROUP },
   { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: PCT_GROUP },
@@ -270,12 +270,28 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                       {thresholds && <StatusBadge pct={r.total_pct} thresholds={thresholds} />}
                     </td>
                   )}
+                  {isVisible('origin_code') && (
+                    <td
+                      style={{ left: pinnedLeft.origin_code }}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                    >
+                      {r.origin_code}
+                    </td>
+                  )}
                   {isVisible('origin_name') && (
                     <td
                       style={{ left: pinnedLeft.origin_name }}
                       className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
                     >
                       {r.origin_name}
+                    </td>
+                  )}
+                  {isVisible('dest_code') && (
+                    <td
+                      style={{ left: pinnedLeft.dest_code }}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                    >
+                      {r.dest_code}
                     </td>
                   )}
                   {isVisible('dest_name') && (
@@ -293,12 +309,6 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                     >
                       {r.product_group}
                     </td>
-                  )}
-                  {isVisible('origin_code') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.origin_code}</td>
-                  )}
-                  {isVisible('dest_code') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5">{r.dest_code}</td>
                   )}
                   {isVisible('plan_total') && (
                     <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">

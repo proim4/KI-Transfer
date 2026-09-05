@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import CodeName from '../components/CodeName';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
 import PctBar from '../components/PctBar';
 import RemarkCell from '../components/RemarkCell';
@@ -162,12 +161,28 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
           thresholds ? <StatusBadge pct={r[pctField] as number | null} thresholds={thresholds} /> : null,
       },
       {
+        key: 'origin_code',
+        label: 'รหัสต้นทาง',
+        pin: true,
+        group: ROUTE_GROUP,
+        sortValue: (r) => r.origin_code,
+        render: (r) => r.origin_code,
+      },
+      {
         key: 'origin',
         label: 'ต้นทาง',
         pin: true,
         group: ROUTE_GROUP,
         sortValue: (r) => r.origin_name,
-        render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
+        render: (r) => r.origin_name,
+      },
+      {
+        key: 'dest_code',
+        label: 'รหัสปลายทาง',
+        pin: true,
+        group: ROUTE_GROUP,
+        sortValue: (r) => r.dest_code,
+        render: (r) => r.dest_code,
       },
       {
         key: 'dest',
@@ -175,7 +190,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         pin: true,
         group: ROUTE_GROUP,
         sortValue: (r) => r.dest_name,
-        render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
+        render: (r) => r.dest_name,
       },
       {
         key: 'product_group',
@@ -184,20 +199,6 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         group: ROUTE_GROUP,
         sortValue: (r) => r.product_group,
         render: (r) => r.product_group,
-      },
-      {
-        key: 'origin_code',
-        label: 'รหัสต้นทาง',
-        group: ROUTE_GROUP,
-        sortValue: (r) => r.origin_code,
-        render: (r) => r.origin_code,
-      },
-      {
-        key: 'dest_code',
-        label: 'รหัสปลายทาง',
-        group: ROUTE_GROUP,
-        sortValue: (r) => r.dest_code,
-        render: (r) => r.dest_code,
       },
       {
         key: 'origin_price',
