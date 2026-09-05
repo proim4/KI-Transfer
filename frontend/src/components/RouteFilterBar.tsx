@@ -56,7 +56,7 @@ const selectClass = 'rounded-md border border-gray-300 bg-white px-2 py-1.5 text
 /** The 4-dropdown (date/origin/dest/product group) filter bar shared by every route-level table in the app. */
 export default function RouteFilterBar({ value, onChange, options, resultCount }: RouteFilterBarProps) {
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
+    <div className="flex flex-1 flex-wrap items-center gap-2">
       <input
         type="text"
         value={value.search}

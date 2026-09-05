@@ -164,9 +164,11 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
 
   return (
     <div>
-      <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
-      <div className="mb-2 flex justify-end">
-        <ColumnVisibilityMenu columns={COLUMNS} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
+        <div className="ml-auto">
+          <ColumnVisibilityMenu columns={COLUMNS} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />
+        </div>
       </div>
 
       <div ref={scrollRef} className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">

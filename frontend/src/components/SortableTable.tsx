@@ -50,6 +50,8 @@ interface SortableTableProps<T> {
   storageKey?: string;
   /** When given, which columns a user hides via the "คอลัม" menu are remembered (localStorage) and restored next visit — use a key unique to this table's column set. */
   columnVisibilityKey?: string;
+  /** A filter bar (e.g. RouteFilterBar) rendered on the same row as the "คอลัม" button, to its left, instead of the caller stacking it above the table separately. */
+  filterBar?: ReactNode;
 }
 
 function compareValues(a: string | number | null, b: string | number | null): number {
@@ -112,6 +114,7 @@ export default function SortableTable<T>({
   maxHeight = '32rem',
   storageKey,
   columnVisibilityKey,
+  filterBar,
 }: SortableTableProps<T>) {
   const [sortKey, setSortKey] = useState(defaultSortKey);
   const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
@@ -176,8 +179,11 @@ export default function SortableTable<T>({
 
   return (
     <div>
-      <div className="mb-2 flex justify-end">
-        <ColumnVisibilityMenu columns={columns} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        {filterBar}
+        <div className="ml-auto">
+          <ColumnVisibilityMenu columns={columns} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />
+        </div>
       </div>
       <div ref={scrollRef} className="overflow-auto rounded-lg border border-gray-200" style={{ maxHeight }}>
         <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>

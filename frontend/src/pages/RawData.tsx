@@ -174,44 +174,44 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
             (actual.isLoading ? (
               <p className="text-sm text-gray-500">กำลังโหลด...</p>
             ) : (
-              <>
-                <RouteFilterBar
-                  value={actualFilter}
-                  onChange={setActualFilter}
-                  options={actualOptions}
-                  resultCount={filteredActual.length}
-                />
-                <SortableTable
-                  rows={filteredActual}
-                  columns={actualColumns}
-                  rowKey={(r) => r.id}
-                  defaultSortKey="transfer_date"
-                  storageKey={`columnWidths:rawdata-${productLine}-actual`}
-                  columnVisibilityKey={`columnVisibility:rawdata-${productLine}-actual`}
-                />
-              </>
+              <SortableTable
+                rows={filteredActual}
+                columns={actualColumns}
+                rowKey={(r) => r.id}
+                defaultSortKey="transfer_date"
+                storageKey={`columnWidths:rawdata-${productLine}-actual`}
+                columnVisibilityKey={`columnVisibility:rawdata-${productLine}-actual`}
+                filterBar={
+                  <RouteFilterBar
+                    value={actualFilter}
+                    onChange={setActualFilter}
+                    options={actualOptions}
+                    resultCount={filteredActual.length}
+                  />
+                }
+              />
             ))}
 
           {tab === 'plan' &&
             (plan.isLoading ? (
               <p className="text-sm text-gray-500">กำลังโหลด...</p>
             ) : (
-              <>
-                <RouteFilterBar
-                  value={planFilter}
-                  onChange={setPlanFilter}
-                  options={planOptions}
-                  resultCount={filteredPlan.length}
-                />
-                <SortableTable
-                  rows={filteredPlan}
-                  columns={planColumns}
-                  rowKey={(r) => r.id}
-                  defaultSortKey="production_date"
-                  storageKey={`columnWidths:rawdata-${productLine}-plan`}
-                  columnVisibilityKey={`columnVisibility:rawdata-${productLine}-plan`}
-                />
-              </>
+              <SortableTable
+                rows={filteredPlan}
+                columns={planColumns}
+                rowKey={(r) => r.id}
+                defaultSortKey="production_date"
+                storageKey={`columnWidths:rawdata-${productLine}-plan`}
+                columnVisibilityKey={`columnVisibility:rawdata-${productLine}-plan`}
+                filterBar={
+                  <RouteFilterBar
+                    value={planFilter}
+                    onChange={setPlanFilter}
+                    options={planOptions}
+                    resultCount={filteredPlan.length}
+                  />
+                }
+              />
             ))}
         </>
       )}
