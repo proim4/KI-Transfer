@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { defaultColumnWidth, useColumnWidths } from '../hooks/useColumnWidths';
 import ResizableTh from './ResizableTh';
 
@@ -143,8 +144,24 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
     return copy;
   }, [rows, columns, sortKey, direction]);
 
+  // Only the rows actually scrolled into view are rendered — a table with
+  // hundreds of rows used to render every <tr>/<td> on every keystroke/sort,
+  // which is what made large tables (Weekly, รวม) feel sluggish. Sticky
+  // headers and pinned columns are untouched by this — only which <tr>s get
+  // mounted changes, not how any of them are positioned/styled.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: sorted.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 33,
+    overscan: 8,
+  });
+  const virtualRows = virtualizer.getVirtualItems();
+  const paddingTop = virtualRows[0]?.start ?? 0;
+  const paddingBottom = virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end ?? 0);
+
   return (
-    <div className="overflow-auto rounded-lg border border-gray-200" style={{ maxHeight }}>
+    <div ref={scrollRef} className="overflow-auto rounded-lg border border-gray-200" style={{ maxHeight }}>
       <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>
         <colgroup>
           {columns.map((c) => (
@@ -218,21 +235,39 @@ export default function SortableTable<T>({ rows, columns, rowKey, defaultSortKey
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {sorted.map((row, i) => (
-            <tr key={rowKey(row)} className={`hover:bg-blue-50 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}>
-              {columns.map((column) => (
-                <td
-                  key={column.key}
-                  style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
-                  className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${
-                    column.align === 'right' ? 'text-right' : ''
-                  } ${column.pin ? PIN_CLASS : ''}`}
-                >
-                  {column.render(row)}
-                </td>
-              ))}
+          {paddingTop > 0 && (
+            <tr>
+              <td style={{ height: paddingTop }} colSpan={columns.length} />
             </tr>
-          ))}
+          )}
+          {virtualRows.map((virtualRow) => {
+            const row = sorted[virtualRow.index];
+            return (
+              <tr
+                key={rowKey(row)}
+                data-index={virtualRow.index}
+                ref={virtualizer.measureElement}
+                className={`hover:bg-blue-50 ${virtualRow.index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
+              >
+                {columns.map((column) => (
+                  <td
+                    key={column.key}
+                    style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
+                    className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${
+                      column.align === 'right' ? 'text-right' : ''
+                    } ${column.pin ? PIN_CLASS : ''}`}
+                  >
+                    {column.render(row)}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+          {paddingBottom > 0 && (
+            <tr>
+              <td style={{ height: paddingBottom }} colSpan={columns.length} />
+            </tr>
+          )}
         </tbody>
       </table>
     </div>

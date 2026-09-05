@@ -1,4 +1,5 @@
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { defaultColumnWidth, useColumnWidths } from '../hooks/useColumnWidths';
 import { useActualBreakdown } from '../hooks/useActualBreakdown';
 import { useStatusThresholds } from '../hooks/useAppSettings';
@@ -136,11 +137,27 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   const expandedRow = sorted.find((r) => r.id === expandedId) ?? null;
   const breakdown = useActualBreakdown(weekId, expandedRow);
 
+  // Only the rows scrolled into view are rendered (see SortableTable.tsx for
+  // why). Each virtual item is its own <tbody> — multiple <tbody> elements in
+  // one <table> are valid HTML — so a row's expand/collapse (which changes
+  // that item's height) is measured and accounted for independently, without
+  // needing to track it as a separate virtual item.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: sorted.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 33,
+    overscan: 8,
+  });
+  const virtualRows = virtualizer.getVirtualItems();
+  const paddingTop = virtualRows[0]?.start ?? 0;
+  const paddingBottom = virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end ?? 0);
+
   return (
     <div>
       <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
 
-      <div className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">
+      <div ref={scrollRef} className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">
         <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>
           <colgroup>
             {COLUMNS.map((c) => (
@@ -210,12 +227,20 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {sorted.map((r, i) => (
-              <Fragment key={r.id}>
+          <tbody>
+            {paddingTop > 0 && (
+              <tr>
+                <td style={{ height: paddingTop }} colSpan={COLUMNS.length} />
+              </tr>
+            )}
+          </tbody>
+          {virtualRows.map((virtualRow) => {
+            const r = sorted[virtualRow.index];
+            return (
+              <tbody key={r.id} data-index={virtualRow.index} ref={virtualizer.measureElement}>
                 <tr
                   onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
-                  className={`cursor-pointer hover:bg-blue-50 ${i % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
+                  className={`cursor-pointer border-b border-gray-100 hover:bg-blue-50 ${virtualRow.index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
                 >
                   <td
                     style={{ left: pinnedLeft.production_date }}
@@ -271,7 +296,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   </td>
                 </tr>
                 {expandedId === r.id && (
-                  <tr className="bg-gray-50">
+                  <tr className="border-b border-gray-100 bg-gray-50">
                     <td colSpan={COLUMNS.length} className="px-3 py-3">
                       <p className="mb-2 text-xs font-medium uppercase text-gray-500">
                         รายละเอียด SKU ที่โอนจริงในกลุ่มนี้
@@ -303,8 +328,15 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                     </td>
                   </tr>
                 )}
-              </Fragment>
-            ))}
+              </tbody>
+            );
+          })}
+          <tbody>
+            {paddingBottom > 0 && (
+              <tr>
+                <td style={{ height: paddingBottom }} colSpan={COLUMNS.length} />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
