@@ -43,8 +43,8 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; gr
   { key: 'origin_name', label: 'ต้นทาง', pin: true, group: ROUTE_GROUP },
   { key: 'dest_name', label: 'ปลายทาง', pin: true, group: ROUTE_GROUP },
   { key: 'product_group', label: 'กลุ่มสินค้า', pin: true, group: ROUTE_GROUP },
-  { key: 'plan_total', label: 'แผน (kg)', align: 'right', group: PLAN_GROUP },
-  { key: 'actual_total', label: 'จริง (kg)', align: 'right', group: ACTUAL_GROUP },
+  { key: 'plan_total', label: 'แผน', align: 'right', group: PLAN_GROUP },
+  { key: 'actual_total', label: 'จริง', align: 'right', group: ACTUAL_GROUP },
   { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: PCT_GROUP },
   { key: 'overage', label: 'โอนเกินแผน', align: 'right', group: DIFF_GROUP },
   { key: 'profit_lost', label: 'สูญเสีย (บาท)', align: 'right', group: LOSS_GROUP },
@@ -286,7 +286,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                             <tr>
                               <th className="py-1 text-left">รหัสสินค้า</th>
                               <th className="py-1 text-left">ชื่อสินค้า</th>
-                              <th className="py-1 text-right">น้ำหนัก (kg)</th>
+                              <th className="py-1 text-right">น้ำหนัก</th>
                             </tr>
                           </thead>
                           <tbody>

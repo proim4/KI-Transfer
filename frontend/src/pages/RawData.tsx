@@ -83,7 +83,7 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
       { key: 'product_group', label: 'กลุ่มสินค้า (P19)', sortValue: (r) => r.product_group, render: (r) => r.product_group },
       {
         key: 'weight_kg',
-        label: 'น้ำหนัก (KG)',
+        label: 'น้ำหนัก',
         align: 'right',
         total: formatKg(sum(filteredActual.map((r) => r.weight_kg))),
         sortValue: (r) => r.weight_kg,

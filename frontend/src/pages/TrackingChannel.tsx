@@ -54,9 +54,9 @@ const PCT_FIELD: Record<Channel, keyof TrackingResultRow> = {
   total: 'total_pct',
 };
 const PLAN_LABEL: Record<Channel, string> = {
-  weekly: 'แผนโอน Weekly (kg)',
-  daily: 'แผนโอน Daily (kg)',
-  total: 'แผนโอนรวม (kg)',
+  weekly: 'แผนโอน Weekly',
+  daily: 'แผนโอน Daily',
+  total: 'แผนโอนรวม',
 };
 
 function pickRoute(r: TrackingResultRow) {
@@ -212,7 +212,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
       },
       {
         key: 'actual_total',
-        label: 'โอนจริงทั้งหมด (kg)',
+        label: 'โอนจริงทั้งหมด',
         align: 'right',
         group: ACTUAL_GROUP,
         total: totals.actual,
@@ -221,7 +221,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
       },
       {
         key: 'diff',
-        label: 'Diff แผนโอน (kg)',
+        label: 'Diff แผนโอน',
         align: 'right',
         group: DIFF_GROUP,
         total: totals.diff,
