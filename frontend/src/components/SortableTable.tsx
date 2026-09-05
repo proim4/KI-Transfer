@@ -111,7 +111,7 @@ export default function SortableTable<T>({
   columns,
   rowKey,
   defaultSortKey,
-  maxHeight = '32rem',
+  maxHeight = 'calc(100vh - 260px)',
   storageKey,
   columnVisibilityKey,
   filterBar,
@@ -170,7 +170,7 @@ export default function SortableTable<T>({
   const virtualizer = useVirtualizer({
     count: sorted.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 33,
+    estimateSize: () => 29,
     overscan: 8,
   });
   const virtualRows = virtualizer.getVirtualItems();
@@ -277,7 +277,7 @@ export default function SortableTable<T>({
                     <td
                       key={column.key}
                       style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${
                         column.align === 'right' ? 'text-right' : ''
                       } ${column.pin ? PIN_CLASS : ''}`}
                     >

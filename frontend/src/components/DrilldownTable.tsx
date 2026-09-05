@@ -155,7 +155,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   const virtualizer = useVirtualizer({
     count: sorted.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => 33,
+    estimateSize: () => 29,
     overscan: 8,
   });
   const virtualRows = virtualizer.getVirtualItems();
@@ -171,7 +171,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
         </div>
       </div>
 
-      <div ref={scrollRef} className="max-h-[28rem] overflow-auto rounded-lg border border-gray-200">
+      <div ref={scrollRef} className="max-h-[calc(100vh-600px)] overflow-auto rounded-lg border border-gray-200">
         <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>
           <colgroup>
             {visibleColumns.map((c) => (
@@ -259,7 +259,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('production_date') && (
                     <td
                       style={{ left: pinnedLeft.production_date }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
                     >
                       {r.production_date}
                     </td>
@@ -267,7 +267,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('status') && (
                     <td
                       style={{ left: pinnedLeft.status }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
                     >
                       {thresholds && <StatusBadge pct={r.total_pct} thresholds={thresholds} />}
                     </td>
@@ -275,7 +275,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('origin_code') && (
                     <td
                       style={{ left: pinnedLeft.origin_code }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
                     >
                       {r.origin_code}
                     </td>
@@ -283,7 +283,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('origin_name') && (
                     <td
                       style={{ left: pinnedLeft.origin_name }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
                     >
                       {r.origin_name}
                     </td>
@@ -291,7 +291,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('dest_code') && (
                     <td
                       style={{ left: pinnedLeft.dest_code }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
                     >
                       {r.dest_code}
                     </td>
@@ -299,7 +299,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('dest_name') && (
                     <td
                       style={{ left: pinnedLeft.dest_name }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
                     >
                       {r.dest_name}
                     </td>
@@ -307,34 +307,34 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('product_group') && (
                     <td
                       style={{ left: pinnedLeft.product_group }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
                     >
                       {r.product_group}
                     </td>
                   )}
                   {isVisible('plan_total') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right">
                       {formatKg(r.plan_total)}
                     </td>
                   )}
                   {isVisible('actual_total') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right">
                       {formatKg(r.actual_total)}
                     </td>
                   )}
                   {isVisible('total_pct') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right font-medium">
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right font-medium">
                       {thresholds ? <PctBar pct={r.total_pct} thresholds={thresholds} /> : formatPct(r.total_pct)}
                     </td>
                   )}
                   {isVisible('overage') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right">
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right">
                       {formatKg(r.overage)}
                     </td>
                   )}
                   {isVisible('profit_lost') && (
                     <td
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1.5 text-right ${
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right ${
                         r.profit_lost < 0 ? 'text-red-600' : ''
                       }`}
                     >
