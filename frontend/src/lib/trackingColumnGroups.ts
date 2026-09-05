@@ -16,8 +16,8 @@ import type { ColumnGroup } from '../components/SortableTable';
 export const ROUTE_GROUP: ColumnGroup = {
   key: 'route',
   bandBottom: 'ข้อมูลเส้นทาง',
-  bandClassName: 'bg-amber-500 text-amber-950',
-  labelClassName: 'bg-amber-500 text-amber-950',
+  bandClassName: 'bg-[#FFC000] text-amber-950',
+  labelClassName: 'bg-[#FFC000] text-amber-950',
   totalsTintClassName: 'bg-amber-50',
 };
 
@@ -25,8 +25,8 @@ export const PLAN_GROUP: ColumnGroup = {
   key: 'plan',
   bandTop: 'BDR130',
   bandBottom: 'แผนโอนทั้งหมด',
-  bandClassName: 'bg-amber-500 text-amber-950',
-  labelClassName: 'bg-amber-500 text-amber-950',
+  bandClassName: 'bg-[#FFC000] text-amber-950',
+  labelClassName: 'bg-[#FFC000] text-amber-950',
   totalsTintClassName: 'bg-amber-50',
 };
 
