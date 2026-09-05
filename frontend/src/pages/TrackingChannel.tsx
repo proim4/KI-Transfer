@@ -243,7 +243,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
       },
       {
         key: 'profit_realized',
-        label: 'กำไรที่ได้ (บาท)',
+        label: 'กำไรที่ได้',
         align: 'right',
         group: PROFIT_GROUP,
         total: totals.profitRealized,
@@ -253,7 +253,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
       },
       {
         key: 'profit_lost',
-        label: 'สูญเสียกำไร (บาท)',
+        label: 'สูญเสียกำไร',
         align: 'right',
         group: LOSS_GROUP,
         total: totals.profitLost.text,

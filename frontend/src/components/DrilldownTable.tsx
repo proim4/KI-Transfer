@@ -47,7 +47,7 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; gr
   { key: 'actual_total', label: 'จริง', align: 'right', group: ACTUAL_GROUP },
   { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: PCT_GROUP },
   { key: 'overage', label: 'โอนเกินแผน', align: 'right', group: DIFF_GROUP },
-  { key: 'profit_lost', label: 'สูญเสีย (บาท)', align: 'right', group: LOSS_GROUP },
+  { key: 'profit_lost', label: 'สูญเสีย', align: 'right', group: LOSS_GROUP },
   { key: 'remark', label: 'หมายเหตุ', group: REMARK_GROUP },
 ];
 
