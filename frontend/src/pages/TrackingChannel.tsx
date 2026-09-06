@@ -4,19 +4,14 @@ import PctBar from '../components/PctBar';
 import RemarkCell from '../components/RemarkCell';
 import StatusBadge from '../components/StatusBadge';
 import { useStatusThresholds } from '../hooks/useAppSettings';
-import RouteFilterBar, {
-  EMPTY_ROUTE_FILTER,
-  matchesRouteFilter,
-  routeFilterOptions,
-  type RouteFilterValue,
-} from '../components/RouteFilterBar';
-import SortableTable, { type Column } from '../components/SortableTable';
+import SortableTable, { type Column, type HeaderFilterConfig } from '../components/SortableTable';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useTrackingResults } from '../hooks/useTrackingResults';
 import { useWeeks } from '../hooks/useWeeks';
 import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
 import { exportWeekToExcel } from '../lib/exportExcel';
+import { computeStatus } from '../lib/statusBadge';
 import {
   ACTUAL_GROUP,
   DIFF_GROUP,
@@ -58,14 +53,8 @@ const PLAN_LABEL: Record<Channel, string> = {
   total: 'แผนโอนรวม',
 };
 
-function pickRoute(r: TrackingResultRow) {
-  return {
-    date: r.production_date,
-    origin: r.origin_name,
-    dest: r.dest_name,
-    productGroup: r.product_group,
-    searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group}`,
-  };
+function searchText(r: TrackingResultRow): string {
+  return `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.remark ?? ''}`.toLowerCase();
 }
 
 /** Diff (kg) text tinted red for a shortfall, green for a surplus — matches the profit_lost convention already used elsewhere in this table. */
@@ -85,7 +74,8 @@ function diffToneClass(diff: number): string {
  */
 export default function TrackingChannel({ channel, title, productLine = 'chicken' }: TrackingChannelProps) {
   const [weekId, setWeekId] = useDefaultedWeekId(productLine);
-  const [filter, setFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
+  const [search, setSearch] = useState('');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const { data, isLoading } = useTrackingResults(weekId);
   const { data: weeks } = useWeeks(productLine);
   const thresholds = useStatusThresholds();
@@ -118,8 +108,66 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
     return rows;
   }, [rows, channel]);
 
-  const options = useMemo(() => routeFilterOptions(channelRows, pickRoute), [channelRows]);
-  const filtered = channelRows.filter((r) => matchesRouteFilter(filter, pickRoute(r)));
+  // Every column's own accessor, reused both to build each header dropdown's
+  // unique-value list and to actually filter rows by it — "status" resolves
+  // to its category label (ตามแผน/ต่ำกว่าแผน/...) instead of the raw pct so
+  // the filter matches what the badge shows, not a number.
+  const filterAccessors = useMemo<Record<string, (r: TrackingResultRow) => string | number | null>>(
+    () => ({
+      production_date: (r) => r.production_date,
+      status: (r) => (thresholds ? computeStatus(r[pctField] as number | null, thresholds).label : null),
+      origin_code: (r) => r.origin_code,
+      origin: (r) => r.origin_name,
+      dest_code: (r) => r.dest_code,
+      dest: (r) => r.dest_name,
+      product_group: (r) => r.product_group,
+      origin_price: (r) => r.origin_price,
+      dest_price: (r) => r.dest_price,
+      plan: (r) => Number(r[planField]),
+      actual_total: (r) => r.actual_total,
+      diff: (r) => Number(r[diffField]),
+      pct: (r) => r[pctField] as number | null,
+      profit_realized: (r) => r.profit_realized,
+      profit_lost: (r) => r.profit_lost,
+      remark: (r) => r.remark,
+    }),
+    [planField, diffField, pctField, thresholds],
+  );
+
+  const columnOptions = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const [key, getter] of Object.entries(filterAccessors)) {
+      const set = new Set<string>();
+      for (const r of channelRows) {
+        const v = getter(r);
+        if (v !== null && v !== '') set.add(String(v));
+      }
+      map[key] = Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    }
+    return map;
+  }, [channelRows, filterAccessors]);
+
+  const filtered = useMemo(
+    () =>
+      channelRows.filter((r) => {
+        if (search && !searchText(r).includes(search.toLowerCase())) return false;
+        return Object.entries(columnFilters).every(([key, fv]) => {
+          if (!fv) return true;
+          const getter = filterAccessors[key];
+          return getter ? String(getter(r) ?? '') === fv : true;
+        });
+      }),
+    [channelRows, search, columnFilters, filterAccessors],
+  );
+
+  function headerFilterFor(key: string, placeholder: string): HeaderFilterConfig {
+    return {
+      value: columnFilters[key] ?? '',
+      onChange: (v) => setColumnFilters((f) => ({ ...f, [key]: v })),
+      options: columnOptions[key] ?? [],
+      placeholder,
+    };
+  }
 
   // Grand totals for whatever rows are currently filtered/visible — shown
   // pinned to the top of each metric's own column, like the source
@@ -148,6 +196,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         label: 'วันที่',
         pin: true,
         group: ROUTE_GROUP,
+        headerFilter: headerFilterFor('production_date', 'ทุกวันที่'),
         sortValue: (r) => r.production_date,
         render: (r) => r.production_date,
       },
@@ -156,6 +205,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         label: 'สถานะ',
         pin: true,
         group: ROUTE_GROUP,
+        headerFilter: headerFilterFor('status', 'ทั้งหมด'),
         sortValue: (r) => r[pctField] as number | null,
         render: (r) =>
           thresholds ? <StatusBadge pct={r[pctField] as number | null} thresholds={thresholds} /> : null,
@@ -165,6 +215,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         label: 'รหัสต้นทาง',
         pin: true,
         group: ROUTE_GROUP,
+        headerFilter: headerFilterFor('origin_code', 'ทั้งหมด'),
         sortValue: (r) => r.origin_code,
         render: (r) => r.origin_code,
       },
@@ -173,6 +224,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         label: 'ต้นทาง',
         pin: true,
         group: ROUTE_GROUP,
+        headerFilter: headerFilterFor('origin', 'ทุกโรงงานต้นทาง'),
         sortValue: (r) => r.origin_name,
         render: (r) => r.origin_name,
       },
@@ -181,6 +233,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         label: 'รหัสปลายทาง',
         pin: true,
         group: ROUTE_GROUP,
+        headerFilter: headerFilterFor('dest_code', 'ทั้งหมด'),
         sortValue: (r) => r.dest_code,
         render: (r) => r.dest_code,
       },
@@ -189,6 +242,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         label: 'ปลายทาง',
         pin: true,
         group: ROUTE_GROUP,
+        headerFilter: headerFilterFor('dest', 'ทุกโรงงานปลายทาง'),
         sortValue: (r) => r.dest_name,
         render: (r) => r.dest_name,
       },
@@ -197,6 +251,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         label: 'กลุ่มสินค้า',
         pin: true,
         group: ROUTE_GROUP,
+        headerFilter: headerFilterFor('product_group', 'ทุกกลุ่มสินค้า'),
         sortValue: (r) => r.product_group,
         render: (r) => r.product_group,
       },
@@ -205,6 +260,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         label: 'ราคาต้นทาง',
         align: 'right',
         group: ROUTE_GROUP,
+        headerFilter: headerFilterFor('origin_price', 'ทั้งหมด'),
         sortValue: (r) => r.origin_price,
         render: (r) => r.origin_price.toLocaleString('en-US'),
       },
@@ -213,6 +269,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         label: 'ราคาปลายทาง',
         align: 'right',
         group: ROUTE_GROUP,
+        headerFilter: headerFilterFor('dest_price', 'ทั้งหมด'),
         sortValue: (r) => r.dest_price,
         render: (r) => r.dest_price.toLocaleString('en-US'),
       },
@@ -222,6 +279,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         align: 'right',
         group: PLAN_GROUP,
         total: totals.plan,
+        headerFilter: headerFilterFor('plan', 'ทั้งหมด'),
         sortValue: (r) => Number(r[planField]),
         render: (r) => formatKg(Number(r[planField])),
       },
@@ -231,6 +289,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         align: 'right',
         group: ACTUAL_GROUP,
         total: totals.actual,
+        headerFilter: headerFilterFor('actual_total', 'ทั้งหมด'),
         sortValue: (r) => r.actual_total,
         render: (r) => formatKg(r.actual_total),
       },
@@ -241,6 +300,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         group: DIFF_GROUP,
         total: totals.diff,
         totalTone: totals.diffTone,
+        headerFilter: headerFilterFor('diff', 'ทั้งหมด'),
         sortValue: (r) => Number(r[diffField]),
         render: (r) => {
           const diff = Number(r[diffField]);
@@ -253,6 +313,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         align: 'right',
         group: PCT_GROUP,
         total: totals.pct,
+        headerFilter: headerFilterFor('pct', 'ทั้งหมด'),
         sortValue: (r) => r[pctField] as number | null,
         render: (r) => (thresholds ? <PctBar pct={r[pctField] as number | null} thresholds={thresholds} /> : formatPct(r[pctField] as number | null)),
       },
@@ -263,6 +324,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         group: PROFIT_GROUP,
         total: totals.profitRealized,
         totalTone: 'good',
+        headerFilter: headerFilterFor('profit_realized', 'ทั้งหมด'),
         sortValue: (r) => r.profit_realized,
         render: (r) => formatBaht(r.profit_realized),
       },
@@ -273,6 +335,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         group: LOSS_GROUP,
         total: totals.profitLost.text,
         totalTone: totals.profitLost.tone,
+        headerFilter: headerFilterFor('profit_lost', 'ทั้งหมด'),
         sortValue: (r) => r.profit_lost,
         render: (r) => <span className={r.profit_lost < 0 ? 'text-red-600' : ''}>{formatBaht(r.profit_lost)}</span>,
       },
@@ -280,11 +343,12 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         key: 'remark',
         label: 'หมายเหตุ',
         group: REMARK_GROUP,
+        headerFilter: headerFilterFor('remark', 'ทั้งหมด'),
         sortValue: (r) => r.remark,
         render: (r) => <RemarkCell id={r.id} value={r.remark} />,
       },
     ],
-    [channel, planField, diffField, pctField, thresholds, totals],
+    [channel, planField, diffField, pctField, thresholds, totals, columnFilters, columnOptions],
   );
 
   return (
@@ -321,7 +385,16 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
           storageKey={`columnWidths:tracking-${productLine}-${channel}`}
           columnVisibilityKey={`columnVisibility:tracking-${productLine}-${channel}`}
           filterBar={
-            <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ค้นหา..."
+                className="w-40 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
+              />
+              <span className="text-xs text-gray-400">{filtered.length} รายการ</span>
+            </div>
           }
         />
       )}

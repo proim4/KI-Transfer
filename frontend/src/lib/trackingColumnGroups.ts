@@ -15,8 +15,8 @@ import type { ColumnGroup } from '../components/SortableTable';
  */
 export const ROUTE_GROUP: ColumnGroup = {
   key: 'route',
-  bandBottom: 'ข้อมูลเส้นทาง',
-  bandClassName: 'bg-[#FFC000] text-amber-950',
+  bandBottom: '',
+  bandClassName: 'bg-amber-50 text-amber-950',
   labelClassName: 'bg-[#FFC000] text-amber-950',
   totalsTintClassName: 'bg-amber-50',
 };
@@ -34,8 +34,8 @@ export const ACTUAL_GROUP: ColumnGroup = {
   key: 'actual',
   bandTop: 'ABS0000',
   bandBottom: 'โอนจริงทั้งหมด',
-  bandClassName: 'bg-green-800 text-white',
-  labelClassName: 'bg-green-800 text-white',
+  bandClassName: 'bg-[#375623] text-white',
+  labelClassName: 'bg-[#375623] text-white',
   totalsTintClassName: 'bg-green-50',
   dark: true,
 };
@@ -44,9 +44,9 @@ export const DIFF_GROUP: ColumnGroup = {
   key: 'diff',
   bandTop: 'ABS0000',
   bandBottom: 'Diff แผนโอน',
-  bandClassName: 'bg-green-700 text-white',
-  labelClassName: 'bg-green-700 text-white',
-  totalsTintClassName: 'bg-green-50',
+  bandClassName: 'bg-red-600 text-white',
+  labelClassName: 'bg-red-600 text-white',
+  totalsTintClassName: 'bg-red-50',
   dark: true,
 };
 
@@ -54,8 +54,8 @@ export const PCT_GROUP: ColumnGroup = {
   key: 'pct',
   bandTop: 'ABS0000',
   bandBottom: '%โอนเทียบแผน',
-  bandClassName: 'bg-green-700 text-white',
-  labelClassName: 'bg-green-700 text-white',
+  bandClassName: 'bg-[#375623] text-white',
+  labelClassName: 'bg-[#375623] text-white',
   totalsTintClassName: 'bg-green-50',
   dark: true,
 };
@@ -82,9 +82,9 @@ export const LOSS_GROUP: ColumnGroup = {
 
 export const REMARK_GROUP: ColumnGroup = {
   key: 'remark',
-  bandBottom: 'หมายเหตุ',
-  bandClassName: 'bg-navy-700 text-white',
+  bandBottom: '',
+  bandClassName: 'bg-[#eef2f7] text-navy-900',
   labelClassName: 'bg-navy-700 text-white',
-  totalsTintClassName: 'bg-navy-50',
+  totalsTintClassName: 'bg-[#eef2f7]',
   dark: true,
 };

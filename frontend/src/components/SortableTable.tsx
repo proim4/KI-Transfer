@@ -22,6 +22,13 @@ export interface ColumnGroup {
   dark?: boolean;
 }
 
+export interface HeaderFilterConfig {
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  placeholder: string;
+}
+
 export interface Column<T> {
   key: string;
   label: string;
@@ -33,6 +40,8 @@ export interface Column<T> {
   /** Pre-formatted grand-total for this column (of whatever rows are currently passed in, i.e. already filtered) — shown in its own row right under the column label, aligned with the column like in the source workbook. Omit/blank for columns with nothing to total (identity columns, remarks). */
   total?: string;
   totalTone?: 'good' | 'bad';
+  /** Renders an Excel-style dropdown in place of the column label — replaces click-to-sort for this column with click-to-filter. */
+  headerFilter?: HeaderFilterConfig;
   sortValue: (row: T) => string | number | null;
   render: (row: T) => ReactNode;
 }
@@ -136,10 +145,10 @@ export default function SortableTable<T>({
   // — only applied once there's a second/third row to stack, so a plain
   // single-row table (no groups, no totals) renders exactly as it always has.
   // Row order (top to bottom): group band -> totals -> column labels -> data.
-  // Heights (h-14/h-8/h-9) track the reference workbook's own row heights.
+  // Heights (h-[40px]/h-8/h-9) track the reference workbook's own row heights.
   const labelRowClass = hasTotals || hasGroups ? 'h-9' : '';
-  const totalsTop = hasGroups ? 'top-14' : 'top-0';
-  const labelTop = hasTotals ? (hasGroups ? 'top-[88px]' : 'top-8') : hasGroups ? 'top-14' : 'top-0';
+  const totalsTop = hasGroups ? 'top-[40px]' : 'top-0';
+  const labelTop = hasTotals ? (hasGroups ? 'top-[72px]' : 'top-8') : hasGroups ? 'top-[40px]' : 'top-0';
 
   function handleSort(key: string) {
     if (key === sortKey) {
@@ -194,7 +203,7 @@ export default function SortableTable<T>({
           </colgroup>
           <thead className="text-xs uppercase text-gray-500">
             {hasGroups && (
-              <tr className="h-14">
+              <tr className="h-[40px]">
                 {runs.map((run, i) => (
                   <th
                     key={`${run.group.key}-${i}`}
@@ -239,8 +248,27 @@ export default function SortableTable<T>({
                   className={`sticky ${labelTop} ${column.pin ? 'z-30' : 'z-10'} ${
                     column.group ? column.group.labelClassName : 'bg-gray-50'
                   }`}
+                  filter={
+                    column.headerFilter && (
+                      <select
+                        value={column.headerFilter.value}
+                        onChange={(e) => column.headerFilter!.onChange(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        title={`กรอง ${column.label}`}
+                        className="w-4 shrink-0 cursor-pointer border-none bg-transparent p-0 text-[10px] text-inherit outline-none"
+                      >
+                        <option value="">{column.headerFilter.placeholder}</option>
+                        {column.headerFilter.options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    )
+                  }
                 >
-                  {column.label}
+                  <span className="truncate">{column.label}</span>
                   <span
                     className={
                       column.key === sortKey

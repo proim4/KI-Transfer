@@ -5,6 +5,8 @@ interface ResizableThProps {
   /** Left offset in px for a pinned/frozen column that isn't the first one — lets several columns freeze side by side instead of all stacking at left:0. */
   left?: number;
   align?: 'right';
+  /** Rendered after the label/sort-arrow group, pinned to the cell's trailing (right) edge via justify-between — e.g. a header filter dropdown. Keeps label → sort → filter in that order for every column, regardless of `align`. */
+  filter?: ReactNode;
   onMouseDownResize: (e: React.MouseEvent) => void;
   onClick?: () => void;
   children: ReactNode;
@@ -12,7 +14,7 @@ interface ResizableThProps {
 }
 
 /** A <th> with a drag handle on its right edge to resize the column, shared by every data table in the app. */
-export default function ResizableTh({ width, left, align, onMouseDownResize, onClick, children, className = '' }: ResizableThProps) {
+export default function ResizableTh({ width, left, align, filter, onMouseDownResize, onClick, children, className = '' }: ResizableThProps) {
   return (
     <th
       style={{ width, ...(left !== undefined ? { left } : {}) }}
@@ -21,7 +23,10 @@ export default function ResizableTh({ width, left, align, onMouseDownResize, onC
         align === 'right' ? 'text-right' : 'text-left'
       } ${className}`}
     >
-      <span className={`inline-flex items-center gap-1 ${align === 'right' ? 'flex-row-reverse' : ''}`}>{children}</span>
+      <div className="flex items-center justify-between gap-1">
+        <span className="inline-flex min-w-0 items-center gap-1">{children}</span>
+        {filter}
+      </div>
       <div
         onMouseDown={(e) => {
           e.stopPropagation();

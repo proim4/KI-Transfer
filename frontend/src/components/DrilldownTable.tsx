@@ -5,19 +5,14 @@ import { useColumnVisibility } from '../hooks/useColumnVisibility';
 import { useActualBreakdown } from '../hooks/useActualBreakdown';
 import { useStatusThresholds } from '../hooks/useAppSettings';
 import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
+import { computeStatus, type StatusThresholds } from '../lib/statusBadge';
 import { ACTUAL_GROUP, DIFF_GROUP, LOSS_GROUP, PCT_GROUP, PLAN_GROUP, REMARK_GROUP, ROUTE_GROUP } from '../lib/trackingColumnGroups';
 import ColumnVisibilityMenu from './ColumnVisibilityMenu';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
 import PctBar from './PctBar';
 import ResizableTh from './ResizableTh';
 import RemarkCell from './RemarkCell';
-import RouteFilterBar, {
-  EMPTY_ROUTE_FILTER,
-  matchesRouteFilter,
-  routeFilterOptions,
-  type RouteFilterValue,
-} from './RouteFilterBar';
-import { groupRuns, pinnedLeftOffsets, type ColumnGroup } from './SortableTable';
+import { groupRuns, pinnedLeftOffsets, type ColumnGroup, type HeaderFilterConfig } from './SortableTable';
 import StatusBadge from './StatusBadge';
 import type { TrackingResultRow } from '../types/db';
 
@@ -77,19 +72,20 @@ function compareValues(a: string | number | null, b: string | number | null): nu
   return an - bn;
 }
 
-function pickRoute(r: TrackingResultRow) {
-  return {
-    date: r.production_date,
-    origin: r.origin_name,
-    dest: r.dest_name,
-    productGroup: r.product_group,
-    searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group}`,
-  };
+function searchText(r: TrackingResultRow): string {
+  return `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.remark ?? ''}`.toLowerCase();
+}
+
+/** Same accessor as sortValue, except "status" resolves to its category label (ตามแผน/ต่ำกว่าแผน/...) instead of the raw pct — filtering by status should match what the badge shows, not a number. */
+function filterValue(row: TrackingResultRow, key: SortKey, thresholds: StatusThresholds | undefined): string | number | null {
+  if (key === 'status') return thresholds ? computeStatus(row.total_pct, thresholds).label : null;
+  return sortValue(row, key);
 }
 
 export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   const thresholds = useStatusThresholds();
-  const [filter, setFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
+  const [search, setSearch] = useState('');
+  const [columnFilters, setColumnFilters] = useState<Partial<Record<SortKey, string>>>({});
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('production_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -115,8 +111,44 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
     }
   }
 
-  const options = useMemo(() => routeFilterOptions(rows, pickRoute), [rows]);
-  const filtered = rows.filter((r) => matchesRouteFilter(filter, pickRoute(r)));
+  // Unique values per column (from the full unfiltered row set) power each
+  // header cell's Excel-style filter dropdown.
+  const columnOptions = useMemo(() => {
+    const map: Partial<Record<SortKey, string[]>> = {};
+    for (const c of COLUMNS) {
+      const set = new Set<string>();
+      for (const r of rows) {
+        const v = filterValue(r, c.key, thresholds);
+        if (v !== null && v !== '') set.add(String(v));
+      }
+      map[c.key] = Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    }
+    return map;
+  }, [rows, thresholds]);
+
+  const filtered = useMemo(
+    () =>
+      rows.filter((r) => {
+        if (search && !searchText(r).includes(search.toLowerCase())) return false;
+        return COLUMNS.every((c) => {
+          const fv = columnFilters[c.key];
+          if (!fv) return true;
+          return String(filterValue(r, c.key, thresholds) ?? '') === fv;
+        });
+      }),
+    [rows, search, columnFilters, thresholds],
+  );
+
+  // Every column's header cell gets its own filter dropdown alongside the
+  // existing click-to-sort label/arrow.
+  function headerFilterFor(key: SortKey): HeaderFilterConfig {
+    return {
+      value: columnFilters[key] ?? '',
+      onChange: (v) => setColumnFilters((f) => ({ ...f, [key]: v })),
+      options: columnOptions[key] ?? [],
+      placeholder: 'ทั้งหมด',
+    };
+  }
 
   const sorted = useMemo(() => {
     const copy = [...filtered];
@@ -165,7 +197,14 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <RouteFilterBar value={filter} onChange={setFilter} options={options} resultCount={filtered.length} />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="ค้นหา..."
+          className="w-40 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
+        />
+        <span className="text-xs text-gray-400">{filtered.length} รายการ</span>
         <div className="ml-auto">
           <ColumnVisibilityMenu columns={COLUMNS} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />
         </div>
@@ -179,7 +218,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
             ))}
           </colgroup>
           <thead className="text-xs uppercase text-gray-500">
-            <tr className="h-14">
+            <tr className="h-[40px]">
               {runs.map((run, i) => (
                 <th
                   key={`${run.group.key}-${i}`}
@@ -201,7 +240,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   <th
                     key={c.key}
                     style={c.pin ? { left: pinnedLeft[c.key] } : undefined}
-                    className={`sticky top-14 overflow-hidden px-3 text-sm font-bold normal-case ${
+                    className={`sticky top-[40px] overflow-hidden px-3 text-sm font-bold normal-case ${
                       c.align === 'right' ? 'text-right' : 'text-left'
                     } ${c.pin ? 'z-30' : 'z-10'} ${c.group.totalsTintClassName} ${
                       total?.tone ? TOTAL_TONE_CLASS[total.tone] : 'text-gray-900'
@@ -213,32 +252,52 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
               })}
             </tr>
             <tr className="h-9">
-              {visibleColumns.map((c) => (
-                <ResizableTh
-                  key={c.key}
-                  width={widths[c.key] ?? defaultColumnWidth(c.label)}
-                  left={c.pin ? pinnedLeft[c.key] : undefined}
-                  align={c.align}
-                  onClick={() => handleSort(c.key)}
-                  onMouseDownResize={startResize(c.key)}
-                  className={`sticky top-[88px] ${c.pin ? 'z-30' : 'z-10'} ${c.group.labelClassName}`}
-                >
-                  {c.label}
-                  <span
-                    className={
-                      c.key === sortKey
-                        ? c.group.dark
-                          ? 'text-white'
-                          : 'text-gray-600'
-                        : c.group.dark
-                          ? 'text-white/50'
-                          : 'text-gray-300'
+              {visibleColumns.map((c) => {
+                const headerFilter = headerFilterFor(c.key);
+                return (
+                  <ResizableTh
+                    key={c.key}
+                    width={widths[c.key] ?? defaultColumnWidth(c.label)}
+                    left={c.pin ? pinnedLeft[c.key] : undefined}
+                    align={c.align}
+                    onClick={() => handleSort(c.key)}
+                    onMouseDownResize={startResize(c.key)}
+                    className={`sticky top-[72px] ${c.pin ? 'z-30' : 'z-10'} ${c.group.labelClassName}`}
+                    filter={
+                      <select
+                        value={headerFilter.value}
+                        onChange={(e) => headerFilter.onChange(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        title={`กรอง ${c.label}`}
+                        className="w-4 shrink-0 cursor-pointer border-none bg-transparent p-0 text-[10px] text-inherit outline-none"
+                      >
+                        <option value="">{headerFilter.placeholder}</option>
+                        {headerFilter.options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
                     }
                   >
-                    {c.key === sortKey ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
-                  </span>
-                </ResizableTh>
-              ))}
+                    <span className="truncate">{c.label}</span>
+                    <span
+                      className={
+                        c.key === sortKey
+                          ? c.group.dark
+                            ? 'text-white'
+                            : 'text-gray-600'
+                          : c.group.dark
+                            ? 'text-white/50'
+                            : 'text-gray-300'
+                      }
+                    >
+                      {c.key === sortKey ? (sortDirection === 'asc' ? '▲' : '▼') : '↕'}
+                    </span>
+                  </ResizableTh>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -259,7 +318,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('production_date') && (
                     <td
                       style={{ left: pinnedLeft.production_date }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
                     >
                       {r.production_date}
                     </td>
@@ -267,7 +326,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('status') && (
                     <td
                       style={{ left: pinnedLeft.status }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
                     >
                       {thresholds && <StatusBadge pct={r.total_pct} thresholds={thresholds} />}
                     </td>
@@ -275,7 +334,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('origin_code') && (
                     <td
                       style={{ left: pinnedLeft.origin_code }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
                     >
                       {r.origin_code}
                     </td>
@@ -283,7 +342,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('origin_name') && (
                     <td
                       style={{ left: pinnedLeft.origin_name }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
                     >
                       {r.origin_name}
                     </td>
@@ -291,7 +350,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('dest_code') && (
                     <td
                       style={{ left: pinnedLeft.dest_code }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
                     >
                       {r.dest_code}
                     </td>
@@ -299,7 +358,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('dest_name') && (
                     <td
                       style={{ left: pinnedLeft.dest_name }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
                     >
                       {r.dest_name}
                     </td>
@@ -307,34 +366,34 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('product_group') && (
                     <td
                       style={{ left: pinnedLeft.product_group }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
                     >
                       {r.product_group}
                     </td>
                   )}
                   {isVisible('plan_total') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right">
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right">
                       {formatKg(r.plan_total)}
                     </td>
                   )}
                   {isVisible('actual_total') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right">
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right">
                       {formatKg(r.actual_total)}
                     </td>
                   )}
                   {isVisible('total_pct') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right font-medium">
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right font-medium">
                       {thresholds ? <PctBar pct={r.total_pct} thresholds={thresholds} /> : formatPct(r.total_pct)}
                     </td>
                   )}
                   {isVisible('overage') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right">
+                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right">
                       {formatKg(r.overage)}
                     </td>
                   )}
                   {isVisible('profit_lost') && (
                     <td
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 text-right ${
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right ${
                         r.profit_lost < 0 ? 'text-red-600' : ''
                       }`}
                     >
@@ -342,7 +401,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                     </td>
                   )}
                   {isVisible('remark') && (
-                    <td className="px-1 py-1">
+                    <td className="px-1 py-0.5">
                       <RemarkCell id={r.id} value={r.remark} />
                     </td>
                   )}
