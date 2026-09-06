@@ -162,6 +162,7 @@ export function validatePlanRows(rows: Record<string, unknown>[], sourceFile: So
       destPrice,
       suggest: suggest!,
       supplyAfter: supplyAfter!,
+      raw,
     });
   });
 
@@ -215,6 +216,7 @@ export function validateActualRows(rows: Record<string, unknown>[]): ValidationR
       skuName: nonEmptyString(raw['ชื่อสินค้า']) ?? skuCode!,
       weightKg: weightKg!,
       productGroup: productGroup!,
+      raw,
     });
   });
 

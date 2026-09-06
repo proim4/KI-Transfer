@@ -7,7 +7,64 @@ import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useRawActualRows, useRawPlanRows, type RawActualRow, type RawPlanRow } from '../hooks/useRawRows';
 import { sum } from '../lib/aggregate';
+import { ACTUAL_REQUIRED_COLUMNS, PLAN_REQUIRED_COLUMNS } from '../lib/excelParser';
 import type { ProductLine } from '../types/db';
+
+// Rows uploaded before `raw` captured the full original file still hold the
+// old reduced object (this app's own internal field names, camelCase) — a
+// week that hasn't been re-uploaded since would otherwise show every one of
+// these as a fake "extra" column duplicating the named column next to it.
+// Excluding them too means an un-re-uploaded week just shows no extra
+// columns (accurate: we don't have the rest of that file) instead of noise.
+const LEGACY_ACTUAL_RAW_KEYS = [
+  'originCode', 'originName', 'destCode', 'destName', 'transferDate', 'skuCode', 'skuName', 'weightKg', 'productGroup',
+] as const;
+const LEGACY_PLAN_RAW_KEYS = [
+  'sourceFile', 'productionDate', 'originCode', 'originName', 'destCode', 'destName', 'productGroup', 'originPrice', 'destPrice', 'suggest', 'supplyAfter',
+] as const;
+
+/**
+ * One column per header in the source Excel file that this app doesn't
+ * already parse into a named field — reusing whatever columns the upload
+ * happened to have (order of first appearance), so ข้อมูลดิบ shows the
+ * complete original row, not just the subset the tracking calc needs.
+ * `raw` is null for rows uploaded before this was captured.
+ */
+function extraRawColumns<T extends { raw: Record<string, unknown> | null }>(
+  rows: T[],
+  parsedColumns: readonly string[],
+): Column<T>[] {
+  const exclude = new Set<string>(parsedColumns);
+  const seen = new Set<string>();
+  const keys: string[] = [];
+  for (const row of rows) {
+    if (!row.raw) continue;
+    for (const key of Object.keys(row.raw)) {
+      if (exclude.has(key) || seen.has(key)) continue;
+      seen.add(key);
+      keys.push(key);
+    }
+  }
+  return keys.map((key) => {
+    const sample = rows.find((r) => r.raw && r.raw[key] !== null && r.raw[key] !== undefined)?.raw?.[key];
+    const isNumeric = typeof sample === 'number';
+    return {
+      key: `raw:${key}`,
+      label: key,
+      align: isNumeric ? 'right' : undefined,
+      sortValue: (r) => {
+        const v = r.raw?.[key];
+        if (typeof v === 'number') return v;
+        return v === null || v === undefined || v === '' ? null : String(v);
+      },
+      render: (r) => {
+        const v = r.raw?.[key];
+        if (v === null || v === undefined || v === '') return '';
+        return typeof v === 'number' ? v.toLocaleString('en-US') : String(v);
+      },
+    };
+  });
+}
 
 type Tab = 'actual' | 'plan';
 
@@ -89,6 +146,7 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
         sortValue: (r) => r.weight_kg,
         render: (r) => r.weight_kg.toLocaleString('en-US'),
       },
+      ...extraRawColumns(filteredActual, [...ACTUAL_REQUIRED_COLUMNS, ...LEGACY_ACTUAL_RAW_KEYS]),
     ],
     [filteredActual],
   );
@@ -145,6 +203,7 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
         sortValue: (r) => r.supply_after,
         render: (r) => r.supply_after.toLocaleString('en-US'),
       },
+      ...extraRawColumns(filteredPlan, [...PLAN_REQUIRED_COLUMNS, ...LEGACY_PLAN_RAW_KEYS]),
     ],
     [filteredPlan],
   );

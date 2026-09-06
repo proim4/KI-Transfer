@@ -18,6 +18,8 @@ export interface PlanRow {
   destPrice: number;
   suggest: number;
   supplyAfter: number;
+  /** The full original Excel row (every column, keyed by its source header), stored verbatim so ข้อมูลดิบ can show columns beyond the ones this app parses. */
+  raw: Record<string, unknown>;
 }
 
 export interface ActualRow {
@@ -30,4 +32,6 @@ export interface ActualRow {
   skuName: string;
   weightKg: number;
   productGroup: string;
+  /** The full original Excel row (every column, keyed by its source header), stored verbatim so ข้อมูลดิบ can show columns beyond the ones this app parses. */
+  raw: Record<string, unknown>;
 }

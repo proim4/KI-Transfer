@@ -16,6 +16,8 @@ export interface RawPlanRow {
   dest_price: number;
   suggest: number;
   supply_after: number;
+  /** The full original Excel row for this record, keyed by its source header — null for rows uploaded before this was captured. */
+  raw: Record<string, unknown> | null;
 }
 
 export interface RawActualRow {
@@ -29,6 +31,8 @@ export interface RawActualRow {
   sku_name: string;
   weight_kg: number;
   product_group: string;
+  /** The full original Excel row for this record, keyed by its source header — null for rows uploaded before this was captured. */
+  raw: Record<string, unknown> | null;
 }
 
 export function useRawPlanRows(weekId: string | null) {

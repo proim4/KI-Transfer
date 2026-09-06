@@ -42,7 +42,7 @@ function planRowToDb(weekId: string, row: ReturnType<typeof validatePlanRows>['r
     dest_price: row.destPrice,
     suggest: row.suggest,
     supply_after: row.supplyAfter,
-    raw: row,
+    raw: row.raw,
   };
 }
 
@@ -58,7 +58,7 @@ function actualRowToDb(weekId: string, row: ReturnType<typeof validateActualRows
     sku_name: row.skuName,
     weight_kg: row.weightKg,
     product_group: row.productGroup,
-    raw: row,
+    raw: row.raw,
   };
 }
 
