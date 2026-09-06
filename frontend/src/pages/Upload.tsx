@@ -56,28 +56,28 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
               {processMutation.isPending ? 'กำลังประมวลผล...' : 'ประมวลผล'}
             </button>
           )}
+          {weekId && processMutation.isSuccess && (
+            <div className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+              ประมวลผลสำเร็จ: {processMutation.data.trackingRowCount} แถว
+              {processMutation.data.unmatchedRowCount > 0 &&
+                ` (พบการโอนที่ไม่ตรงกับแผน ${processMutation.data.unmatchedRowCount} กลุ่ม)`}
+              <button
+                type="button"
+                onClick={() => navigate(productLine === 'pork' ? '/pork/dashboard' : '/dashboard')}
+                className="ml-2 font-medium underline"
+              >
+                ไปที่ Dashboard
+              </button>
+            </div>
+          )}
+          {weekId && processMutation.isError && (
+            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+              ประมวลผลไม่สำเร็จ: {(processMutation.error as Error).message}
+            </p>
+          )}
         </div>
         {weekId && !allValidated && (
           <p className="mt-2 text-xs text-gray-500">อัพโหลดและตรวจสอบให้ผ่านครบทั้ง {requiredFileCount} ไฟล์ก่อน</p>
-        )}
-        {weekId && processMutation.isSuccess && (
-          <div className="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700">
-            ประมวลผลสำเร็จ: {processMutation.data.trackingRowCount} แถว
-            {processMutation.data.unmatchedRowCount > 0 &&
-              ` (พบการโอนที่ไม่ตรงกับแผน ${processMutation.data.unmatchedRowCount} กลุ่ม)`}
-            <button
-              type="button"
-              onClick={() => navigate(productLine === 'pork' ? '/pork/dashboard' : '/dashboard')}
-              className="ml-2 font-medium underline"
-            >
-              ไปที่ Dashboard
-            </button>
-          </div>
-        )}
-        {weekId && processMutation.isError && (
-          <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
-            ประมวลผลไม่สำเร็จ: {(processMutation.error as Error).message}
-          </p>
         )}
       </div>
 
