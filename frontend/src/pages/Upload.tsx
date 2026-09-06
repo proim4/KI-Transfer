@@ -3,17 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import LastUpdatedLabel from '../components/LastUpdatedLabel';
 import MultiFileUploadZone from '../components/MultiFileUploadZone';
 import UploadDropzone from '../components/UploadDropzone';
-import UploadHistoryPanel from '../components/UploadHistoryPanel';
 import WeekSelector from '../components/WeekSelector';
 import { useProcessWeek } from '../hooks/useProcessWeek';
+import { useUploadFiles } from '../hooks/useUploadFiles';
 import { useUploads } from '../hooks/useUploads';
 import { lastUpdatedAt } from '../lib/lastUpdated';
 import type { ProductLine, UploadFileType } from '../types/db';
 
-const REQUIRED_FILE_TYPES: Record<ProductLine, UploadFileType[]> = {
-  chicken: ['actual_abs0000', 'plan_weekly_bsr030', 'plan_daily_bdr130'],
-  pork: ['actual_abs0000', 'plan_daily_bdr130'],
+// actual_abs0000/plan_weekly_bsr030 stay single-file (checked via `uploads`);
+// plan_daily_bdr130 moved to the multi-file model (checked via `upload_files`
+// — see REQUIRED_MULTI_FILE_TYPE below), so it's not in this list.
+const REQUIRED_SINGLE_FILE_TYPES: Record<ProductLine, UploadFileType[]> = {
+  chicken: ['actual_abs0000', 'plan_weekly_bsr030'],
+  pork: ['actual_abs0000'],
 };
+const REQUIRED_MULTI_FILE_COUNT = 1; // both product lines require plan_daily_bdr130
 
 interface UploadProps {
   productLine?: ProductLine;
@@ -22,11 +26,16 @@ interface UploadProps {
 export default function Upload({ productLine = 'chicken' }: UploadProps) {
   const [weekId, setWeekId] = useState<string | null>(null);
   const { data: uploads } = useUploads(weekId);
+  const { data: planDailyFiles } = useUploadFiles(weekId, 'plan_daily_bdr130');
   const navigate = useNavigate();
 
-  const requiredFileTypes = REQUIRED_FILE_TYPES[productLine];
-  const allValidated =
-    !!weekId && requiredFileTypes.every((t) => uploads?.find((u) => u.file_type === t)?.status === 'validated');
+  const requiredSingleFileTypes = REQUIRED_SINGLE_FILE_TYPES[productLine];
+  const singleFilesValidated = requiredSingleFileTypes.every(
+    (t) => uploads?.find((u) => u.file_type === t)?.status === 'validated',
+  );
+  const planDailyValidated = (planDailyFiles ?? []).some((f) => f.status === 'validated');
+  const requiredFileCount = requiredSingleFileTypes.length + REQUIRED_MULTI_FILE_COUNT;
+  const allValidated = !!weekId && singleFilesValidated && planDailyValidated;
 
   const processMutation = useProcessWeek();
 
@@ -42,6 +51,39 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
 
       {weekId && (
         <>
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <button
+              type="button"
+              disabled={!allValidated || processMutation.isPending}
+              onClick={() => processMutation.mutate(weekId)}
+              className="rounded-md bg-navy-800 px-4 py-2 text-sm font-medium text-white hover:bg-navy-900 disabled:opacity-40"
+            >
+              {processMutation.isPending ? 'กำลังประมวลผล...' : 'ประมวลผล'}
+            </button>
+            {!allValidated && (
+              <p className="mt-2 text-xs text-gray-500">อัพโหลดและตรวจสอบให้ผ่านครบทั้ง {requiredFileCount} ไฟล์ก่อน</p>
+            )}
+            {processMutation.isSuccess && (
+              <div className="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700">
+                ประมวลผลสำเร็จ: {processMutation.data.trackingRowCount} แถว
+                {processMutation.data.unmatchedRowCount > 0 &&
+                  ` (พบการโอนที่ไม่ตรงกับแผน ${processMutation.data.unmatchedRowCount} กลุ่ม)`}
+                <button
+                  type="button"
+                  onClick={() => navigate(productLine === 'pork' ? '/pork/dashboard' : '/dashboard')}
+                  className="ml-2 font-medium underline"
+                >
+                  ไปที่ Dashboard
+                </button>
+              </div>
+            )}
+            {processMutation.isError && (
+              <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
+                ประมวลผลไม่สำเร็จ: {(processMutation.error as Error).message}
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="rounded-lg border border-gray-200 bg-white p-4">
               <h2 className="text-base font-semibold text-gray-900">Upload Excel Files</h2>
@@ -61,11 +103,11 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
                     hint="ไฟล์ Export จาก Smart Sales: BSR030_BsTransferReport"
                   />
                 )}
-                <UploadDropzone
+                <MultiFileUploadZone
                   weekId={weekId}
                   fileType="plan_daily_bdr130"
                   label="แผนโอนรายวัน (BDR130 Daily)"
-                  hint="ไฟล์ Export จาก Smart Sales: BDR130_BsTransferReport"
+                  hint="ไฟล์ Export จาก Smart Sales: BDR130_BsTransferReport — เลือกได้หลายไฟล์ (ไฟล์ชื่อซ้ำจะแทนที่ไฟล์เดิม)"
                 />
               </div>
             </div>
@@ -98,41 +140,6 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
               </div>
             </div>
           </div>
-
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <button
-              type="button"
-              disabled={!allValidated || processMutation.isPending}
-              onClick={() => processMutation.mutate(weekId)}
-              className="rounded-md bg-navy-800 px-4 py-2 text-sm font-medium text-white hover:bg-navy-900 disabled:opacity-40"
-            >
-              {processMutation.isPending ? 'กำลังประมวลผล...' : 'ประมวลผล'}
-            </button>
-            {!allValidated && (
-              <p className="mt-2 text-xs text-gray-500">อัพโหลดและตรวจสอบให้ผ่านครบทั้ง {requiredFileTypes.length} ไฟล์ก่อน</p>
-            )}
-            {processMutation.isSuccess && (
-              <div className="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700">
-                ประมวลผลสำเร็จ: {processMutation.data.trackingRowCount} แถว
-                {processMutation.data.unmatchedRowCount > 0 &&
-                  ` (พบการโอนที่ไม่ตรงกับแผน ${processMutation.data.unmatchedRowCount} กลุ่ม)`}
-                <button
-                  type="button"
-                  onClick={() => navigate(productLine === 'pork' ? '/pork/dashboard' : '/dashboard')}
-                  className="ml-2 font-medium underline"
-                >
-                  ไปที่ Dashboard
-                </button>
-              </div>
-            )}
-            {processMutation.isError && (
-              <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
-                ประมวลผลไม่สำเร็จ: {(processMutation.error as Error).message}
-              </p>
-            )}
-          </div>
-
-          <UploadHistoryPanel productLine={productLine} />
         </>
       )}
     </div>

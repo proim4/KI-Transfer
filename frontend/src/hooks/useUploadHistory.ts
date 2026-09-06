@@ -25,27 +25,13 @@ export function useUploadHistory(weekId: string | null) {
   });
 }
 
-/** All upload_history rows across every week — feeds the collapsed by-week summary list on the Upload page. */
-export function useAllUploadHistory() {
-  return useQuery({
-    queryKey: ['upload-history-all'],
-    queryFn: async (): Promise<UploadHistoryRow[]> => {
-      const { data, error } = await supabase.from('upload_history').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-
 const SOURCE_FILE_BY_TYPE: Record<string, 'weekly' | 'daily'> = {
   plan_weekly_bsr030: 'weekly',
-  plan_daily_bdr130: 'daily',
 };
 
 const TABLE_BY_TYPE: Record<string, string> = {
   actual_abs0000: 'actual_rows',
   plan_weekly_bsr030: 'plan_rows',
-  plan_daily_bdr130: 'plan_rows',
 };
 
 /**

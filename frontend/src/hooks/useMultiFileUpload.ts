@@ -1,12 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   BIDDING_REQUIRED_COLUMNS,
+  PLAN_REQUIRED_COLUMNS,
   PRICING_REQUIRED_COLUMNS,
   SUPPLY_DAILY_REQUIRED_COLUMNS,
   missingColumns,
   parsePricingFilenameDate,
   readWorkbookFirstSheet,
   validateBiddingRows,
+  validatePlanRows,
   validatePricingRows,
   validateSupplyDailyRows,
 } from '../lib/excelParser';
@@ -33,12 +35,14 @@ const REQUIRED_COLUMNS: Record<MultiFileUploadType, readonly string[]> = {
   supply_daily_bsd010: SUPPLY_DAILY_REQUIRED_COLUMNS,
   pricing_daily: PRICING_REQUIRED_COLUMNS,
   bidding_tc05: BIDDING_REQUIRED_COLUMNS,
+  plan_daily_bdr130: PLAN_REQUIRED_COLUMNS,
 };
 
 const TABLE: Record<MultiFileUploadType, string> = {
   supply_daily_bsd010: 'supply_daily_rows',
   pricing_daily: 'pricing_rows',
   bidding_tc05: 'bidding_rows',
+  plan_daily_bdr130: 'plan_rows',
 };
 
 function supplyDailyRowToDb(weekId: string, uploadFileId: string, row: ReturnType<typeof validateSupplyDailyRows>['rows'][number]) {
@@ -82,6 +86,25 @@ function biddingRowToDb(weekId: string, uploadFileId: string, row: ReturnType<ty
   };
 }
 
+function planDailyRowToDb(weekId: string, uploadFileId: string, row: ReturnType<typeof validatePlanRows>['rows'][number]) {
+  return {
+    week_id: weekId,
+    upload_file_id: uploadFileId,
+    source_file: row.sourceFile,
+    production_date: row.productionDate,
+    origin_code: row.originCode,
+    origin_name: row.originName,
+    dest_code: row.destCode,
+    dest_name: row.destName,
+    product_group: row.productGroup,
+    origin_price: row.originPrice,
+    dest_price: row.destPrice,
+    suggest: row.suggest,
+    supply_after: row.supplyAfter,
+    raw: row.raw,
+  };
+}
+
 /** mas_sku_representative.product_code -> plan19, paginated (thousands of rows real-world). Rows with no plan19 can't resolve a product group, so they're left out rather than mapped to null. */
 async function fetchSkuRepresentativeMap(): Promise<Map<string, string>> {
   const rows = await fetchAllRows<{ product_code: string; plan19: string | null }>((from, to) =>
@@ -100,12 +123,13 @@ async function fetchProductMap(): Promise<Map<string, string>> {
 
 /**
  * Uploads one file into a category that allows several files per week
- * (Supply Daily / ราคารายวัน / Bidding — see migration 0012). Re-uploading a
- * file with the same name replaces just that file: its previous upload_files
- * row (and, via FK cascade, every row it contributed) is deleted first, then
- * a fresh row + fresh data rows are inserted — other files already in the
- * same category are untouched, unlike the single-file categories (ABS0000/
- * BSR030/BDR130) which replace the whole slot on every upload.
+ * (Supply Daily / ราคารายวัน / Bidding / BDR130 Daily plan — see migrations
+ * 0012/0013). Re-uploading a file with the same name replaces just that
+ * file: its previous upload_files row (and, via FK cascade, every row it
+ * contributed) is deleted first, then a fresh row + fresh data rows are
+ * inserted — other files already in the same category are untouched,
+ * unlike the single-file categories (ABS0000/BSR030 Weekly) which replace
+ * the whole slot on every upload.
  */
 /**
  * Note: this deliberately does NOT auto-trigger process-week on its own —
@@ -180,11 +204,17 @@ export function useMultiFileUpload() {
         dbRowsWithoutFileId = rows.map((r) => ({ toDb: (id: string) => pricingRowToDb(weekId, id, r) }));
         rowCount = rows.length;
         skippedCount = skipped;
-      } else {
+      } else if (fileType === 'bidding_tc05') {
         const productGroupByCode = await fetchProductMap();
         const { rows, errors, skippedCount: skipped } = validateBiddingRows(rawRows, productGroupByCode);
         if (errors.length > 0) return recordError(errors);
         dbRowsWithoutFileId = rows.map((r) => ({ toDb: (id: string) => biddingRowToDb(weekId, id, r) }));
+        rowCount = rows.length;
+        skippedCount = skipped;
+      } else {
+        const { rows, errors, skippedCount: skipped } = validatePlanRows(rawRows, 'daily');
+        if (errors.length > 0) return recordError(errors);
+        dbRowsWithoutFileId = rows.map((r) => ({ toDb: (id: string) => planDailyRowToDb(weekId, id, r) }));
         rowCount = rows.length;
         skippedCount = skipped;
       }

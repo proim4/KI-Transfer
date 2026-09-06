@@ -32,6 +32,19 @@ function hasAcceptedExtension(filename: string): boolean {
   return ACCEPTED_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
+const statusBadge: Record<string, { text: string; className: string }> = {
+  none: { text: 'ยังไม่อัพโหลด', className: 'bg-gray-100 text-gray-600' },
+  validating: { text: 'กำลังตรวจสอบ...', className: 'bg-amber-100 text-amber-700' },
+  validated: { text: '✓ สำเร็จ', className: 'bg-green-100 text-green-700' },
+  error: { text: 'พบข้อผิดพลาด', className: 'bg-red-100 text-red-700' },
+};
+
+/**
+ * Single-file upload widget for ABS0000/BSR030 (Weekly) — one current file
+ * per category, replaced on every upload. Laid out to match
+ * MultiFileUploadZone's header + list-row style (even though there's only
+ * ever at most one row here) so both Upload page boxes look consistent.
+ */
 export default function UploadDropzone({ weekId, fileType, label, hint }: UploadDropzoneProps) {
   const upload = useUploadFor(weekId, fileType);
   const mutation = useFileUpload();
@@ -72,19 +85,6 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
 
   const isBusy = mutation.isPending || upload?.status === 'validating';
   const status = isBusy ? 'validating' : (upload?.status ?? 'none');
-
-  const statusBadge: Record<string, { text: string; className: string }> = {
-    none: { text: 'ยังไม่อัพโหลด', className: 'bg-gray-100 text-gray-600' },
-    validating: { text: 'กำลังตรวจสอบ...', className: 'bg-amber-100 text-amber-700' },
-    validated: {
-      text:
-        upload && upload.skipped_count > 0
-          ? `✓ สำเร็จ (${upload.row_count} แถว, ข้าม ${upload.skipped_count} แถวที่ไม่เกี่ยวข้อง)`
-          : `✓ สำเร็จ (${upload?.row_count ?? 0} แถว)`,
-      className: 'bg-green-100 text-green-700',
-    },
-    error: { text: `พบข้อผิดพลาด (${upload?.error_report?.length ?? 0} รายการ)`, className: 'bg-red-100 text-red-700' },
-  };
   const badge = statusBadge[status];
 
   return (
@@ -99,16 +99,9 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium text-gray-900">{label}</h3>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}>{badge.text}</span>
-          </div>
+          <h3 className="font-medium text-gray-900">{label}</h3>
           <p className="text-xs text-gray-500">{hint}</p>
-          {upload?.original_filename && (
-            <p className="truncate text-xs text-gray-400">ไฟล์ล่าสุด: {upload.original_filename}</p>
-          )}
         </div>
-
         <div className="flex shrink-0 items-center gap-2">
           <input
             ref={inputRef}
@@ -125,37 +118,57 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
           >
             {upload ? 'อัพโหลดไฟล์ใหม่' : 'เลือกไฟล์'}
           </button>
-          {status === 'validated' && currentHistoryRow && (
-            <button
-              type="button"
-              onClick={() => setConfirmingDelete(true)}
-              title="ลบไฟล์นี้"
-              className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-red-600 hover:bg-red-50"
-            >
-              🗑
-            </button>
-          )}
-          {status === 'error' && upload?.error_report && upload.error_report.length > 0 && (
-            <button
-              type="button"
-              onClick={() => downloadErrors(`errors_${fileType}.csv`, upload.error_report!)}
-              className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm text-red-700 hover:bg-red-50"
-            >
-              ดาวน์โหลดรายการ Error
-            </button>
-          )}
         </div>
       </div>
 
       {dropError && <p className="mt-2 text-xs text-red-600">{dropError}</p>}
-      {status === 'error' && upload?.error_report && (
-        <ul className="mt-3 max-h-32 space-y-1 overflow-y-auto text-xs text-red-600">
-          {upload.error_report.slice(0, 20).map((e, i) => (
-            <li key={i}>
-              แถว {e.rowNumber}: {e.reason}
-            </li>
-          ))}
-          {upload.error_report.length > 20 && <li>...และอีก {upload.error_report.length - 20} รายการ</li>}
+
+      {!upload && !isBusy && <p className="mt-2 text-xs text-gray-400">ยังไม่มีไฟล์</p>}
+
+      {(upload || isBusy) && (
+        <ul className="mt-2 space-y-1">
+          <li className="rounded-md border border-gray-100 bg-gray-50 p-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`shrink-0 rounded-full px-2 py-0.5 font-medium ${badge.className}`}>{badge.text}</span>
+              <span className="min-w-0 flex-1 truncate text-gray-700" title={upload?.original_filename}>
+                {upload?.original_filename ?? ''}
+              </span>
+              {status === 'validated' && upload && (
+                <span className="shrink-0 text-gray-500">
+                  {upload.row_count} แถว{upload.skipped_count > 0 && ` (ข้าม ${upload.skipped_count} แถวที่ไม่เกี่ยวข้อง)`}
+                </span>
+              )}
+              {status === 'error' && upload?.error_report && upload.error_report.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => downloadErrors(`errors_${fileType}.csv`, upload.error_report!)}
+                  className="shrink-0 rounded-md border border-red-300 bg-white px-2 py-1 text-red-700 hover:bg-red-50"
+                >
+                  ดาวน์โหลด Error
+                </button>
+              )}
+              {status === 'validated' && currentHistoryRow && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(true)}
+                  title="ลบไฟล์นี้"
+                  className="shrink-0 rounded-md border border-gray-300 bg-white px-2 py-1 text-red-600 hover:bg-red-50"
+                >
+                  🗑
+                </button>
+              )}
+            </div>
+            {status === 'error' && upload?.error_report && (
+              <ul className="mt-1 max-h-24 space-y-0.5 overflow-y-auto text-red-600">
+                {upload.error_report.slice(0, 10).map((e, i) => (
+                  <li key={i}>
+                    แถว {e.rowNumber}: {e.reason}
+                  </li>
+                ))}
+                {upload.error_report.length > 10 && <li>...และอีก {upload.error_report.length - 10} รายการ</li>}
+              </ul>
+            )}
+          </li>
         </ul>
       )}
 

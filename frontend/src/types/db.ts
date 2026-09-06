@@ -147,8 +147,8 @@ export interface UnmatchedActualRow {
 // Supply Daily filing tracker ("ติดตามการกรอก Supply Daily")
 // ---------------------------------------------------------------------------
 
-/** File-type discriminator for the 3 Supply Daily sources that support multiple files per week (one upload_files row per file — see migration 0012). */
-export type MultiFileUploadType = 'supply_daily_bsd010' | 'pricing_daily' | 'bidding_tc05';
+/** File-type discriminator for sources that support multiple files per week (one upload_files row per file — see migrations 0012/0013). */
+export type MultiFileUploadType = 'supply_daily_bsd010' | 'pricing_daily' | 'bidding_tc05' | 'plan_daily_bdr130';
 
 export interface UploadFileRow {
   id: string;

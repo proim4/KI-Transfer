@@ -1,4 +1,4 @@
-import type { UploadHistoryRow, WeekRow } from '../types/db';
+import type { UploadHistoryRow } from '../types/db';
 
 /** Next version number for a (week, file_type) slot given the versions already logged for it. */
 export function nextVersion(existingVersions: number[]): number {
@@ -16,51 +16,3 @@ export function isCurrentVersion(row: UploadHistoryRow, rowsForSameSlot: UploadH
   return row.version === maxVersion;
 }
 
-export interface WeekHistorySummary {
-  weekId: string;
-  weekLabel: string;
-  fileCount: number;
-  lastUpdated: string;
-}
-
-/**
- * Groups upload_history rows by week for the collapsed "ประวัติการอัปโหลด"
- * summary list — one line per week ("WK36 — 3 Files • Updated 13:25") instead
- * of a big always-open table. fileCount counts each slot's *current* file
- * only (not every historical attempt); lastUpdated is the most recent attempt
- * of any kind for that week. Sorted most-recently-updated first.
- */
-export function groupHistoryByWeek(rows: UploadHistoryRow[], weeks: WeekRow[]): WeekHistorySummary[] {
-  const weekLabelById = new Map(weeks.map((w) => [w.id, w.label]));
-  const byWeek = new Map<string, UploadHistoryRow[]>();
-  for (const row of rows) {
-    // rows is fetched globally across every product line, but weeks is
-    // already scoped to one — skip history for weeks outside that scope so
-    // e.g. the pork Upload page never shows chicken weeks' history.
-    if (!weekLabelById.has(row.week_id)) continue;
-    const bucket = byWeek.get(row.week_id) ?? [];
-    bucket.push(row);
-    byWeek.set(row.week_id, bucket);
-  }
-
-  const summaries: WeekHistorySummary[] = [];
-  for (const [weekId, weekRows] of byWeek) {
-    const fileTypes = [...new Set(weekRows.map((r) => r.file_type))];
-    const fileCount = fileTypes.filter((fileType) => {
-      const slotRows = weekRows.filter((r) => r.file_type === fileType);
-      const current = slotRows.find((r) => isCurrentVersion(r, slotRows));
-      return current?.status === 'validated';
-    }).length;
-    const lastUpdated = weekRows.map((r) => r.created_at).reduce((a, b) => (a > b ? a : b));
-    summaries.push({ weekId, weekLabel: weekLabelById.get(weekId) ?? weekId, fileCount, lastUpdated });
-  }
-
-  return summaries.sort((a, b) => (a.lastUpdated > b.lastUpdated ? -1 : 1));
-}
-
-export function formatFileSize(bytes: number | null): string {
-  if (bytes === null || bytes === undefined) return '-';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
