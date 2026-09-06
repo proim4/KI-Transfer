@@ -197,12 +197,11 @@ async function recomputeSupplyDaily(
   planRows: PlanRow[],
   actualRows: ActualRow[],
 ): Promise<number> {
-  const [supplyRowsRaw, pricingRowsRaw, biddingRowsRaw, uploadRow, zonesRaw, tollPairsRaw, specialSkusRaw, factoriesRaw] =
+  const [supplyRowsRaw, pricingRowsRaw, biddingRowsRaw, zonesRaw, tollPairsRaw, specialSkusRaw, factoriesRaw] =
     await Promise.all([
       fetchAllRows((from, to) => supabase.from('supply_daily_rows').select('*').eq('week_id', weekId).range(from, to)),
       fetchAllRows((from, to) => supabase.from('pricing_rows').select('*').eq('week_id', weekId).range(from, to)),
       fetchAllRows((from, to) => supabase.from('bidding_rows').select('*').eq('week_id', weekId).range(from, to)),
-      supabase.from('uploads').select('updated_at').eq('week_id', weekId).eq('file_type', 'supply_daily_bsd010').maybeSingle(),
       fetchAllRows((from, to) => supabase.from('mas_factory_zones').select('*').range(from, to)),
       fetchAllRows((from, to) => supabase.from('mas_toll_processing_pairs').select('*').range(from, to)),
       fetchAllRows((from, to) => supabase.from('mas_special_skus').select('*').range(from, to)),
@@ -260,11 +259,7 @@ async function recomputeSupplyDaily(
     vendorGroupByFactoryCode,
   };
 
-  const supplyUploadedAt = (uploadRow.data as { updated_at?: string } | null)?.updated_at;
-
-  const results = computeSupplyDailyResults(supplyRows, planRows, actualRows, pricingRows, biddingRows, masterData, {
-    supplyUploadedAt,
-  });
+  const results = computeSupplyDailyResults(supplyRows, planRows, actualRows, pricingRows, biddingRows, masterData);
 
   const resultRows = results.map((r) => ({
     week_id: weekId,
@@ -273,7 +268,6 @@ async function recomputeSupplyDaily(
     origin_name: r.originName,
     product_group: r.productGroup,
     filed: r.filed,
-    filed_on_time: r.filedOnTime,
     remaining_qty: r.remainingQty,
     plan_out: r.planOut,
     remaining_after_plan: r.remainingAfterPlan,

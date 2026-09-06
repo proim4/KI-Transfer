@@ -215,7 +215,6 @@ export interface SupplyDailyResultRow {
   product_group: string;
 
   filed: boolean;
-  filed_on_time: boolean;
 
   remaining_qty: number;
   plan_out: number;

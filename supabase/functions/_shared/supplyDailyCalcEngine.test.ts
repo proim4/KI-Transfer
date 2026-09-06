@@ -210,31 +210,6 @@ describe('computeSupplyDailyResults', () => {
     );
     expect(results).toHaveLength(1);
     expect(results[0].filed).toBe(false);
-    expect(results[0].filedOnTime).toBe(false);
-  });
-
-  it('marks filedOnTime only when the whole upload happened on the same day as the latest date it contains', () => {
-    const onTime = computeSupplyDailyResults(
-      [supplyRow({ productionDate: '2026-08-27' })],
-      [],
-      [],
-      [],
-      [],
-      masterData(),
-      { supplyUploadedAt: '2026-08-27T18:00:00Z' },
-    );
-    expect(onTime[0].filedOnTime).toBe(true);
-
-    const late = computeSupplyDailyResults(
-      [supplyRow({ productionDate: '2026-08-27' })],
-      [],
-      [],
-      [],
-      [],
-      masterData(),
-      { supplyUploadedAt: '2026-08-29T09:00:00Z' },
-    );
-    expect(late[0].filedOnTime).toBe(false);
   });
 
   it('reproduces "check ลงราคา": no supply left + tomorrow priced down by >=1 baht + already off-plan', () => {

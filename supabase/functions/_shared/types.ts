@@ -167,10 +167,8 @@ export interface SupplyDailyResult {
   originName: string;
   productGroup: string;
 
-  /** A supply_daily_rows entry exists for this exact key. */
+  /** A supply_daily_rows entry exists for this exact key, using the date as it appears in the uploaded BSD010 file. */
   filed: boolean;
-  /** Only meaningful when filed; see supplyDailyCalcEngine's on-time rule. */
-  filedOnTime: boolean;
 
   remainingQty: number;
   /** Sum of plan_rows.supplyAfter across every destination for this (date, origin, group). */

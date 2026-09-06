@@ -14,8 +14,6 @@ export interface SupplyDailyKpis {
   filedPct: number | null;
 
   filedRowCount: number;
-  onTimeRowCount: number;
-  onTimePct: number | null;
 
   totalSupplyQty: number;
   biddingRecordCount: number;
@@ -58,8 +56,6 @@ export function computeSupplyDailyKpis(rows: SupplyDailyResultRow[], totalFactor
     filedPct: pct(filedOrigins.size, totalFactories),
 
     filedRowCount: filedRows.length,
-    onTimeRowCount: filedRows.filter((r) => r.filed_on_time).length,
-    onTimePct: pct(filedRows.filter((r) => r.filed_on_time).length, filedRows.length),
 
     totalSupplyQty: sum(filedRows.map((r) => r.remaining_qty)),
     biddingRecordCount: biddingRows.length,
@@ -90,7 +86,6 @@ export type ExceptionKey =
   | 'supply_no_plan'
   | 'plan_no_actual'
   | 'off_plan'
-  | 'late_filing'
   | 'unresolved';
 
 export const EXCEPTION_LABELS: Record<ExceptionKey, string> = {
@@ -100,7 +95,6 @@ export const EXCEPTION_LABELS: Record<ExceptionKey, string> = {
   supply_no_plan: 'Supply แต่ไม่มีแผนโอน',
   plan_no_actual: 'แผนโอนแต่ไม่มีโอนจริง',
   off_plan: 'โอนนอกแผน',
-  late_filing: 'กรอก Supply ไม่ทันเวลา',
   unresolved: 'ไม่สามารถ Match ข้อมูลได้ (Master Data ไม่ครบ)',
 };
 
@@ -118,8 +112,6 @@ export function matchesException(row: SupplyDailyResultRow, key: ExceptionKey): 
       return row.plan_out > 0 && row.actual_out === 0;
     case 'off_plan':
       return row.is_off_plan;
-    case 'late_filing':
-      return row.filed && !row.filed_on_time;
     case 'unresolved':
       return row.origin_zone_unresolved || row.vendor_group_unresolved;
   }

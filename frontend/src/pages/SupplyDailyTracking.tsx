@@ -61,7 +61,6 @@ function statusLabel(r: SupplyDailyResultRow): string {
   const labels: string[] = [];
   if (r.origin_zone_unresolved || r.vendor_group_unresolved) labels.push('ไม่สามารถ Match ข้อมูลได้');
   if (!r.filed) labels.push('ไม่ได้กรอก');
-  else if (!r.filed_on_time) labels.push('กรอกไม่ทันเวลา');
   if (r.is_off_plan) labels.push('โอนนอกแผน');
   if (r.is_off_plan_off_zone > 0) labels.push('นอกแผนนอกโซน');
   if (r.is_priced_down_off_plan) labels.push('ลงราคาแล้วนอกแผน');
@@ -105,7 +104,7 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
         key: 'filed',
         label: 'กรอก Supply',
         sortValue: (r) => (r.filed ? 1 : 0),
-        render: (r) => (r.filed ? (r.filed_on_time ? '✓ ตรงเวลา' : '✓ ไม่ทันเวลา') : '✗ ไม่ได้กรอก'),
+        render: (r) => (r.filed ? '✓ กรอกแล้ว' : '✗ ไม่ได้กรอก'),
       },
       {
         key: 'remaining_qty',
@@ -179,7 +178,6 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
     { key: 'supply_no_plan', count: kpis.supplyNoPlanCount },
     { key: 'plan_no_actual', count: kpis.planNoActualCount },
     { key: 'off_plan', count: kpis.offPlanCount },
-    { key: 'late_filing', count: rows.filter((r) => matchesException(r, 'late_filing')).length },
     { key: 'unresolved', count: kpis.unresolvedCount },
   ];
 
@@ -198,15 +196,9 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
 
       {weekId && !isLoading && (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-4">
             <KpiCard label="จำนวนโรงงานทั้งหมด" value={String(kpis.totalFactories)} />
             <KpiCard label="โรงงานที่กรอก Supply" value={String(kpis.filedFactories)} sub={`${formatPct(kpis.filedPct)}`} />
-            <KpiCard
-              label="กรอกตรงเวลา"
-              value={String(kpis.onTimeRowCount)}
-              sub={`${formatPct(kpis.onTimePct)} ของที่กรอกแล้ว`}
-              tone={kpis.onTimePct !== null && kpis.onTimePct < 1 ? 'warn' : 'default'}
-            />
             <KpiCard
               label="โอนนอกแผน"
               value={String(kpis.offPlanCount)}
@@ -251,7 +243,7 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
 
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             <h2 className="mb-3 text-sm font-semibold text-gray-900">🚨 Exception</h2>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-8">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
               {exceptionCards.map(({ key, count }) => (
                 <button
                   key={key}

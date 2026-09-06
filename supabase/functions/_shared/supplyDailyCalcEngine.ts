@@ -185,20 +185,6 @@ function aggregateLowBidFlags(biddingRows: BiddingRow[]): Set<string> {
   return out;
 }
 
-export interface ComputeSupplyDailyOptions {
-  /**
-   * ISO datetime the current supply_daily_rows upload was ingested at (e.g.
-   * `uploads.updated_at`). Used only for the on-time-filing rule below — this
-   * is a new operational rule, not read from the Excel (BSD010 carries no
-   * per-row timestamp at all). A single upload covers many days at once (the
-   * whole week's combined BSD010 file, same "Folder.Files" pattern as
-   * BDR130/ABS0000), so "on time" is judged per *upload*, not per row: was
-   * this upload made on the same calendar day as the most recent date it
-   * actually contains? Every row from that same upload shares that verdict.
-   */
-  supplyUploadedAt?: string;
-}
-
 /**
  * Computes one SupplyDailyResult per (productionDate, originCode,
  * productGroup) key seen anywhere across supplyRows/planRows/actualRows —
@@ -207,10 +193,11 @@ export interface ComputeSupplyDailyOptions {
  * not silently dropped the way the source workbook's own pivot (which is
  * driven only by BSD010 rows) would.
  *
- * On-time filing rule (per product decision, not in the Excel): a key is
- * "filed on time" only if it was actually filed AND the whole
- * supply_daily_rows upload happened on the SAME calendar date as this row's
- * own production_date — an upload dated any later day counts as late.
+ * "filed" is purely existence-based, using the dates as they appear in the
+ * uploaded BSD010 file itself — there used to also be an "on time" verdict
+ * (upload timestamp vs. the file's own latest date), but that was an
+ * invented rule with no basis in the source Excel (BSD010 carries no
+ * per-row timestamp at all) and has been removed per product decision.
  */
 export function computeSupplyDailyResults(
   supplyRows: SupplyDailyRow[],
@@ -219,23 +206,11 @@ export function computeSupplyDailyResults(
   pricingRows: PricingRow[],
   biddingRows: BiddingRow[],
   masterData: SupplyDailyMasterData,
-  options: ComputeSupplyDailyOptions = {},
 ): SupplyDailyResult[] {
   const planOutByKey = aggregatePlanOut(planRows);
   const actualOutByKey = aggregateActualOut(actualRows, masterData);
   const avgNetPriceByKey = averageNetPriceByKey(pricingRows);
   const lowBidKeys = aggregateLowBidFlags(biddingRows);
-
-  // "On time" is judged for the whole upload at once (see ComputeSupplyDailyOptions):
-  // was it made on the same calendar day as the most recent date it contains?
-  const latestFiledDate = supplyRows.reduce<string | null>(
-    (max, row) => (max === null || row.productionDate > max ? row.productionDate : max),
-    null,
-  );
-  const uploadWasOnTime =
-    options.supplyUploadedAt !== undefined && latestFiledDate !== null
-      ? options.supplyUploadedAt.slice(0, 10) === latestFiledDate
-      : false;
 
   interface RowInfo {
     productionDate: string;
@@ -309,7 +284,6 @@ export function computeSupplyDailyResults(
     const actualOut = actualOutByKey.get(key) ?? 0;
     const remainingAfterPlan = info.remainingQty - planOut;
     const isOffPlan = offPlanKeys.has(key);
-    const filedOnTime = info.filed && uploadWasOnTime;
 
     const { pricedDown, vendorGroupUnresolved } = computePricedDown(
       info.originCode,
@@ -326,7 +300,6 @@ export function computeSupplyDailyResults(
       originName: info.originName,
       productGroup: info.productGroup,
       filed: info.filed,
-      filedOnTime,
       remainingQty: info.remainingQty,
       planOut,
       remainingAfterPlan,
