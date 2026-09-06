@@ -136,8 +136,8 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
       {
         key: 'transfer_status',
         label: 'สถานะโอน',
-        sortValue: (r) => (r.is_off_plan ? 'นอกแผน' : 'ตามแผน'),
-        render: (r) => (r.is_off_plan ? 'นอกแผน' : 'ตามแผน'),
+        sortValue: (r) => (r.is_off_plan ? 'โอนนอกแผน' : ''),
+        render: (r) => (r.is_off_plan ? 'โอนนอกแผน' : '-'),
       },
       {
         key: 'exception_status',
