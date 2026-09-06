@@ -46,7 +46,7 @@ export interface Column<T> {
   render: (row: T) => ReactNode;
 }
 
-const PIN_CLASS = 'sticky z-10 bg-[inherit]';
+const PIN_CLASS = 'sticky z-10';
 const TOTAL_TONE_CLASS: Record<'good' | 'bad', string> = { good: 'text-green-700', bad: 'text-red-700' };
 
 interface SortableTableProps<T> {
@@ -294,20 +294,16 @@ export default function SortableTable<T>({
             )}
             {virtualRows.map((virtualRow) => {
               const row = sorted[virtualRow.index];
+              const isTintRow = virtualRow.index % 2 === 1;
               return (
-                <tr
-                  key={rowKey(row)}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  className={`hover:bg-blue-50 ${virtualRow.index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
-                >
+                <tr key={rowKey(row)} data-index={virtualRow.index} ref={virtualizer.measureElement} className="group">
                   {visibleColumns.map((column) => (
                     <td
                       key={column.key}
                       style={column.pin ? { left: pinnedLeft[column.key] } : undefined}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 ${
-                        column.align === 'right' ? 'text-right' : ''
-                      } ${column.pin ? PIN_CLASS : ''}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-1 group-hover:bg-blue-50 ${
+                        isTintRow ? (column.group ? column.group.totalsTintClassName : 'bg-gray-50') : 'bg-white'
+                      } ${column.align === 'right' ? 'text-right' : ''} ${column.pin ? PIN_CLASS : ''}`}
                     >
                       {column.render(row)}
                     </td>

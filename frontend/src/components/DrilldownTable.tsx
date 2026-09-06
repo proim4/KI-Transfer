@@ -59,7 +59,15 @@ function sortValue(row: TrackingResultRow, key: SortKey): string | number | null
   return key === 'status' ? row.total_pct : row[key];
 }
 
-const PIN_CLASS = 'sticky z-10 bg-[inherit]';
+const PIN_CLASS = 'sticky z-10';
+
+const GROUP_BY_KEY: Record<SortKey, ColumnGroup> = Object.fromEntries(
+  COLUMNS.map((c) => [c.key, c.group]),
+) as Record<SortKey, ColumnGroup>;
+
+function rowBg(key: SortKey, isTintRow: boolean): string {
+  return isTintRow ? GROUP_BY_KEY[key].totalsTintClassName : 'bg-white';
+}
 
 function compareValues(a: string | number | null, b: string | number | null): number {
   if (typeof a === 'string' || typeof b === 'string') {
@@ -309,16 +317,17 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
           </tbody>
           {virtualRows.map((virtualRow) => {
             const r = sorted[virtualRow.index];
+            const isTintRow = virtualRow.index % 2 === 1;
             return (
               <tbody key={r.id} data-index={virtualRow.index} ref={virtualizer.measureElement}>
                 <tr
                   onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
-                  className={`cursor-pointer border-b border-gray-100 hover:bg-blue-50 ${virtualRow.index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
+                  className="group cursor-pointer border-b border-gray-100"
                 >
                   {isVisible('production_date') && (
                     <td
                       style={{ left: pinnedLeft.production_date }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 group-hover:bg-blue-50 ${rowBg('production_date', isTintRow)} ${PIN_CLASS}`}
                     >
                       {r.production_date}
                     </td>
@@ -326,7 +335,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('status') && (
                     <td
                       style={{ left: pinnedLeft.status }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 group-hover:bg-blue-50 ${rowBg('status', isTintRow)} ${PIN_CLASS}`}
                     >
                       {thresholds && <StatusBadge pct={r.total_pct} thresholds={thresholds} />}
                     </td>
@@ -334,7 +343,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('origin_code') && (
                     <td
                       style={{ left: pinnedLeft.origin_code }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 group-hover:bg-blue-50 ${rowBg('origin_code', isTintRow)} ${PIN_CLASS}`}
                     >
                       {r.origin_code}
                     </td>
@@ -342,7 +351,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('origin_name') && (
                     <td
                       style={{ left: pinnedLeft.origin_name }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 group-hover:bg-blue-50 ${rowBg('origin_name', isTintRow)} ${PIN_CLASS}`}
                     >
                       {r.origin_name}
                     </td>
@@ -350,7 +359,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('dest_code') && (
                     <td
                       style={{ left: pinnedLeft.dest_code }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 group-hover:bg-blue-50 ${rowBg('dest_code', isTintRow)} ${PIN_CLASS}`}
                     >
                       {r.dest_code}
                     </td>
@@ -358,7 +367,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('dest_name') && (
                     <td
                       style={{ left: pinnedLeft.dest_name }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 group-hover:bg-blue-50 ${rowBg('dest_name', isTintRow)} ${PIN_CLASS}`}
                     >
                       {r.dest_name}
                     </td>
@@ -366,34 +375,34 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                   {isVisible('product_group') && (
                     <td
                       style={{ left: pinnedLeft.product_group }}
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 ${PIN_CLASS}`}
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 group-hover:bg-blue-50 ${rowBg('product_group', isTintRow)} ${PIN_CLASS}`}
                     >
                       {r.product_group}
                     </td>
                   )}
                   {isVisible('plan_total') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right">
+                    <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right group-hover:bg-blue-50 ${rowBg('plan_total', isTintRow)}`}>
                       {formatKg(r.plan_total)}
                     </td>
                   )}
                   {isVisible('actual_total') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right">
+                    <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right group-hover:bg-blue-50 ${rowBg('actual_total', isTintRow)}`}>
                       {formatKg(r.actual_total)}
                     </td>
                   )}
                   {isVisible('total_pct') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right font-medium">
+                    <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right font-medium group-hover:bg-blue-50 ${rowBg('total_pct', isTintRow)}`}>
                       {thresholds ? <PctBar pct={r.total_pct} thresholds={thresholds} /> : formatPct(r.total_pct)}
                     </td>
                   )}
                   {isVisible('overage') && (
-                    <td className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right">
+                    <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right group-hover:bg-blue-50 ${rowBg('overage', isTintRow)}`}>
                       {formatKg(r.overage)}
                     </td>
                   )}
                   {isVisible('profit_lost') && (
                     <td
-                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right ${
+                      className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right group-hover:bg-blue-50 ${rowBg('profit_lost', isTintRow)} ${
                         r.profit_lost < 0 ? 'text-red-600' : ''
                       }`}
                     >
@@ -401,7 +410,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                     </td>
                   )}
                   {isVisible('remark') && (
-                    <td className="px-1 py-0.5">
+                    <td className={`px-1 py-0.5 group-hover:bg-blue-50 ${rowBg('remark', isTintRow)}`}>
                       <RemarkCell id={r.id} value={r.remark} />
                     </td>
                   )}
