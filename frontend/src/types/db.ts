@@ -38,7 +38,13 @@ export interface WeekRow {
   updated_at: string;
 }
 
-export type UploadFileType = 'actual_abs0000' | 'plan_weekly_bsr030' | 'plan_daily_bdr130';
+export type UploadFileType =
+  | 'actual_abs0000'
+  | 'plan_weekly_bsr030'
+  | 'plan_daily_bdr130'
+  | 'supply_daily_bsd010'
+  | 'pricing_daily'
+  | 'bidding_tc05';
 export type UploadStatus = 'uploaded' | 'validating' | 'validated' | 'error';
 
 export interface UploadErrorEntry {
@@ -135,4 +141,135 @@ export interface UnmatchedActualRow {
   product_group: string;
   total_weight_kg: number;
   created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Supply Daily filing tracker ("ติดตามการกรอก Supply Daily")
+// ---------------------------------------------------------------------------
+
+/** File-type discriminator for the 3 Supply Daily sources that support multiple files per week (one upload_files row per file — see migration 0012). */
+export type MultiFileUploadType = 'supply_daily_bsd010' | 'pricing_daily' | 'bidding_tc05';
+
+export interface UploadFileRow {
+  id: string;
+  week_id: string;
+  file_type: MultiFileUploadType;
+  original_filename: string;
+  file_size: number | null;
+  storage_path: string | null;
+  status: UploadStatus;
+  row_count: number;
+  skipped_count: number;
+  error_report: UploadErrorEntry[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupplyDailyRawRow {
+  id: number;
+  week_id: string;
+  upload_file_id: string | null;
+  production_date: string;
+  origin_code: string;
+  origin_name: string;
+  product_group: string;
+  product_group_custom: string;
+  remaining_qty: number;
+  raw: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface PricingRawRow {
+  id: number;
+  week_id: string;
+  upload_file_id: string | null;
+  price_date: string;
+  vendor_group: string;
+  product_group: string;
+  cost_z: number;
+  margin: number;
+  net_price: number;
+  raw: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface BiddingRawRow {
+  id: number;
+  week_id: string;
+  upload_file_id: string | null;
+  sales_date: string;
+  plant_code: string;
+  product_group: string;
+  allocate_sp_type: string;
+  is_low_bid: boolean;
+  raw: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface SupplyDailyResultRow {
+  id: number;
+  week_id: string;
+  production_date: string;
+  origin_code: string;
+  origin_name: string;
+  product_group: string;
+
+  filed: boolean;
+  filed_on_time: boolean;
+
+  remaining_qty: number;
+  plan_out: number;
+  remaining_after_plan: number;
+  actual_out: number;
+
+  is_off_plan: boolean;
+  is_off_plan_off_zone: number;
+  is_priced_down_off_plan: boolean;
+  is_low_bid_off_plan: boolean;
+
+  created_at: string;
+}
+
+export interface MasFactoryRow {
+  id: number;
+  plant_code: string;
+  warehouse_name: string;
+  class_price: string | null;
+  vendor_group: string | null;
+  class_price_ladder: string | null;
+  species: string | null;
+}
+
+export interface MasFactoryZoneRow {
+  plant_code: string;
+  warehouse_name: string;
+  zone: string;
+}
+
+export interface MasTollProcessingPairRow {
+  id: number;
+  origin_name: string;
+  dest_name: string;
+}
+
+export interface MasSpecialSkuRow {
+  sku_name: string;
+}
+
+export interface MasProductRow {
+  product_code: string;
+  product_name: string;
+  plan1: string | null;
+  plan7: string | null;
+  plan19: string | null;
+  plan19_custom: string | null;
+}
+
+export interface MasSkuRepresentativeRow {
+  product_code: string;
+  product_name: string;
+  plan1: string;
+  plan19: string;
+  p19_custom: string;
+  in_program: string;
 }

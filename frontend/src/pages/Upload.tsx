@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LastUpdatedLabel from '../components/LastUpdatedLabel';
+import MultiFileUploadZone from '../components/MultiFileUploadZone';
 import UploadDropzone from '../components/UploadDropzone';
 import UploadHistoryPanel from '../components/UploadHistoryPanel';
 import WeekSelector from '../components/WeekSelector';
@@ -30,7 +31,7 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
   const processMutation = useProcessWeek();
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div>
         <h1 className="mb-2 text-xl font-semibold text-gray-900">Upload Data</h1>
         <div className="flex flex-wrap items-center gap-3">
@@ -41,30 +42,60 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
 
       {weekId && (
         <>
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <h2 className="text-base font-semibold text-gray-900">Upload Excel Files</h2>
-            <p className="mb-3 text-sm text-gray-500">รองรับการอัปโหลดหลายไฟล์ — ลากไฟล์มาวางหรือกดเลือกไฟล์ทีละรายการ</p>
-            <div className="divide-y divide-gray-100">
-              <UploadDropzone
-                weekId={weekId}
-                fileType="actual_abs0000"
-                label="โอนจริง (ABS0000)"
-                hint="ไฟล์ Export จาก Smart Sales: ABS0000_StockTransfers"
-              />
-              {productLine === 'chicken' && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <h2 className="text-base font-semibold text-gray-900">Upload Excel Files</h2>
+              <p className="mb-3 text-sm text-gray-500">รองรับการอัปโหลดหลายไฟล์ — ลากไฟล์มาวางหรือกดเลือกไฟล์ทีละรายการ</p>
+              <div className="divide-y divide-gray-100">
                 <UploadDropzone
                   weekId={weekId}
-                  fileType="plan_weekly_bsr030"
-                  label="แผนโอนรายสัปดาห์ (BSR030 Weekly)"
-                  hint="ไฟล์ Export จาก Smart Sales: BSR030_BsTransferReport"
+                  fileType="actual_abs0000"
+                  label="โอนจริง (ABS0000)"
+                  hint="ไฟล์ Export จาก Smart Sales: ABS0000_StockTransfers"
                 />
-              )}
-              <UploadDropzone
-                weekId={weekId}
-                fileType="plan_daily_bdr130"
-                label="แผนโอนรายวัน (BDR130 Daily)"
-                hint="ไฟล์ Export จาก Smart Sales: BDR130_BsTransferReport"
-              />
+                {productLine === 'chicken' && (
+                  <UploadDropzone
+                    weekId={weekId}
+                    fileType="plan_weekly_bsr030"
+                    label="แผนโอนรายสัปดาห์ (BSR030 Weekly)"
+                    hint="ไฟล์ Export จาก Smart Sales: BSR030_BsTransferReport"
+                  />
+                )}
+                <UploadDropzone
+                  weekId={weekId}
+                  fileType="plan_daily_bdr130"
+                  label="แผนโอนรายวัน (BDR130 Daily)"
+                  hint="ไฟล์ Export จาก Smart Sales: BDR130_BsTransferReport"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <h2 className="text-base font-semibold text-gray-900">Upload — ติดตามการกรอก Supply Daily</h2>
+              <p className="mb-3 text-sm text-gray-500">
+                ไม่บังคับสำหรับการประมวลผลแผนโอน — ใช้เฉพาะ Tab &quot;ติดตามการกรอก Supply Daily&quot; — เลือกได้หลายไฟล์ต่อหัวข้อ
+                (ไฟล์ชื่อซ้ำจะแทนที่ไฟล์เดิม)
+              </p>
+              <div className="divide-y divide-gray-100">
+                <MultiFileUploadZone
+                  weekId={weekId}
+                  fileType="supply_daily_bsd010"
+                  label="กรอก Supply Daily (BSD010)"
+                  hint="ไฟล์ Export จาก Supply Planning: Actual Balance Supply Daily"
+                />
+                <MultiFileUploadZone
+                  weekId={weekId}
+                  fileType="pricing_daily"
+                  label="ราคารายวัน"
+                  hint="ไฟล์ต้องตั้งชื่อรูปแบบ ChickenW2_DD.MM.YYYY.xlsx (วันที่อ่านจากชื่อไฟล์)"
+                />
+                <MultiFileUploadZone
+                  weekId={weekId}
+                  fileType="bidding_tc05"
+                  label="รายการ Bidding (TC05)"
+                  hint="ไฟล์ Export จาก Supply Planning: Actual allocation"
+                />
+              </div>
             </div>
           </div>
 

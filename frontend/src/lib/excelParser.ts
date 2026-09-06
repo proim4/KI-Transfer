@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import type { UploadErrorEntry } from '../types/db';
-import type { ActualRow, PlanRow, SourceFile } from '../types/tracking';
+import type { ActualRow, BiddingRow, PlanRow, PricingRow, SourceFile, SupplyDailyRow } from '../types/tracking';
 
 export interface ParsedFile {
   headers: string[];
@@ -58,6 +58,33 @@ export function parseFlexibleDate(value: unknown): string | null {
   return null;
 }
 
+/**
+ * The daily pricing export carries no date column at all — the manual sheet
+ * requires the filename format `ChickenW2_DD.MM.YYYY.xlsx` (or
+ * `Chicken_DD.MM.YYYY`), so the date has to be parsed from the filename
+ * itself. Returns 'YYYY-MM-DD' or null if the filename doesn't contain a
+ * DD.MM.YYYY pattern.
+ */
+export function parsePricingFilenameDate(filename: string): string | null {
+  const match = /(\d{1,2})\.(\d{1,2})\.(\d{4})/.exec(filename);
+  if (!match) return null;
+  const [, d, m, y] = match;
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
+
+/**
+ * Product/SKU codes appear in two different shapes across these exports: the
+ * master-data sheets (Mas P19 Cus, Mas sku ตัวแทน) store them as bare numbers
+ * (e.g. `23056283`), while the Bidding/ABS0000 exports store the same code as
+ * an 18-digit zero-padded text string (e.g. `"000000000023056283"`, a SAP
+ * material-code convention). Strips leading zeros so both shapes join
+ * correctly against the master-data maps.
+ */
+export function normalizeProductCode(code: string): string {
+  const stripped = code.replace(/^0+/, '');
+  return stripped === '' ? '0' : stripped;
+}
+
 function parseNumber(value: unknown): number | null {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
   if (typeof value === 'string') {
@@ -105,6 +132,24 @@ export const ACTUAL_REQUIRED_COLUMNS = [
   'น้ำหนักสินค้า (KG)',
   'P19',
 ] as const;
+
+// BSD010 "Actual Balance Supply Daily" export has 34 columns; only the ones
+// the Supply Daily checks actually read are required here.
+export const SUPPLY_DAILY_REQUIRED_COLUMNS = [
+  'วันที่โอน',
+  'รหัสโรงงาน',
+  'โรงงาน',
+  'กลุ่มชิ้นส่วน',
+  'กลุ่มชิ้นส่วน(Custom)',
+  'Rev. ปริมาณของเหลือ',
+] as const;
+
+// Daily pricing export (ChickenW2_DD.MM.YYYY.xlsx) has 26 columns; the date
+// itself comes from the *filename*, not a column (see parsePricingFilenameDate).
+export const PRICING_REQUIRED_COLUMNS = ['VendorGroup', 'ProductCode', 'CostZ', 'Margin'] as const;
+
+// TC05 "Actual allocation" (Bidding) export.
+export const BIDDING_REQUIRED_COLUMNS = ['Sales date', 'Plant code', 'Product code', 'Allocate sp type'] as const;
 
 export function missingColumns(headers: string[], required: readonly string[]): string[] {
   const headerSet = new Set(headers);
@@ -216,6 +261,148 @@ export function validateActualRows(rows: Record<string, unknown>[]): ValidationR
       skuName: nonEmptyString(raw['ชื่อสินค้า']) ?? skuCode!,
       weightKg: weightKg!,
       productGroup: productGroup!,
+      raw,
+    });
+  });
+
+  return { rows: result, errors, skippedCount };
+}
+
+export function validateSupplyDailyRows(rows: Record<string, unknown>[]): ValidationResult<SupplyDailyRow> {
+  const result: SupplyDailyRow[] = [];
+  const errors: UploadErrorEntry[] = [];
+
+  rows.forEach((raw, index) => {
+    const rowNumber = index + 2;
+    const productionDate = parseFlexibleDate(raw['วันที่โอน']);
+    const originCode = nonEmptyString(raw['รหัสโรงงาน']);
+    const productGroup = nonEmptyString(raw['กลุ่มชิ้นส่วน']);
+    const remainingQty = parseNumber(raw['Rev. ปริมาณของเหลือ']);
+
+    const problems: string[] = [];
+    if (!productionDate) problems.push('วันที่โอนอ่านไม่ได้');
+    if (!originCode) problems.push('รหัสโรงงานว่างเปล่า');
+    if (!productGroup) problems.push('กลุ่มชิ้นส่วนว่างเปล่า');
+    if (remainingQty === null) problems.push('Rev. ปริมาณของเหลือ ไม่ใช่ตัวเลข');
+
+    if (problems.length > 0) {
+      errors.push({ rowNumber, reason: problems.join('; ') });
+      return;
+    }
+
+    result.push({
+      productionDate: productionDate!,
+      originCode: originCode!,
+      originName: nonEmptyString(raw['โรงงาน']) ?? originCode!,
+      productGroup: productGroup!,
+      productGroupCustom: nonEmptyString(raw['กลุ่มชิ้นส่วน(Custom)']) ?? '',
+      remainingQty: remainingQty!,
+      raw,
+    });
+  });
+
+  return { rows: result, errors, skippedCount: 0 };
+}
+
+/**
+ * @param priceDate parsed once from the filename by the caller (see
+ * parsePricingFilenameDate) — the file itself carries no date column.
+ * @param productGroupByCode SKU code -> P19 group, resolved from
+ * mas_sku_representative (fetched by the caller before validating).
+ */
+export function validatePricingRows(
+  rows: Record<string, unknown>[],
+  priceDate: string,
+  productGroupByCode: Map<string, string>,
+): ValidationResult<PricingRow> {
+  const result: PricingRow[] = [];
+  const errors: UploadErrorEntry[] = [];
+  let skippedCount = 0;
+
+  rows.forEach((raw, index) => {
+    const rowNumber = index + 2;
+    const vendorGroup = nonEmptyString(raw['VendorGroup']);
+    const productCode = nonEmptyString(raw['ProductCode']);
+    const costZ = parseNumber(raw['CostZ']);
+    const margin = parseNumber(raw['Margin']);
+
+    // A SKU not in mas_sku_representative can't be resolved to a P19 group —
+    // it simply never feeds the "check ลงราคา" comparison, same as an
+    // unresolvable SKU silently contributes nothing in the source workbook's
+    // own VLOOKUP-based join.
+    const productGroup = productCode ? productGroupByCode.get(normalizeProductCode(productCode)) : undefined;
+    if (!productGroup) {
+      skippedCount += 1;
+      return;
+    }
+
+    const problems: string[] = [];
+    if (!vendorGroup) problems.push('VendorGroup ว่างเปล่า');
+    if (costZ === null) problems.push('CostZ ไม่ใช่ตัวเลข');
+    if (margin === null) problems.push('Margin ไม่ใช่ตัวเลข');
+
+    if (problems.length > 0) {
+      errors.push({ rowNumber, reason: problems.join('; ') });
+      return;
+    }
+
+    result.push({
+      priceDate,
+      vendorGroup: vendorGroup!,
+      productGroup,
+      costZ: costZ!,
+      margin: margin!,
+      netPrice: costZ! + margin!,
+      raw,
+    });
+  });
+
+  return { rows: result, errors, skippedCount };
+}
+
+/**
+ * @param productGroupByCode Product code -> P19 group, resolved from
+ * mas_products (fetched by the caller before validating).
+ */
+export function validateBiddingRows(
+  rows: Record<string, unknown>[],
+  productGroupByCode: Map<string, string>,
+): ValidationResult<BiddingRow> {
+  const result: BiddingRow[] = [];
+  const errors: UploadErrorEntry[] = [];
+  let skippedCount = 0;
+
+  rows.forEach((raw, index) => {
+    const rowNumber = index + 2;
+    const salesDate = parseFlexibleDate(raw['Sales date']);
+    const plantCode = nonEmptyString(raw['Plant code']);
+    const productCode = nonEmptyString(raw['Product code']);
+    const allocateSpType = nonEmptyString(raw['Allocate sp type']) ?? '';
+
+    // Same silent-skip rationale as pricing rows: an unresolvable product
+    // code contributes nothing to any check, same as the workbook's own
+    // VLOOKUP against Mas P19 Cus.
+    const productGroup = productCode ? productGroupByCode.get(normalizeProductCode(productCode)) : undefined;
+    if (!productGroup) {
+      skippedCount += 1;
+      return;
+    }
+
+    const problems: string[] = [];
+    if (!salesDate) problems.push('Sales date อ่านไม่ได้');
+    if (!plantCode) problems.push('Plant code ว่างเปล่า');
+
+    if (problems.length > 0) {
+      errors.push({ rowNumber, reason: problems.join('; ') });
+      return;
+    }
+
+    result.push({
+      salesDate: salesDate!,
+      plantCode: plantCode!,
+      productGroup,
+      allocateSpType,
+      isLowBid: allocateSpType === 'PICKUP_LOW_BIDDING',
       raw,
     });
   });

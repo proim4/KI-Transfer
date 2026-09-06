@@ -42,6 +42,12 @@ const SOURCE_FILE_BY_TYPE: Record<string, 'weekly' | 'daily'> = {
   plan_daily_bdr130: 'daily',
 };
 
+const TABLE_BY_TYPE: Record<string, string> = {
+  actual_abs0000: 'actual_rows',
+  plan_weekly_bsr030: 'plan_rows',
+  plan_daily_bdr130: 'plan_rows',
+};
+
 /**
  * Deletes one upload_history row. If it's the current version for its slot,
  * this also clears that slot's live data (plan_rows/actual_rows), resets the
@@ -61,14 +67,12 @@ export function useDeleteUploadHistory(weekId: string) {
           await supabase.storage.from('transfer-uploads').remove([row.storage_path]);
         }
 
-        if (row.file_type === 'actual_abs0000') {
-          await supabase.from('actual_rows').delete().eq('week_id', weekId);
+        const table = TABLE_BY_TYPE[row.file_type];
+        const sourceFile = SOURCE_FILE_BY_TYPE[row.file_type];
+        if (sourceFile) {
+          await supabase.from(table).delete().eq('week_id', weekId).eq('source_file', sourceFile);
         } else {
-          await supabase
-            .from('plan_rows')
-            .delete()
-            .eq('week_id', weekId)
-            .eq('source_file', SOURCE_FILE_BY_TYPE[row.file_type]);
+          await supabase.from(table).delete().eq('week_id', weekId);
         }
 
         await supabase.from('uploads').delete().eq('week_id', weekId).eq('file_type', row.file_type);

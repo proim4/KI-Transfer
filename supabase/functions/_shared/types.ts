@@ -102,3 +102,89 @@ export interface UnmatchedActual {
   totalWeightKg: number;
   rows: ActualRow[];
 }
+
+// ---------------------------------------------------------------------------
+// Supply Daily filing tracker ("ติดตามการกรอก Supply Daily") — see
+// supplyDailyCalcEngine.ts for the check formulas, reverse-engineered from
+// Tracking_การกรอก Supply Daily_WK35.xlsx.
+// ---------------------------------------------------------------------------
+
+/** A single row from the BSD010 "Actual Balance Supply Daily" export. */
+export interface SupplyDailyRow {
+  productionDate: string; // ISO 'YYYY-MM-DD'
+  originCode: string;
+  originName: string;
+  /** กลุ่มชิ้นส่วน / P19 */
+  productGroup: string;
+  productGroupCustom: string;
+  /** BSD010 "Rev. ปริมาณของเหลือ" — remaining supply after every adjustment. */
+  remainingQty: number;
+}
+
+/** A single row from the daily pricing export (date is parsed from the filename, not a column). */
+export interface PricingRow {
+  priceDate: string; // ISO 'YYYY-MM-DD'
+  vendorGroup: string;
+  /** Resolved via ProductCode -> mas_sku_representative.plan19. */
+  productGroup: string;
+  costZ: number;
+  margin: number;
+  /** costZ + margin — the file has no literal "Net Price" column (see plan notes: this one formula is inferred, not read directly). */
+  netPrice: number;
+}
+
+/** A single row from the TC05 "Actual allocation" (Bidding) export. */
+export interface BiddingRow {
+  salesDate: string; // ISO 'YYYY-MM-DD'
+  plantCode: string;
+  /** Resolved via Product code -> mas_products.plan19. */
+  productGroup: string;
+  allocateSpType: string;
+  /** allocateSpType === 'PICKUP_LOW_BIDDING' */
+  isLowBid: boolean;
+}
+
+/** Static reference data seeded once from the workbook's Mas sheets (see migration 0011). */
+export interface SupplyDailyMasterData {
+  /** SKU *names* flagged as "SKU พิเศษ" (matched by name, not code — mirrors the Excel's own VLOOKUP). */
+  specialSkuNames: Set<string>;
+  /** Registered "ฝากตัดแต่ง" (toll-processing) pairs, keyed `${originName}::${destName}` (matched by factory name). */
+  tollProcessingPairs: Set<string>;
+  /** plant_code -> zone (ภาค). Deliberately partial — some factories have no zone mapping in the source workbook, same as Excel. */
+  factoryZoneByCode: Map<string, string>;
+  /** plant_code -> vendor_group, first-match-wins (mirrors XLOOKUP against a table with multiple rows per factory). */
+  vendorGroupByFactoryCode: Map<string, string>;
+}
+
+/**
+ * One computed row of the Supply Daily tracking sheet, keyed by
+ * (productionDate, originCode, productGroup) — BSD010 carries no destination
+ * dimension, so this is coarser than TrackingResult's key.
+ */
+export interface SupplyDailyResult {
+  productionDate: string;
+  originCode: string;
+  originName: string;
+  productGroup: string;
+
+  /** A supply_daily_rows entry exists for this exact key. */
+  filed: boolean;
+  /** Only meaningful when filed; see supplyDailyCalcEngine's on-time rule. */
+  filedOnTime: boolean;
+
+  remainingQty: number;
+  /** Sum of plan_rows.supplyAfter across every destination for this (date, origin, group). */
+  planOut: number;
+  remainingAfterPlan: number;
+  /** Sum of actual_rows.weightKg for this key, excluding special-SKU/toll-processing/zone-unresolved rows. */
+  actualOut: number;
+
+  /** actualOut - planOut > remainingAfterPlan + 100kg (and remainingQty >= 0). */
+  isOffPlan: boolean;
+  /** Count of individual actual-transfer rows that are off-plan AND cross a zone boundary. */
+  isOffPlanOffZone: number;
+  /** No supply left, a price cut is scheduled for tomorrow, and this key is off-plan. */
+  isPricedDownOffPlan: boolean;
+  /** No supply left and a Bidding record this key has Allocate sp type = PICKUP_LOW_BIDDING. */
+  isLowBidOffPlan: boolean;
+}

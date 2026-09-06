@@ -47,6 +47,9 @@ function MoreMenu({ showSettings }: { showSettings: boolean }) {
       <NavLink to="/tracking/total" className={moreLinkClass}>
         🐔 ติดตามโอนรวม
       </NavLink>
+      <NavLink to="/supply-daily" className={moreLinkClass}>
+        🐔 ติดตามการกรอก Supply Daily
+      </NavLink>
       {showSettings && (
         <NavLink to="/settings" className={moreLinkClass}>
           Settings
@@ -70,6 +73,9 @@ function PorkMoreMenu({ showSettings }: { showSettings: boolean }) {
       </NavLink>
       <NavLink to="/pork/raw-data" className={moreLinkClass}>
         🐷 ข้อมูลดิบ (หมู)
+      </NavLink>
+      <NavLink to="/pork/supply-daily" className={moreLinkClass}>
+        🐷 ติดตามการกรอก Supply Daily (หมู)
       </NavLink>
       {showSettings && (
         <NavLink to="/settings" className={moreLinkClass}>

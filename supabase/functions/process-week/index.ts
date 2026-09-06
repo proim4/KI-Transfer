@@ -9,8 +9,16 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { computeTracking } from '../_shared/calcEngine.ts';
+import { computeSupplyDailyResults } from '../_shared/supplyDailyCalcEngine.ts';
 import { fetchAllRows } from '../_shared/fetchAllRows.ts';
-import type { ActualRow, PlanRow } from '../_shared/types.ts';
+import type {
+  ActualRow,
+  BiddingRow,
+  PlanRow,
+  PricingRow,
+  SupplyDailyMasterData,
+  SupplyDailyRow,
+} from '../_shared/types.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -161,14 +169,127 @@ Deno.serve(async (req: Request) => {
     return jsonError(err instanceof Error ? err.message : String(err));
   }
 
+  // Supply Daily filing tracker: recomputed here too (not a separate button)
+  // since its own numbers depend on the exact same plan_rows/actual_rows that
+  // just became final above. Soft-fails: an issue here (e.g. master data not
+  // seeded yet on a fresh deploy) must never break the plan-vs-actual
+  // tracking this endpoint already exists for.
+  let supplyDaily: { resultCount: number } | { error: string };
+  try {
+    supplyDaily = { resultCount: await recomputeSupplyDaily(supabase, weekId, planRows, actualRows) };
+  } catch (err) {
+    supplyDaily = { error: err instanceof Error ? err.message : String(err) };
+  }
+
   return new Response(
     JSON.stringify({
       trackingRowCount: trackingRows.length,
       unmatchedRowCount: unmatchedRows.length,
+      supplyDaily,
     }),
     { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
   );
 });
+
+async function recomputeSupplyDaily(
+  supabase: ReturnType<typeof createClient>,
+  weekId: string,
+  planRows: PlanRow[],
+  actualRows: ActualRow[],
+): Promise<number> {
+  const [supplyRowsRaw, pricingRowsRaw, biddingRowsRaw, uploadRow, zonesRaw, tollPairsRaw, specialSkusRaw, factoriesRaw] =
+    await Promise.all([
+      fetchAllRows((from, to) => supabase.from('supply_daily_rows').select('*').eq('week_id', weekId).range(from, to)),
+      fetchAllRows((from, to) => supabase.from('pricing_rows').select('*').eq('week_id', weekId).range(from, to)),
+      fetchAllRows((from, to) => supabase.from('bidding_rows').select('*').eq('week_id', weekId).range(from, to)),
+      supabase.from('uploads').select('updated_at').eq('week_id', weekId).eq('file_type', 'supply_daily_bsd010').maybeSingle(),
+      fetchAllRows((from, to) => supabase.from('mas_factory_zones').select('*').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('mas_toll_processing_pairs').select('*').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('mas_special_skus').select('*').range(from, to)),
+      fetchAllRows((from, to) => supabase.from('mas_factories').select('*').order('id', { ascending: true }).range(from, to)),
+    ]);
+
+  const supplyRows: SupplyDailyRow[] = supplyRowsRaw.map((r: any) => ({
+    productionDate: toIsoDate(r.production_date),
+    originCode: r.origin_code,
+    originName: r.origin_name,
+    productGroup: r.product_group,
+    productGroupCustom: r.product_group_custom,
+    remainingQty: Number(r.remaining_qty),
+  }));
+
+  const pricingRows: PricingRow[] = pricingRowsRaw.map((r: any) => ({
+    priceDate: toIsoDate(r.price_date),
+    vendorGroup: r.vendor_group,
+    productGroup: r.product_group,
+    costZ: Number(r.cost_z),
+    margin: Number(r.margin),
+    netPrice: Number(r.net_price),
+  }));
+
+  const biddingRows: BiddingRow[] = biddingRowsRaw.map((r: any) => ({
+    salesDate: toIsoDate(r.sales_date),
+    plantCode: r.plant_code,
+    productGroup: r.product_group,
+    allocateSpType: r.allocate_sp_type,
+    isLowBid: Boolean(r.is_low_bid),
+  }));
+
+  const factoryZoneByCode = new Map<string, string>();
+  for (const r of zonesRaw as any[]) factoryZoneByCode.set(r.plant_code, r.zone);
+
+  // First-match-wins, mirroring XLOOKUP against a table with multiple rows
+  // per factory (see mas_factories' own comment). Some rows have no
+  // vendor_group at all (real, blank in the source sheet) — skipped so a
+  // later, populated row for the same factory can still win.
+  const vendorGroupByFactoryCode = new Map<string, string>();
+  for (const r of factoriesRaw as any[]) {
+    if (!r.vendor_group) continue;
+    if (!vendorGroupByFactoryCode.has(r.plant_code)) vendorGroupByFactoryCode.set(r.plant_code, r.vendor_group);
+  }
+
+  const tollProcessingPairs = new Set<string>();
+  for (const r of tollPairsRaw as any[]) tollProcessingPairs.add(`${r.origin_name}::${r.dest_name}`);
+
+  const specialSkuNames = new Set<string>((specialSkusRaw as any[]).map((r) => r.sku_name));
+
+  const masterData: SupplyDailyMasterData = {
+    specialSkuNames,
+    tollProcessingPairs,
+    factoryZoneByCode,
+    vendorGroupByFactoryCode,
+  };
+
+  const supplyUploadedAt = (uploadRow.data as { updated_at?: string } | null)?.updated_at;
+
+  const results = computeSupplyDailyResults(supplyRows, planRows, actualRows, pricingRows, biddingRows, masterData, {
+    supplyUploadedAt,
+  });
+
+  const resultRows = results.map((r) => ({
+    week_id: weekId,
+    production_date: r.productionDate,
+    origin_code: r.originCode,
+    origin_name: r.originName,
+    product_group: r.productGroup,
+    filed: r.filed,
+    filed_on_time: r.filedOnTime,
+    remaining_qty: r.remainingQty,
+    plan_out: r.planOut,
+    remaining_after_plan: r.remainingAfterPlan,
+    actual_out: r.actualOut,
+    is_off_plan: r.isOffPlan,
+    is_off_plan_off_zone: r.isOffPlanOffZone,
+    is_priced_down_off_plan: r.isPricedDownOffPlan,
+    is_low_bid_off_plan: r.isLowBidOffPlan,
+  }));
+
+  const { error: deleteError } = await supabase.from('supply_daily_results').delete().eq('week_id', weekId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  await insertInBatches(supabase, 'supply_daily_results', resultRows);
+  return resultRows.length;
+}
 
 async function insertInBatches(
   supabase: ReturnType<typeof createClient>,

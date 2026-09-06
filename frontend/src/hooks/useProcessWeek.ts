@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 export interface ProcessWeekResult {
   trackingRowCount: number;
   unmatchedRowCount: number;
+  supplyDaily?: { resultCount: number } | { error: string };
 }
 
 /** Invokes the `process-week` Edge Function, which idempotently recomputes tracking_results/unmatched_actual from whatever plan_rows/actual_rows currently exist for the week. Shared by the manual "ประมวลผล" button and the auto-recalculate-after-delete flow. */
