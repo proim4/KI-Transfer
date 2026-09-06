@@ -2,6 +2,7 @@ import { useRef, useState, type DragEvent } from 'react';
 import { useMultiFileUpload } from '../hooks/useMultiFileUpload';
 import { useProcessWeek } from '../hooks/useProcessWeek';
 import { useDeleteUploadFile, useUploadFiles } from '../hooks/useUploadFiles';
+import { supabase } from '../lib/supabase';
 import type { MultiFileUploadType, UploadFileRow } from '../types/db';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -18,6 +19,18 @@ function downloadErrors(filename: string, errors: UploadFileRow['error_report'])
   const body = errors.map((e) => `${e.rowNumber},"${e.reason.replace(/"/g, '""')}"`).join('\n');
   const blob = new Blob([`﻿${header}${body}`], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Downloads the original uploaded file back from Supabase Storage, exactly as it was submitted. */
+async function downloadOriginalFile(storagePath: string, filename: string) {
+  const { data, error } = await supabase.storage.from('transfer-uploads').download(storagePath);
+  if (error || !data) return;
+  const url = URL.createObjectURL(data);
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
@@ -153,6 +166,16 @@ export default function MultiFileUploadZone({ weekId, fileType, label, hint }: M
                       className="shrink-0 rounded-md border border-red-300 bg-white px-2 py-1 text-red-700 hover:bg-red-50"
                     >
                       ดาวน์โหลด Error
+                    </button>
+                  )}
+                  {row.storage_path && (
+                    <button
+                      type="button"
+                      onClick={() => downloadOriginalFile(row.storage_path!, row.original_filename)}
+                      title="ดาวน์โหลดไฟล์ต้นฉบับ"
+                      className="shrink-0 rounded-md border border-gray-300 bg-white px-2 py-1 text-gray-700 hover:bg-gray-50"
+                    >
+                      ⬇
                     </button>
                   )}
                   <button

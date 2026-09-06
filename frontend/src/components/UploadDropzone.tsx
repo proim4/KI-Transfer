@@ -2,6 +2,7 @@ import { useRef, useState, type DragEvent } from 'react';
 import { useFileUpload } from '../hooks/useFileUpload';
 import { useDeleteUploadHistory, useUploadHistory } from '../hooks/useUploadHistory';
 import { useUploadFor } from '../hooks/useUploads';
+import { supabase } from '../lib/supabase';
 import { isCurrentVersion } from '../lib/uploadHistory';
 import type { UploadErrorEntry, UploadFileType } from '../types/db';
 import ConfirmDialog from './ConfirmDialog';
@@ -18,6 +19,18 @@ function downloadErrors(filename: string, errors: UploadErrorEntry[]) {
   const body = errors.map((e) => `${e.rowNumber},"${e.reason.replace(/"/g, '""')}"`).join('\n');
   const blob = new Blob([`﻿${header}${body}`], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Downloads the original uploaded file back from Supabase Storage, exactly as it was submitted. */
+async function downloadOriginalFile(storagePath: string, filename: string) {
+  const { data, error } = await supabase.storage.from('transfer-uploads').download(storagePath);
+  if (error || !data) return;
+  const url = URL.createObjectURL(data);
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
@@ -145,6 +158,16 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
                   className="shrink-0 rounded-md border border-red-300 bg-white px-2 py-1 text-red-700 hover:bg-red-50"
                 >
                   ดาวน์โหลด Error
+                </button>
+              )}
+              {upload?.storage_path && (
+                <button
+                  type="button"
+                  onClick={() => downloadOriginalFile(upload.storage_path!, upload.original_filename)}
+                  title="ดาวน์โหลดไฟล์ต้นฉบับ"
+                  className="shrink-0 rounded-md border border-gray-300 bg-white px-2 py-1 text-gray-700 hover:bg-gray-50"
+                >
+                  ⬇
                 </button>
               )}
               {status === 'validated' && currentHistoryRow && (
