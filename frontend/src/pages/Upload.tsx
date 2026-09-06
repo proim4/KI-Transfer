@@ -46,12 +46,7 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
         <div className="flex flex-wrap items-center gap-3">
           <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} allowCreate />
           <LastUpdatedLabel at={lastUpdatedAt(uploads)} />
-        </div>
-      </div>
-
-      {weekId && (
-        <>
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
+          {weekId && (
             <button
               type="button"
               disabled={!allValidated || processMutation.isPending}
@@ -60,30 +55,34 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
             >
               {processMutation.isPending ? 'กำลังประมวลผล...' : 'ประมวลผล'}
             </button>
-            {!allValidated && (
-              <p className="mt-2 text-xs text-gray-500">อัพโหลดและตรวจสอบให้ผ่านครบทั้ง {requiredFileCount} ไฟล์ก่อน</p>
-            )}
-            {processMutation.isSuccess && (
-              <div className="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700">
-                ประมวลผลสำเร็จ: {processMutation.data.trackingRowCount} แถว
-                {processMutation.data.unmatchedRowCount > 0 &&
-                  ` (พบการโอนที่ไม่ตรงกับแผน ${processMutation.data.unmatchedRowCount} กลุ่ม)`}
-                <button
-                  type="button"
-                  onClick={() => navigate(productLine === 'pork' ? '/pork/dashboard' : '/dashboard')}
-                  className="ml-2 font-medium underline"
-                >
-                  ไปที่ Dashboard
-                </button>
-              </div>
-            )}
-            {processMutation.isError && (
-              <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
-                ประมวลผลไม่สำเร็จ: {(processMutation.error as Error).message}
-              </p>
-            )}
+          )}
+        </div>
+        {weekId && !allValidated && (
+          <p className="mt-2 text-xs text-gray-500">อัพโหลดและตรวจสอบให้ผ่านครบทั้ง {requiredFileCount} ไฟล์ก่อน</p>
+        )}
+        {weekId && processMutation.isSuccess && (
+          <div className="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700">
+            ประมวลผลสำเร็จ: {processMutation.data.trackingRowCount} แถว
+            {processMutation.data.unmatchedRowCount > 0 &&
+              ` (พบการโอนที่ไม่ตรงกับแผน ${processMutation.data.unmatchedRowCount} กลุ่ม)`}
+            <button
+              type="button"
+              onClick={() => navigate(productLine === 'pork' ? '/pork/dashboard' : '/dashboard')}
+              className="ml-2 font-medium underline"
+            >
+              ไปที่ Dashboard
+            </button>
           </div>
+        )}
+        {weekId && processMutation.isError && (
+          <p className="mt-3 rounded-md bg-red-50 p-3 text-sm text-red-700">
+            ประมวลผลไม่สำเร็จ: {(processMutation.error as Error).message}
+          </p>
+        )}
+      </div>
 
+      {weekId && (
+        <>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="rounded-lg border border-gray-200 bg-white p-4">
               <h2 className="text-base font-semibold text-gray-900">Upload Excel Files</h2>
