@@ -41,14 +41,22 @@ function addDaysIso(iso: string, days: number): string {
 
 /**
  * "Sum of แผนโอนออก" — sums plan_rows.supplyAfter across every destination
- * (and both weekly/daily source files) for each (productionDate, originCode,
- * productGroup). This is a coarser re-aggregation of the exact same
- * plan_rows the existing "ติดตามแผนโอน" tab already populates — BSD010 (and
- * therefore this whole tracking sheet) has no destination-factory dimension.
+ * for each (productionDate, originCode, productGroup). This is a coarser
+ * re-aggregation of the exact same plan_rows the existing "ติดตามแผนโอน" tab
+ * already populates — BSD010 (and therefore this whole tracking sheet) has
+ * no destination-factory dimension.
+ *
+ * Daily plan (BDR130) only — the source workbook's own Power Query
+ * connections (connections.xml) has a "BDR130" query feeding this figure but
+ * no "BSR030" (weekly) query anywhere in the workbook at all, confirmed by
+ * comparing computed results against the real WK35 workbook: including
+ * weekly-sourced plan_rows here overcounted "แผนโอนออก" by exactly the
+ * weekly contribution wherever a route also had a weekly plan.
  */
 export function aggregatePlanOut(planRows: PlanRow[]): Map<string, number> {
   const out = new Map<string, number>();
   for (const row of planRows) {
+    if (row.sourceFile !== 'daily') continue;
     const key = keyOf(row.productionDate, row.originCode, row.productGroup);
     out.set(key, (out.get(key) ?? 0) + row.supplyAfter);
   }
@@ -237,13 +245,20 @@ export function computeSupplyDailyResults(
   }
   const rows = new Map<string, RowInfo>();
   for (const row of supplyRows) {
+    // Summed, not overwritten: BSD010 can carry more than one raw row for
+    // the same (date, origin, productGroup) key (e.g. overlapping daily
+    // export files), and the workbook's own pivot field for this ("ปริมาณ
+    // ของเหลือ") is itself a SUM aggregation — taking only the last row seen
+    // silently halved this figure against real WK35 data wherever a key had
+    // two contributing rows.
     const key = keyOf(row.productionDate, row.originCode, row.productGroup);
+    const existing = rows.get(key);
     rows.set(key, {
       productionDate: row.productionDate,
       originCode: row.originCode,
       originName: row.originName,
       productGroup: row.productGroup,
-      remainingQty: row.remainingQty,
+      remainingQty: (existing?.filed ? existing.remainingQty : 0) + row.remainingQty,
       filed: true,
     });
   }

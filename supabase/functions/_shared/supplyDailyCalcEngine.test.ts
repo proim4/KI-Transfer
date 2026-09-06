@@ -69,10 +69,20 @@ describe('aggregatePlanOut', () => {
     const rows = [
       planRow({ destCode: 'OPRCD0007', supplyAfter: 300 }),
       planRow({ destCode: 'OPRCDNE20', supplyAfter: 200 }),
-      planRow({ sourceFile: 'weekly', destCode: 'OPRCD0011', supplyAfter: 100 }),
     ];
     const result = aggregatePlanOut(rows);
-    expect(result.get('2026-08-27|OPRCDS111|BBไก่')).toBe(600);
+    expect(result.get('2026-08-27|OPRCDS111|BBไก่')).toBe(500);
+  });
+
+  it('excludes weekly-sourced (BSR030) plan rows — the source workbook has no BSR030 query at all, only BDR130 (daily)', () => {
+    // Confirmed against real WK35 data: including weekly rows overcounted
+    // "แผนโอนออก" by exactly the weekly contribution.
+    const rows = [
+      planRow({ sourceFile: 'daily', destCode: 'OPRCD0007', supplyAfter: 300 }),
+      planRow({ sourceFile: 'weekly', destCode: 'OPRCD0011', supplyAfter: 9999 }),
+    ];
+    const result = aggregatePlanOut(rows);
+    expect(result.get('2026-08-27|OPRCDS111|BBไก่')).toBe(300);
   });
 });
 
@@ -169,6 +179,24 @@ describe('computeSupplyDailyResults', () => {
       masterData(),
     );
     expect(results[0].isOffPlan).toBe(false);
+  });
+
+  it('sums remainingQty across duplicate supply rows for the same key, rather than keeping only the last one seen', () => {
+    // Confirmed against real WK35 data: BSD010 can carry more than one raw
+    // row for the same (date, origin, productGroup) — the workbook's own
+    // pivot field for this ("ปริมาณของเหลือ") is itself a SUM, and taking
+    // only the last row silently halved this figure wherever a key had two
+    // contributing rows.
+    const results = computeSupplyDailyResults(
+      [supplyRow({ remainingQty: 400 }), supplyRow({ remainingQty: 600 })],
+      [],
+      [],
+      [],
+      [],
+      masterData(),
+    );
+    expect(results).toHaveLength(1);
+    expect(results[0].remainingQty).toBe(1000);
   });
 
   it('includes a key with a plan/actual but no filed supply row at all, marking filed=false', () => {
