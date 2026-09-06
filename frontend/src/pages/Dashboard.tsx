@@ -10,6 +10,7 @@ import { useTrackingResults, useUnmatchedActual } from '../hooks/useTrackingResu
 import { aggregateChannel, aggregateReject, dedupedActualTotal, sum } from '../lib/aggregate';
 import { exportWeekToExcel } from '../lib/exportExcel';
 import { formatDate, formatDateTime, formatTime } from '../lib/formatDateTime';
+import { lastUpdatedAt } from '../lib/lastUpdated';
 import { computeStatus } from '../lib/statusBadge';
 import type { ProductLine } from '../types/db';
 
@@ -49,10 +50,7 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
   const lossTotal = sum(rows.map((r) => Number(r.profit_lost)));
   const unmatchedTotal = sum((unmatched ?? []).map((u) => Number(u.total_weight_kg)));
 
-  const lastUpdatedAt = (uploads ?? [])
-    .map((u) => u.updated_at)
-    .sort()
-    .at(-1);
+  const updatedAt = lastUpdatedAt(uploads);
   const achievementStatus = thresholds && computeStatus(total.pct, thresholds);
   const achievementTone =
     achievementStatus?.color === 'green' ? 'good' : achievementStatus?.color === 'red' ? 'bad' : achievementStatus?.color === 'amber' ? 'warn' : 'default';
@@ -67,7 +65,7 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
           {week && (
             <p className="mt-1 text-sm text-gray-500">
               📅 {week.label}
-              {lastUpdatedAt && <> · อัปเดตล่าสุด {formatDateTime(lastUpdatedAt)}</>}
+              {updatedAt && <> · อัปเดตล่าสุด {formatDateTime(updatedAt)}</>}
               {uploads && (
                 <>
                   {' '}
@@ -113,8 +111,8 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
             <KpiCard
               size="hero"
               label="Last Update"
-              value={lastUpdatedAt ? formatTime(lastUpdatedAt) : '-'}
-              sub={lastUpdatedAt ? formatDate(lastUpdatedAt) : undefined}
+              value={updatedAt ? formatTime(updatedAt) : '-'}
+              sub={updatedAt ? formatDate(updatedAt) : undefined}
             />
           </div>
 

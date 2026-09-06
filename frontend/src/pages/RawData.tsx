@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import ClearFilterButton from '../components/ClearFilterButton';
 import { formatKg } from '../components/KpiCard';
+import LastUpdatedLabel from '../components/LastUpdatedLabel';
 import RouteFilterBar, { EMPTY_ROUTE_FILTER, matchesRouteFilter, type RouteFilterValue } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useRawActualRows, useRawPlanRows, type RawActualRow, type RawPlanRow } from '../hooks/useRawRows';
+import { useUploads } from '../hooks/useUploads';
 import { sum } from '../lib/aggregate';
 import { ACTUAL_REQUIRED_COLUMNS, PLAN_REQUIRED_COLUMNS } from '../lib/excelParser';
+import { lastUpdatedAt } from '../lib/lastUpdated';
 import type { ProductLine } from '../types/db';
 
 // Rows uploaded before `raw` captured the full original file still hold the
@@ -129,6 +132,7 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
   const [planFilter, setPlanFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [actualColumnFilters, setActualColumnFilters] = useState<Record<string, string>>({});
   const [planColumnFilters, setPlanColumnFilters] = useState<Record<string, string>>({});
+  const { data: uploads } = useUploads(weekId);
 
   // A filter set on one Week must not silently keep filtering a different
   // Week's data once selected — the header dropdown would even show
@@ -243,7 +247,10 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
     <div className="space-y-4">
       <div>
         <h1 className="mb-2 text-xl font-semibold text-gray-900">ข้อมูลดิบ</h1>
-        <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
+        <div className="flex flex-wrap items-center gap-3">
+          <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
+          <LastUpdatedLabel at={lastUpdatedAt(uploads)} />
+        </div>
       </div>
 
       {!weekId && <p className="text-sm text-gray-500">เลือก Week เพื่อดูข้อมูล</p>}

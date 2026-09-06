@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import ClearFilterButton from '../components/ClearFilterButton';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
+import LastUpdatedLabel from '../components/LastUpdatedLabel';
 import PctBar from '../components/PctBar';
 import RemarkCell from '../components/RemarkCell';
 import StatusBadge from '../components/StatusBadge';
@@ -9,9 +10,11 @@ import SortableTable, { type Column, type HeaderFilterConfig } from '../componen
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useTrackingResults } from '../hooks/useTrackingResults';
+import { useUploads } from '../hooks/useUploads';
 import { useWeeks } from '../hooks/useWeeks';
 import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
 import { exportWeekToExcel } from '../lib/exportExcel';
+import { lastUpdatedAt } from '../lib/lastUpdated';
 import { computeStatus } from '../lib/statusBadge';
 import {
   ACTUAL_GROUP,
@@ -86,6 +89,8 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
     setSearch('');
     setColumnFilters({});
   }, [weekId]);
+
+  const { data: uploads } = useUploads(weekId);
 
   const { data, isLoading } = useTrackingResults(weekId);
   const { data: weeks } = useWeeks(productLine);
@@ -362,29 +367,34 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
     [channel, planField, diffField, pctField, thresholds, totals, columnFilters, columnOptions],
   );
 
+  const weekSelector = (
+    <div className="flex flex-wrap items-center gap-3">
+      <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
+      <LastUpdatedLabel at={lastUpdatedAt(uploads)} />
+    </div>
+  );
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="mb-2 text-xl font-semibold text-gray-900">{title}</h1>
-          <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
-        </div>
-        {weekId && rows.length > 0 && (
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={exporting}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
-          >
-            {exporting ? 'กำลังสร้างไฟล์...' : 'Export Excel'}
-          </button>
-        )}
-      </div>
+      <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
 
-      {!weekId && <p className="text-sm text-gray-500">เลือก Week เพื่อดูข้อมูล</p>}
-      {weekId && isLoading && <p className="text-sm text-gray-500">กำลังโหลด...</p>}
+      {!weekId && (
+        <>
+          {weekSelector}
+          <p className="text-sm text-gray-500">เลือก Week เพื่อดูข้อมูล</p>
+        </>
+      )}
+      {weekId && isLoading && (
+        <>
+          {weekSelector}
+          <p className="text-sm text-gray-500">กำลังโหลด...</p>
+        </>
+      )}
       {weekId && !isLoading && rows.length === 0 && (
-        <p className="text-sm text-gray-500">Week นี้ยังไม่มีผลการประมวลผล — ไปที่หน้า Upload Data ก่อน</p>
+        <>
+          {weekSelector}
+          <p className="text-sm text-gray-500">Week นี้ยังไม่มีผลการประมวลผล — ไปที่หน้า Upload Data ก่อน</p>
+        </>
       )}
 
       {weekId && rows.length > 0 && (
@@ -396,7 +406,8 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
           storageKey={`columnWidths:tracking-${productLine}-${channel}`}
           columnVisibilityKey={`columnVisibility:tracking-${productLine}-${channel}`}
           filterBar={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {weekSelector}
               <input
                 type="text"
                 value={search}
@@ -408,13 +419,23 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
             </div>
           }
           headerExtra={
-            <ClearFilterButton
-              active={search !== '' || Object.values(columnFilters).some(Boolean)}
-              onClear={() => {
-                setSearch('');
-                setColumnFilters({});
-              }}
-            />
+            <>
+              <button
+                type="button"
+                onClick={handleExport}
+                disabled={exporting}
+                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+              >
+                {exporting ? 'กำลังสร้างไฟล์...' : 'Export Excel'}
+              </button>
+              <ClearFilterButton
+                active={search !== '' || Object.values(columnFilters).some(Boolean)}
+                onClear={() => {
+                  setSearch('');
+                  setColumnFilters({});
+                }}
+              />
+            </>
           }
         />
       )}

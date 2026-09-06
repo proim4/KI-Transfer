@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LastUpdatedLabel from '../components/LastUpdatedLabel';
 import UploadDropzone from '../components/UploadDropzone';
 import UploadHistoryPanel from '../components/UploadHistoryPanel';
 import WeekSelector from '../components/WeekSelector';
 import { useProcessWeek } from '../hooks/useProcessWeek';
 import { useUploads } from '../hooks/useUploads';
+import { lastUpdatedAt } from '../lib/lastUpdated';
 import type { ProductLine, UploadFileType } from '../types/db';
 
 const REQUIRED_FILE_TYPES: Record<ProductLine, UploadFileType[]> = {
@@ -31,7 +33,10 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
     <div className="max-w-3xl space-y-6">
       <div>
         <h1 className="mb-2 text-xl font-semibold text-gray-900">Upload Data</h1>
-        <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} allowCreate />
+        <div className="flex flex-wrap items-center gap-3">
+          <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} allowCreate />
+          <LastUpdatedLabel at={lastUpdatedAt(uploads)} />
+        </div>
       </div>
 
       {weekId && (
