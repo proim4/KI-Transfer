@@ -26,8 +26,8 @@ export default function KpiCard({ label, value, sub, tone = 'default', size = 'd
     <div
       className={
         isHero
-          ? 'rounded-lg border border-navy-100 bg-navy-50 p-5'
-          : 'rounded-lg border border-gray-200 bg-white p-4'
+          ? 'h-full rounded-xl border border-navy-100 bg-navy-50 p-5 shadow-sm transition-shadow hover:shadow-md'
+          : 'h-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md'
       }
     >
       <p
@@ -39,7 +39,9 @@ export default function KpiCard({ label, value, sub, tone = 'default', size = 'd
       >
         {label}
       </p>
-      <p className={`mt-1 font-semibold ${isHero ? `text-3xl ${heroToneClass[tone]}` : `text-2xl ${toneClass[tone]}`}`}>
+      <p
+        className={`mt-1 font-semibold tabular-nums ${isHero ? `text-3xl ${heroToneClass[tone]}` : `text-2xl ${toneClass[tone]}`}`}
+      >
         {value}
       </p>
       {sub && <p className={`mt-1 text-xs ${isHero ? 'text-navy-400' : 'text-gray-400'}`}>{sub}</p>}

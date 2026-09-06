@@ -6,7 +6,7 @@ import { useActualBreakdown } from '../hooks/useActualBreakdown';
 import { useStatusThresholds } from '../hooks/useAppSettings';
 import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
 import { computeStatus, type StatusThresholds } from '../lib/statusBadge';
-import { ACTUAL_GROUP, DIFF_GROUP, LOSS_GROUP, PCT_GROUP, PLAN_GROUP, REMARK_GROUP, ROUTE_GROUP } from '../lib/trackingColumnGroups';
+import { ACTUAL_GROUP, DIFF_GROUP, LOSS_GROUP, PCT_GROUP, PLAN_GROUP, PROFIT_GROUP, REMARK_GROUP, ROUTE_GROUP } from '../lib/trackingColumnGroups';
 import ClearFilterButton from './ClearFilterButton';
 import ColumnVisibilityMenu from './ColumnVisibilityMenu';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
@@ -20,6 +20,8 @@ import type { TrackingResultRow } from '../types/db';
 interface DrilldownTableProps {
   weekId: string;
   rows: TrackingResultRow[];
+  /** Heading shown on the same row as the search box / Clear Filter / คอลัม, instead of the caller stacking it above separately. */
+  title?: string;
 }
 
 type SortKey =
@@ -34,6 +36,7 @@ type SortKey =
   | 'actual_total'
   | 'total_pct'
   | 'overage'
+  | 'profit_realized'
   | 'profit_lost'
   | 'remark';
 type SortDirection = 'asc' | 'desc';
@@ -48,8 +51,9 @@ const COLUMNS: { key: SortKey; label: string; align?: 'right'; pin?: boolean; gr
   { key: 'product_group', label: 'กลุ่มสินค้า', pin: true, group: ROUTE_GROUP },
   { key: 'plan_total', label: 'แผน', align: 'right', group: PLAN_GROUP },
   { key: 'actual_total', label: 'จริง', align: 'right', group: ACTUAL_GROUP },
-  { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: PCT_GROUP },
   { key: 'overage', label: 'โอนเกินแผน', align: 'right', group: DIFF_GROUP },
+  { key: 'total_pct', label: '% เทียบแผน', align: 'right', group: PCT_GROUP },
+  { key: 'profit_realized', label: 'กำไรที่ได้', align: 'right', group: PROFIT_GROUP },
   { key: 'profit_lost', label: 'สูญเสีย', align: 'right', group: LOSS_GROUP },
   { key: 'remark', label: 'หมายเหตุ', group: REMARK_GROUP },
 ];
@@ -91,7 +95,7 @@ function filterValue(row: TrackingResultRow, key: SortKey, thresholds: StatusThr
   return sortValue(row, key);
 }
 
-export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
+export default function DrilldownTable({ weekId, rows, title }: DrilldownTableProps) {
   const thresholds = useStatusThresholds();
   const [search, setSearch] = useState('');
   const [columnFilters, setColumnFilters] = useState<Partial<Record<SortKey, string>>>({});
@@ -189,6 +193,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
       actual_total: { value: formatKg(dedupedActualTotal(filtered)) },
       total_pct: { value: formatPct(agg.pct) },
       overage: { value: formatKg(sum(filtered.map((r) => Number(r.overage)))) },
+      profit_realized: { value: formatBaht(sum(filtered.map((r) => Number(r.profit_realized)))), tone: 'good' },
       profit_lost: { value: formatBaht(lossSum), tone: lossSum < 0 ? 'bad' : undefined },
     };
   }, [filtered]);
@@ -215,6 +220,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-2">
+        {title && <h2 className="text-sm font-semibold text-gray-700">{title}</h2>}
         <input
           type="text"
           value={search}
@@ -235,7 +241,7 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
         </div>
       </div>
 
-      <div ref={scrollRef} className="max-h-[calc(100vh-600px)] overflow-auto rounded-lg border border-gray-200">
+      <div ref={scrollRef} className="max-h-[calc(100vh-380px)] overflow-auto rounded-lg border border-gray-200">
         <table className="text-left text-sm" style={{ tableLayout: 'fixed', width: totalWidth }}>
           <colgroup>
             {visibleColumns.map((c) => (
@@ -407,14 +413,19 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
                       {formatKg(r.actual_total)}
                     </td>
                   )}
+                  {isVisible('overage') && (
+                    <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right group-hover:bg-blue-50 ${rowBg('overage', isTintRow)}`}>
+                      {formatKg(r.overage)}
+                    </td>
+                  )}
                   {isVisible('total_pct') && (
                     <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right font-medium group-hover:bg-blue-50 ${rowBg('total_pct', isTintRow)}`}>
                       {thresholds ? <PctBar pct={r.total_pct} thresholds={thresholds} /> : formatPct(r.total_pct)}
                     </td>
                   )}
-                  {isVisible('overage') && (
-                    <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right group-hover:bg-blue-50 ${rowBg('overage', isTintRow)}`}>
-                      {formatKg(r.overage)}
+                  {isVisible('profit_realized') && (
+                    <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right group-hover:bg-blue-50 ${rowBg('profit_realized', isTintRow)}`}>
+                      {formatBaht(r.profit_realized)}
                     </td>
                   )}
                   {isVisible('profit_lost') && (
