@@ -187,4 +187,14 @@ export interface SupplyDailyResult {
   isPricedDownOffPlan: boolean;
   /** No supply left and a Bidding record this key has Allocate sp type = PICKUP_LOW_BIDDING. */
   isLowBidOffPlan: boolean;
+
+  /** A price cut of >=1 baht is scheduled for tomorrow for this key's vendor group/product group — the same price comparison as isPricedDownOffPlan, but WITHOUT the "no supply left" / "already off-plan" gates. Used for dashboard totals ("จำนวนรายการลงราคา"), not an exception flag on its own. */
+  isPricedDown: boolean;
+  /** A Bidding record this key has Allocate sp type = PICKUP_LOW_BIDDING — same as isLowBidOffPlan but WITHOUT the "no supply left" gate. Used for dashboard totals ("จำนวนรายการ Bidding"). */
+  isLowBid: boolean;
+
+  /** Data-quality: this key's origin factory has no entry in mas_factory_zones, so off-plan-off-zone / actual-out filtering could not be evaluated for it (silently excluded rather than a genuine "in zone"/"resolved" result). */
+  originZoneUnresolved: boolean;
+  /** Data-quality: this key's origin factory has no entry in mas_factories (vendor_group), so the "check ลงราคา" comparison could not run at all (isPricedDown/isPricedDownOffPlan are both false by default, not a genuine "no price cut"). */
+  vendorGroupUnresolved: boolean;
 }

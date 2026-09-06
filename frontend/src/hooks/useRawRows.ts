@@ -52,3 +52,62 @@ export function useRawActualRows(weekId: string | null) {
       fetchAllRows((from, to) => supabase.from('actual_rows').select('*').eq('week_id', weekId!).range(from, to)),
   });
 }
+
+export interface RawSupplyDailyRow {
+  id: number;
+  production_date: string;
+  origin_code: string;
+  origin_name: string;
+  product_group: string;
+  product_group_custom: string;
+  remaining_qty: number;
+  raw: Record<string, unknown> | null;
+}
+
+export interface RawPricingRow {
+  id: number;
+  price_date: string;
+  vendor_group: string;
+  product_group: string;
+  cost_z: number;
+  margin: number;
+  net_price: number;
+  raw: Record<string, unknown> | null;
+}
+
+export interface RawBiddingRow {
+  id: number;
+  sales_date: string;
+  plant_code: string;
+  product_group: string;
+  allocate_sp_type: string;
+  is_low_bid: boolean;
+  raw: Record<string, unknown> | null;
+}
+
+export function useRawSupplyDailyRows(weekId: string | null) {
+  return useQuery({
+    queryKey: ['raw-supply-daily-rows', weekId],
+    enabled: !!weekId,
+    queryFn: (): Promise<RawSupplyDailyRow[]> =>
+      fetchAllRows((from, to) => supabase.from('supply_daily_rows').select('*').eq('week_id', weekId!).range(from, to)),
+  });
+}
+
+export function useRawPricingRows(weekId: string | null) {
+  return useQuery({
+    queryKey: ['raw-pricing-rows', weekId],
+    enabled: !!weekId,
+    queryFn: (): Promise<RawPricingRow[]> =>
+      fetchAllRows((from, to) => supabase.from('pricing_rows').select('*').eq('week_id', weekId!).range(from, to)),
+  });
+}
+
+export function useRawBiddingRows(weekId: string | null) {
+  return useQuery({
+    queryKey: ['raw-bidding-rows', weekId],
+    enabled: !!weekId,
+    queryFn: (): Promise<RawBiddingRow[]> =>
+      fetchAllRows((from, to) => supabase.from('bidding_rows').select('*').eq('week_id', weekId!).range(from, to)),
+  });
+}

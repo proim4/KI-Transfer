@@ -299,4 +299,35 @@ describe('computeSupplyDailyResults', () => {
     );
     expect(results[0].isLowBidOffPlan).toBe(false);
   });
+
+  it('exposes isPricedDown/isLowBid as the raw (ungated) conditions, for dashboard totals independent of the off-plan exception', () => {
+    const pricing: PricingRow[] = [
+      { priceDate: '2026-08-27', vendorGroup: 'SOT_ไก่_1', productGroup: 'BBไก่', costZ: 15, margin: 5, netPrice: 20 },
+      { priceDate: '2026-08-28', vendorGroup: 'SOT_ไก่_1', productGroup: 'BBไก่', costZ: 13, margin: 5, netPrice: 18 },
+    ];
+    const bidding: BiddingRow[] = [
+      { salesDate: '2026-08-27', plantCode: 'OPRCDS111', productGroup: 'BBไก่', allocateSpType: 'PICKUP_LOW_BIDDING', isLowBid: true },
+    ];
+    // Plenty of supply left, so neither *OffPlan flag should fire — but the
+    // raw price cut and bidding record both still happened.
+    const results = computeSupplyDailyResults(
+      [supplyRow({ remainingQty: 1000 })],
+      [],
+      [],
+      pricing,
+      bidding,
+      masterData(),
+    );
+    expect(results[0].isPricedDown).toBe(true);
+    expect(results[0].isPricedDownOffPlan).toBe(false);
+    expect(results[0].isLowBid).toBe(true);
+    expect(results[0].isLowBidOffPlan).toBe(false);
+  });
+
+  it('flags originZoneUnresolved/vendorGroupUnresolved when the origin factory is missing from master data, instead of silently reading as "no exception"', () => {
+    const md = masterData({ factoryZoneByCode: new Map(), vendorGroupByFactoryCode: new Map() });
+    const results = computeSupplyDailyResults([supplyRow({ remainingQty: 0 })], [], [], [], [], md);
+    expect(results[0].originZoneUnresolved).toBe(true);
+    expect(results[0].vendorGroupUnresolved).toBe(true);
+  });
 });

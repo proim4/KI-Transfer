@@ -6,10 +6,28 @@ import RouteFilterBar, { EMPTY_ROUTE_FILTER, matchesRouteFilter, type RouteFilte
 import SortableTable, { type Column } from '../components/SortableTable';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
-import { useRawActualRows, useRawPlanRows, type RawActualRow, type RawPlanRow } from '../hooks/useRawRows';
+import {
+  useRawActualRows,
+  useRawBiddingRows,
+  useRawPlanRows,
+  useRawPricingRows,
+  useRawSupplyDailyRows,
+  type RawActualRow,
+  type RawBiddingRow,
+  type RawPlanRow,
+  type RawPricingRow,
+  type RawSupplyDailyRow,
+} from '../hooks/useRawRows';
+import { useMasFactoryZones } from '../hooks/useSupplyDailyResults';
 import { useUploads } from '../hooks/useUploads';
 import { sum } from '../lib/aggregate';
-import { ACTUAL_REQUIRED_COLUMNS, PLAN_REQUIRED_COLUMNS } from '../lib/excelParser';
+import {
+  ACTUAL_REQUIRED_COLUMNS,
+  BIDDING_REQUIRED_COLUMNS,
+  PLAN_REQUIRED_COLUMNS,
+  PRICING_REQUIRED_COLUMNS,
+  SUPPLY_DAILY_REQUIRED_COLUMNS,
+} from '../lib/excelParser';
 import { lastUpdatedAt } from '../lib/lastUpdated';
 import type { ProductLine } from '../types/db';
 
@@ -106,7 +124,7 @@ function applyColumnFilters<T>(rows: T[], columns: Column<T>[], filters: Record<
   );
 }
 
-type Tab = 'actual' | 'plan';
+type Tab = 'actual' | 'plan' | 'supply_daily' | 'pricing' | 'bidding';
 
 function pickActualRoute(r: RawActualRow) {
   return { searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.sku_code} ${r.sku_name}` };
@@ -114,6 +132,18 @@ function pickActualRoute(r: RawActualRow) {
 
 function pickPlanRoute(r: RawPlanRow) {
   return { searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group}` };
+}
+
+function pickSupplyDailyRoute(r: RawSupplyDailyRow) {
+  return { searchText: `${r.origin_code} ${r.origin_name} ${r.product_group}` };
+}
+
+function pickPricingRoute(r: RawPricingRow) {
+  return { searchText: `${r.vendor_group} ${r.product_group}` };
+}
+
+function pickBiddingRoute(r: RawBiddingRow) {
+  return { searchText: `${r.plant_code} ${r.product_group} ${r.allocate_sp_type}` };
 }
 
 const tabClass = (active: boolean) =>
@@ -130,9 +160,16 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
   const [tab, setTab] = useState<Tab>('actual');
   const [actualFilter, setActualFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [planFilter, setPlanFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
+  const [supplyDailyFilter, setSupplyDailyFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
+  const [pricingFilter, setPricingFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
+  const [biddingFilter, setBiddingFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [actualColumnFilters, setActualColumnFilters] = useState<Record<string, string>>({});
   const [planColumnFilters, setPlanColumnFilters] = useState<Record<string, string>>({});
+  const [supplyDailyColumnFilters, setSupplyDailyColumnFilters] = useState<Record<string, string>>({});
+  const [pricingColumnFilters, setPricingColumnFilters] = useState<Record<string, string>>({});
+  const [biddingColumnFilters, setBiddingColumnFilters] = useState<Record<string, string>>({});
   const { data: uploads } = useUploads(weekId);
+  const { data: factoryZones } = useMasFactoryZones();
 
   // A filter set on one Week must not silently keep filtering a different
   // Week's data once selected — the header dropdown would even show
@@ -141,18 +178,39 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
   useEffect(() => {
     setActualFilter(EMPTY_ROUTE_FILTER);
     setPlanFilter(EMPTY_ROUTE_FILTER);
+    setSupplyDailyFilter(EMPTY_ROUTE_FILTER);
+    setPricingFilter(EMPTY_ROUTE_FILTER);
+    setBiddingFilter(EMPTY_ROUTE_FILTER);
     setActualColumnFilters({});
     setPlanColumnFilters({});
+    setSupplyDailyColumnFilters({});
+    setPricingColumnFilters({});
+    setBiddingColumnFilters({});
   }, [weekId]);
 
   const actual = useRawActualRows(weekId);
   const plan = useRawPlanRows(weekId);
+  const supplyDaily = useRawSupplyDailyRows(weekId);
+  const pricing = useRawPricingRows(weekId);
+  const bidding = useRawBiddingRows(weekId);
 
   const actualRows = actual.data ?? [];
   const planRows = plan.data ?? [];
+  const supplyDailyRows = supplyDaily.data ?? [];
+  const pricingRows = pricing.data ?? [];
+  const biddingRows = bidding.data ?? [];
 
   const filteredActual = actualRows.filter((r) => matchesRouteFilter(actualFilter, pickActualRoute(r)));
   const filteredPlan = planRows.filter((r) => matchesRouteFilter(planFilter, pickPlanRoute(r)));
+  const filteredSupplyDaily = supplyDailyRows.filter((r) => matchesRouteFilter(supplyDailyFilter, pickSupplyDailyRoute(r)));
+  const filteredPricing = pricingRows.filter((r) => matchesRouteFilter(pricingFilter, pickPricingRoute(r)));
+  const filteredBidding = biddingRows.filter((r) => matchesRouteFilter(biddingFilter, pickBiddingRoute(r)));
+
+  const zoneByCode = useMemo(() => new Map((factoryZones ?? []).map((z) => [z.plant_code, z.zone])), [factoryZones]);
+  function zoneLabel(code: string): string {
+    const zone = zoneByCode.get(code);
+    return zone ?? (code ? 'ไม่พบใน Master Zone' : '');
+  }
 
   // Grand totals pinned above their own column (see DrilldownTable/TrackingChannel for the same pattern) instead of a separate strip that would drift out of alignment on horizontal scroll.
   const actualColumnsBase: Column<RawActualRow>[] = useMemo(
@@ -160,8 +218,31 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
       { key: 'transfer_date', label: 'วันที่โอน', sortValue: (r) => r.transfer_date, render: (r) => r.transfer_date },
       { key: 'origin_code', label: 'รหัสต้นทาง', sortValue: (r) => r.origin_code, render: (r) => r.origin_code },
       { key: 'origin', label: 'ต้นทาง', sortValue: (r) => r.origin_name, render: (r) => r.origin_name },
+      {
+        key: 'origin_zone',
+        label: 'ภาคต้นทาง',
+        sortValue: (r) => zoneLabel(r.origin_code),
+        render: (r) => zoneLabel(r.origin_code),
+      },
       { key: 'dest_code', label: 'รหัสปลายทาง', sortValue: (r) => r.dest_code, render: (r) => r.dest_code },
       { key: 'dest', label: 'ปลายทาง', sortValue: (r) => r.dest_name, render: (r) => r.dest_name },
+      {
+        key: 'dest_zone',
+        label: 'ภาคปลายทาง',
+        sortValue: (r) => zoneLabel(r.dest_code),
+        render: (r) => zoneLabel(r.dest_code),
+      },
+      {
+        key: 'zone_status',
+        label: 'สถานะ Zone',
+        sortValue: (r) => (zoneByCode.get(r.origin_code) && zoneByCode.get(r.dest_code) ? (zoneByCode.get(r.origin_code) === zoneByCode.get(r.dest_code) ? 'ใน Zone' : 'นอก Zone') : 'ไม่สามารถตรวจสอบได้'),
+        render: (r) => {
+          const originZone = zoneByCode.get(r.origin_code);
+          const destZone = zoneByCode.get(r.dest_code);
+          if (!originZone || !destZone) return 'ไม่สามารถตรวจสอบได้';
+          return originZone === destZone ? 'ใน Zone' : 'นอก Zone';
+        },
+      },
       { key: 'sku_code', label: 'รหัสสินค้า', sortValue: (r) => r.sku_code, render: (r) => r.sku_code },
       { key: 'sku', label: 'สินค้า', sortValue: (r) => r.sku_name, render: (r) => r.sku_name },
       { key: 'product_group', label: 'กลุ่มสินค้า (P19)', sortValue: (r) => r.product_group, render: (r) => r.product_group },
@@ -175,7 +256,7 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
       },
       ...extraRawColumns(filteredActual, [...ACTUAL_REQUIRED_COLUMNS, ...LEGACY_ACTUAL_RAW_KEYS]),
     ],
-    [filteredActual],
+    [filteredActual, zoneByCode],
   );
   const finalActual = useMemo(
     () => applyColumnFilters(filteredActual, actualColumnsBase, actualColumnFilters),
@@ -243,6 +324,108 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
     [planColumnsBase, filteredPlan, planColumnFilters],
   );
 
+  const supplyDailyColumnsBase: Column<RawSupplyDailyRow>[] = useMemo(
+    () => [
+      { key: 'production_date', label: 'วันที่', sortValue: (r) => r.production_date, render: (r) => r.production_date },
+      { key: 'origin_code', label: 'รหัสโรงงาน', sortValue: (r) => r.origin_code, render: (r) => r.origin_code },
+      { key: 'origin', label: 'โรงงาน', sortValue: (r) => r.origin_name, render: (r) => r.origin_name },
+      { key: 'product_group', label: 'กลุ่มชิ้นส่วน', sortValue: (r) => r.product_group, render: (r) => r.product_group },
+      {
+        key: 'product_group_custom',
+        label: 'กลุ่มชิ้นส่วน (Custom)',
+        sortValue: (r) => r.product_group_custom,
+        render: (r) => r.product_group_custom,
+      },
+      {
+        key: 'remaining_qty',
+        label: 'Rev. ปริมาณของเหลือ',
+        align: 'right',
+        total: formatKg(sum(filteredSupplyDaily.map((r) => r.remaining_qty))),
+        sortValue: (r) => r.remaining_qty,
+        render: (r) => r.remaining_qty.toLocaleString('en-US'),
+      },
+      ...extraRawColumns(filteredSupplyDaily, SUPPLY_DAILY_REQUIRED_COLUMNS),
+    ],
+    [filteredSupplyDaily],
+  );
+  const finalSupplyDaily = useMemo(
+    () => applyColumnFilters(filteredSupplyDaily, supplyDailyColumnsBase, supplyDailyColumnFilters),
+    [filteredSupplyDaily, supplyDailyColumnsBase, supplyDailyColumnFilters],
+  );
+  const supplyDailyColumns = useMemo(
+    () => attachHeaderFilters(supplyDailyColumnsBase, filteredSupplyDaily, supplyDailyColumnFilters, setSupplyDailyColumnFilters),
+    [supplyDailyColumnsBase, filteredSupplyDaily, supplyDailyColumnFilters],
+  );
+
+  const pricingColumnsBase: Column<RawPricingRow>[] = useMemo(
+    () => [
+      { key: 'price_date', label: 'วันที่ราคา', sortValue: (r) => r.price_date, render: (r) => r.price_date },
+      { key: 'vendor_group', label: 'Vendor Group', sortValue: (r) => r.vendor_group, render: (r) => r.vendor_group },
+      { key: 'product_group', label: 'กลุ่มสินค้า (P19)', sortValue: (r) => r.product_group, render: (r) => r.product_group },
+      {
+        key: 'cost_z',
+        label: 'CostZ',
+        align: 'right',
+        sortValue: (r) => r.cost_z,
+        render: (r) => r.cost_z.toLocaleString('en-US'),
+      },
+      {
+        key: 'margin',
+        label: 'Margin',
+        align: 'right',
+        sortValue: (r) => r.margin,
+        render: (r) => r.margin.toLocaleString('en-US'),
+      },
+      {
+        key: 'net_price',
+        label: 'Net Price (CostZ+Margin)',
+        align: 'right',
+        sortValue: (r) => r.net_price,
+        render: (r) => r.net_price.toLocaleString('en-US'),
+      },
+      ...extraRawColumns(filteredPricing, PRICING_REQUIRED_COLUMNS),
+    ],
+    [filteredPricing],
+  );
+  const finalPricing = useMemo(
+    () => applyColumnFilters(filteredPricing, pricingColumnsBase, pricingColumnFilters),
+    [filteredPricing, pricingColumnsBase, pricingColumnFilters],
+  );
+  const pricingColumns = useMemo(
+    () => attachHeaderFilters(pricingColumnsBase, filteredPricing, pricingColumnFilters, setPricingColumnFilters),
+    [pricingColumnsBase, filteredPricing, pricingColumnFilters],
+  );
+
+  const biddingColumnsBase: Column<RawBiddingRow>[] = useMemo(
+    () => [
+      { key: 'sales_date', label: 'วันที่ขาย', sortValue: (r) => r.sales_date, render: (r) => r.sales_date },
+      { key: 'plant_code', label: 'รหัสโรงงาน (Plant code)', sortValue: (r) => r.plant_code, render: (r) => r.plant_code },
+      { key: 'product_group', label: 'กลุ่มสินค้า (P19)', sortValue: (r) => r.product_group, render: (r) => r.product_group },
+      {
+        key: 'allocate_sp_type',
+        label: 'Allocate sp type',
+        sortValue: (r) => r.allocate_sp_type,
+        render: (r) => r.allocate_sp_type,
+      },
+      {
+        key: 'is_low_bid',
+        label: 'Is bidding (PICKUP_LOW_BIDDING)',
+        sortValue: (r) => (r.is_low_bid ? 1 : 0),
+        render: (r) => (r.is_low_bid ? 'YES' : 'NO'),
+      },
+      ...extraRawColumns(filteredBidding, BIDDING_REQUIRED_COLUMNS),
+    ],
+    [filteredBidding],
+  );
+  const finalBidding = useMemo(
+    () => applyColumnFilters(filteredBidding, biddingColumnsBase, biddingColumnFilters),
+    [filteredBidding, biddingColumnsBase, biddingColumnFilters],
+  );
+  const biddingColumns = useMemo(
+    () => attachHeaderFilters(biddingColumnsBase, filteredBidding, biddingColumnFilters, setBiddingColumnFilters),
+    [biddingColumnsBase, filteredBidding, biddingColumnFilters],
+  );
+
   return (
     <div className="space-y-4">
       <div>
@@ -257,13 +440,22 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
 
       {weekId && (
         <>
-          <div className="flex gap-2 border-b border-gray-200">
+          <div className="flex flex-wrap gap-2 border-b border-gray-200">
             <button type="button" onClick={() => setTab('actual')} className={tabClass(tab === 'actual')}>
               โอนจริง (ABS0000){actual.data ? ` — ${actual.data.length} แถว` : ''}
             </button>
             <button type="button" onClick={() => setTab('plan')} className={tabClass(tab === 'plan')}>
               {productLine === 'pork' ? 'แผนโอน Daily' : 'แผนโอน Weekly-Daily'}
               {plan.data ? ` — ${plan.data.length} แถว` : ''}
+            </button>
+            <button type="button" onClick={() => setTab('supply_daily')} className={tabClass(tab === 'supply_daily')}>
+              กรอก Supply Daily (BSD010){supplyDaily.data ? ` — ${supplyDaily.data.length} แถว` : ''}
+            </button>
+            <button type="button" onClick={() => setTab('pricing')} className={tabClass(tab === 'pricing')}>
+              ราคารายวัน{pricing.data ? ` — ${pricing.data.length} แถว` : ''}
+            </button>
+            <button type="button" onClick={() => setTab('bidding')} className={tabClass(tab === 'bidding')}>
+              รายการ Bidding (TC05){bidding.data ? ` — ${bidding.data.length} แถว` : ''}
             </button>
           </div>
 
@@ -313,6 +505,84 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
                     onClear={() => {
                       setPlanFilter(EMPTY_ROUTE_FILTER);
                       setPlanColumnFilters({});
+                    }}
+                  />
+                }
+              />
+            ))}
+
+          {tab === 'supply_daily' &&
+            (supplyDaily.isLoading ? (
+              <p className="text-sm text-gray-500">กำลังโหลด...</p>
+            ) : (
+              <SortableTable
+                rows={finalSupplyDaily}
+                columns={supplyDailyColumns}
+                rowKey={(r) => r.id}
+                defaultSortKey="production_date"
+                storageKey={`columnWidths:rawdata-${productLine}-supply-daily`}
+                columnVisibilityKey={`columnVisibility:rawdata-${productLine}-supply-daily`}
+                filterBar={
+                  <RouteFilterBar value={supplyDailyFilter} onChange={setSupplyDailyFilter} resultCount={finalSupplyDaily.length} />
+                }
+                headerExtra={
+                  <ClearFilterButton
+                    active={supplyDailyFilter.search !== '' || Object.values(supplyDailyColumnFilters).some(Boolean)}
+                    onClear={() => {
+                      setSupplyDailyFilter(EMPTY_ROUTE_FILTER);
+                      setSupplyDailyColumnFilters({});
+                    }}
+                  />
+                }
+              />
+            ))}
+
+          {tab === 'pricing' &&
+            (pricing.isLoading ? (
+              <p className="text-sm text-gray-500">กำลังโหลด...</p>
+            ) : (
+              <SortableTable
+                rows={finalPricing}
+                columns={pricingColumns}
+                rowKey={(r) => r.id}
+                defaultSortKey="price_date"
+                storageKey={`columnWidths:rawdata-${productLine}-pricing`}
+                columnVisibilityKey={`columnVisibility:rawdata-${productLine}-pricing`}
+                filterBar={
+                  <RouteFilterBar value={pricingFilter} onChange={setPricingFilter} resultCount={finalPricing.length} />
+                }
+                headerExtra={
+                  <ClearFilterButton
+                    active={pricingFilter.search !== '' || Object.values(pricingColumnFilters).some(Boolean)}
+                    onClear={() => {
+                      setPricingFilter(EMPTY_ROUTE_FILTER);
+                      setPricingColumnFilters({});
+                    }}
+                  />
+                }
+              />
+            ))}
+
+          {tab === 'bidding' &&
+            (bidding.isLoading ? (
+              <p className="text-sm text-gray-500">กำลังโหลด...</p>
+            ) : (
+              <SortableTable
+                rows={finalBidding}
+                columns={biddingColumns}
+                rowKey={(r) => r.id}
+                defaultSortKey="sales_date"
+                storageKey={`columnWidths:rawdata-${productLine}-bidding`}
+                columnVisibilityKey={`columnVisibility:rawdata-${productLine}-bidding`}
+                filterBar={
+                  <RouteFilterBar value={biddingFilter} onChange={setBiddingFilter} resultCount={finalBidding.length} />
+                }
+                headerExtra={
+                  <ClearFilterButton
+                    active={biddingFilter.search !== '' || Object.values(biddingColumnFilters).some(Boolean)}
+                    onClear={() => {
+                      setBiddingFilter(EMPTY_ROUTE_FILTER);
+                      setBiddingColumnFilters({});
                     }}
                   />
                 }

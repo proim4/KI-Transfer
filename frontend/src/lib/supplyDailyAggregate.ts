@@ -17,6 +17,12 @@ export interface SupplyDailyKpis {
   onTimeRowCount: number;
   onTimePct: number | null;
 
+  totalSupplyQty: number;
+  biddingRecordCount: number;
+  pricedDownRecordCount: number;
+  planRecordCount: number;
+  actualRecordCount: number;
+
   offPlanCount: number;
   offPlanOffZoneCount: number;
   pricedDownOffPlanCount: number;
@@ -24,6 +30,14 @@ export interface SupplyDailyKpis {
   supplyNoPlanCount: number;
   actualNoPlanCount: number;
   planNoActualCount: number;
+  unresolvedCount: number;
+
+  /** % of active rows (plan_out>0 or actual_out>0) that are NOT off-plan. */
+  onPlanPct: number | null;
+  offPlanPct: number | null;
+  /** % of rows with a Bidding record (is_low_bid) that did NOT end up off-plan — i.e. the demand was still captured by the transfer plan. */
+  biddingEnteredSystemPct: number | null;
+  biddingNotEnteredSystemPct: number | null;
 }
 
 /**
@@ -34,6 +48,9 @@ export interface SupplyDailyKpis {
 export function computeSupplyDailyKpis(rows: SupplyDailyResultRow[], totalFactories: number): SupplyDailyKpis {
   const filedRows = rows.filter((r) => r.filed);
   const filedOrigins = new Set(filedRows.map((r) => r.origin_code));
+  const activeRows = rows.filter((r) => r.plan_out > 0 || r.actual_out > 0);
+  const biddingRows = rows.filter((r) => r.is_low_bid);
+  const lowBidOffPlanCount = rows.filter((r) => r.is_low_bid_off_plan).length;
 
   return {
     totalFactories,
@@ -44,13 +61,25 @@ export function computeSupplyDailyKpis(rows: SupplyDailyResultRow[], totalFactor
     onTimeRowCount: filedRows.filter((r) => r.filed_on_time).length,
     onTimePct: pct(filedRows.filter((r) => r.filed_on_time).length, filedRows.length),
 
+    totalSupplyQty: sum(filedRows.map((r) => r.remaining_qty)),
+    biddingRecordCount: biddingRows.length,
+    pricedDownRecordCount: rows.filter((r) => r.is_priced_down).length,
+    planRecordCount: rows.filter((r) => r.plan_out > 0).length,
+    actualRecordCount: rows.filter((r) => r.actual_out > 0).length,
+
     offPlanCount: rows.filter((r) => r.is_off_plan).length,
     offPlanOffZoneCount: sum(rows.map((r) => r.is_off_plan_off_zone)),
     pricedDownOffPlanCount: rows.filter((r) => r.is_priced_down_off_plan).length,
-    lowBidOffPlanCount: rows.filter((r) => r.is_low_bid_off_plan).length,
+    lowBidOffPlanCount,
     supplyNoPlanCount: rows.filter((r) => r.filed && r.plan_out === 0).length,
     actualNoPlanCount: rows.filter((r) => r.actual_out > 0 && r.plan_out === 0).length,
     planNoActualCount: rows.filter((r) => r.plan_out > 0 && r.actual_out === 0).length,
+    unresolvedCount: rows.filter((r) => r.origin_zone_unresolved || r.vendor_group_unresolved).length,
+
+    onPlanPct: pct(activeRows.filter((r) => !r.is_off_plan).length, activeRows.length),
+    offPlanPct: pct(activeRows.filter((r) => r.is_off_plan).length, activeRows.length),
+    biddingEnteredSystemPct: pct(biddingRows.length - lowBidOffPlanCount, biddingRows.length),
+    biddingNotEnteredSystemPct: pct(lowBidOffPlanCount, biddingRows.length),
   };
 }
 
@@ -61,7 +90,8 @@ export type ExceptionKey =
   | 'supply_no_plan'
   | 'plan_no_actual'
   | 'off_plan'
-  | 'late_filing';
+  | 'late_filing'
+  | 'unresolved';
 
 export const EXCEPTION_LABELS: Record<ExceptionKey, string> = {
   low_bid_off_plan: 'Bidding แต่ไม่เข้าระบบโอน',
@@ -71,6 +101,7 @@ export const EXCEPTION_LABELS: Record<ExceptionKey, string> = {
   plan_no_actual: 'แผนโอนแต่ไม่มีโอนจริง',
   off_plan: 'โอนนอกแผน',
   late_filing: 'กรอก Supply ไม่ทันเวลา',
+  unresolved: 'ไม่สามารถ Match ข้อมูลได้ (Master Data ไม่ครบ)',
 };
 
 export function matchesException(row: SupplyDailyResultRow, key: ExceptionKey): boolean {
@@ -89,5 +120,7 @@ export function matchesException(row: SupplyDailyResultRow, key: ExceptionKey): 
       return row.is_off_plan;
     case 'late_filing':
       return row.filed && !row.filed_on_time;
+    case 'unresolved':
+      return row.origin_zone_unresolved || row.vendor_group_unresolved;
   }
 }

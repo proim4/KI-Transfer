@@ -141,31 +141,33 @@ function averageNetPriceByKey(pricingRows: PricingRow[]): Map<string, number> {
 }
 
 /**
- * "check ลงราคา" per key — true when supply is exhausted (remainingQty <= 0),
- * a price cut of at least 1 baht is scheduled effective tomorrow for this
- * factory's vendor group/product group, and the key is already off-plan.
- * Mirrors ข้อมูล!L:
- *   =IF(IF(F>0,0,SUMIFS(ลงราคา!check,...))=0,0,IF(check_off_plan>0,1,0))
+ * The raw price comparison behind "check ลงราคา" — today's average net price
+ * vs. tomorrow's, for this key's vendor group/product group — WITHOUT the
+ * "no supply left" / "already off-plan" gates applied by
+ * computeSupplyDailyResults. Exposed on its own (as isPricedDown) so the
+ * dashboard can report "จำนวนรายการลงราคา" as a total, independent of the
+ * off-plan exception. `vendorGroupUnresolved` distinguishes "genuinely no
+ * price cut" from "couldn't even check" (the factory has no vendor_group in
+ * mas_factories at all) — the latter must not silently read as "no price
+ * cut", per the data-quality requirement.
  */
-function computePricedDownOffPlan(
+function computePricedDown(
   originCode: string,
   productGroup: string,
   date: string,
-  remainingQty: number,
-  isOffPlan: boolean,
   avgNetPriceByKey: Map<string, number>,
   masterData: SupplyDailyMasterData,
-): boolean {
-  if (remainingQty > 0) return false;
+): { pricedDown: boolean; vendorGroupUnresolved: boolean } {
   const vendorGroup = masterData.vendorGroupByFactoryCode.get(originCode);
-  if (!vendorGroup) return false;
+  if (!vendorGroup) return { pricedDown: false, vendorGroupUnresolved: true };
   const todayKey = `${vendorGroup}|${productGroup}|${date}`;
   const tomorrowKey = `${vendorGroup}|${productGroup}|${addDaysIso(date, 1)}`;
   const todayPrice = avgNetPriceByKey.get(todayKey);
   const tomorrowPrice = avgNetPriceByKey.get(tomorrowKey);
-  if (todayPrice === undefined || tomorrowPrice === undefined) return false;
-  const pricedDown = todayPrice - tomorrowPrice >= PRICE_CUT_THRESHOLD_BAHT;
-  return pricedDown && isOffPlan;
+  if (todayPrice === undefined || tomorrowPrice === undefined) {
+    return { pricedDown: false, vendorGroupUnresolved: false };
+  }
+  return { pricedDown: todayPrice - tomorrowPrice >= PRICE_CUT_THRESHOLD_BAHT, vendorGroupUnresolved: false };
 }
 
 /**
@@ -309,6 +311,15 @@ export function computeSupplyDailyResults(
     const isOffPlan = offPlanKeys.has(key);
     const filedOnTime = info.filed && uploadWasOnTime;
 
+    const { pricedDown, vendorGroupUnresolved } = computePricedDown(
+      info.originCode,
+      info.productGroup,
+      info.productionDate,
+      avgNetPriceByKey,
+      masterData,
+    );
+    const isLowBid = lowBidKeys.has(key);
+
     results.push({
       productionDate: info.productionDate,
       originCode: info.originCode,
@@ -322,16 +333,13 @@ export function computeSupplyDailyResults(
       actualOut,
       isOffPlan,
       isOffPlanOffZone: offZoneCountByKey.get(key) ?? 0,
-      isPricedDownOffPlan: computePricedDownOffPlan(
-        info.originCode,
-        info.productGroup,
-        info.productionDate,
-        info.remainingQty,
-        isOffPlan,
-        avgNetPriceByKey,
-        masterData,
-      ),
-      isLowBidOffPlan: info.remainingQty <= 0 && lowBidKeys.has(key),
+      // Excel's own gates: no supply left AND already off-plan/low-supply.
+      isPricedDownOffPlan: info.remainingQty <= 0 && isOffPlan && pricedDown,
+      isLowBidOffPlan: info.remainingQty <= 0 && isLowBid,
+      isPricedDown: pricedDown,
+      isLowBid,
+      originZoneUnresolved: !masterData.factoryZoneByCode.has(info.originCode),
+      vendorGroupUnresolved,
     });
   }
 

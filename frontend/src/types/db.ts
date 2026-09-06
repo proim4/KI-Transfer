@@ -227,6 +227,15 @@ export interface SupplyDailyResultRow {
   is_priced_down_off_plan: boolean;
   is_low_bid_off_plan: boolean;
 
+  /** Raw (ungated) version of is_priced_down_off_plan — a price cut happened regardless of supply/off-plan status. */
+  is_priced_down: boolean;
+  /** Raw (ungated) version of is_low_bid_off_plan — a low-bid record exists regardless of supply status. */
+  is_low_bid: boolean;
+  /** Data-quality: origin factory has no entry in mas_factory_zones (zone/off-zone checks could not run for this key). */
+  origin_zone_unresolved: boolean;
+  /** Data-quality: origin factory has no entry in mas_factories (the ลงราคา check could not run for this key). */
+  vendor_group_unresolved: boolean;
+
   created_at: string;
 }
 

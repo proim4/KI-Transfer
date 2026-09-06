@@ -282,6 +282,10 @@ async function recomputeSupplyDaily(
     is_off_plan_off_zone: r.isOffPlanOffZone,
     is_priced_down_off_plan: r.isPricedDownOffPlan,
     is_low_bid_off_plan: r.isLowBidOffPlan,
+    is_priced_down: r.isPricedDown,
+    is_low_bid: r.isLowBid,
+    origin_zone_unresolved: r.originZoneUnresolved,
+    vendor_group_unresolved: r.vendorGroupUnresolved,
   }));
 
   const { error: deleteError } = await supabase.from('supply_daily_results').delete().eq('week_id', weekId);
