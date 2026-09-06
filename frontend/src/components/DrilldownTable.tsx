@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { defaultColumnWidth, useColumnWidths } from '../hooks/useColumnWidths';
 import { useColumnVisibility } from '../hooks/useColumnVisibility';
@@ -7,6 +7,7 @@ import { useStatusThresholds } from '../hooks/useAppSettings';
 import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
 import { computeStatus, type StatusThresholds } from '../lib/statusBadge';
 import { ACTUAL_GROUP, DIFF_GROUP, LOSS_GROUP, PCT_GROUP, PLAN_GROUP, REMARK_GROUP, ROUTE_GROUP } from '../lib/trackingColumnGroups';
+import ClearFilterButton from './ClearFilterButton';
 import ColumnVisibilityMenu from './ColumnVisibilityMenu';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
 import PctBar from './PctBar';
@@ -95,6 +96,15 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
   const [search, setSearch] = useState('');
   const [columnFilters, setColumnFilters] = useState<Partial<Record<SortKey, string>>>({});
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  // A filter set on one Week must not silently keep filtering a different
+  // Week's data once selected — the header dropdown would even show
+  // "ทั้งหมด" again (its old value isn't among the new Week's options),
+  // making the leftover filter invisible while it's still excluding rows.
+  useEffect(() => {
+    setSearch('');
+    setColumnFilters({});
+  }, [weekId]);
   const [sortKey, setSortKey] = useState<SortKey>('production_date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -213,7 +223,14 @@ export default function DrilldownTable({ weekId, rows }: DrilldownTableProps) {
           className="w-40 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
         />
         <span className="text-xs text-gray-400">{filtered.length} รายการ</span>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <ClearFilterButton
+            active={search !== '' || Object.values(columnFilters).some(Boolean)}
+            onClear={() => {
+              setSearch('');
+              setColumnFilters({});
+            }}
+          />
           <ColumnVisibilityMenu columns={COLUMNS} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />
         </div>
       </div>

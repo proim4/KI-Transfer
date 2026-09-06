@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
-import CodeName from '../components/CodeName';
+import { useEffect, useMemo, useState } from 'react';
+import ClearFilterButton from '../components/ClearFilterButton';
 import { formatKg } from '../components/KpiCard';
-import RouteFilterBar, { EMPTY_ROUTE_FILTER, matchesRouteFilter, routeFilterOptions, type RouteFilterValue } from '../components/RouteFilterBar';
+import RouteFilterBar, { EMPTY_ROUTE_FILTER, matchesRouteFilter, type RouteFilterValue } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
@@ -66,26 +66,51 @@ function extraRawColumns<T extends { raw: Record<string, unknown> | null }>(
   });
 }
 
+/** Attaches an Excel-style header filter dropdown to every column, reusing each column's own `sortValue` as the filter's value accessor so there's only one place (per column) that defines what a field "is". */
+function attachHeaderFilters<T>(
+  columns: Column<T>[],
+  rows: T[],
+  filters: Record<string, string>,
+  setFilters: (updater: (prev: Record<string, string>) => Record<string, string>) => void,
+): Column<T>[] {
+  return columns.map((col) => {
+    const values = new Set<string>();
+    for (const row of rows) {
+      const v = col.sortValue(row);
+      if (v !== null && v !== '') values.add(String(v));
+    }
+    return {
+      ...col,
+      headerFilter: {
+        value: filters[col.key] ?? '',
+        onChange: (v: string) => setFilters((f) => ({ ...f, [col.key]: v })),
+        options: Array.from(values).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+        placeholder: 'ทั้งหมด',
+      },
+    };
+  });
+}
+
+/** Rows matching every active header-filter dropdown, checked against the same `sortValue` the filter's own options were built from. */
+function applyColumnFilters<T>(rows: T[], columns: Column<T>[], filters: Record<string, string>): T[] {
+  const active = Object.entries(filters).filter(([, v]) => v);
+  if (active.length === 0) return rows;
+  return rows.filter((row) =>
+    active.every(([key, value]) => {
+      const col = columns.find((c) => c.key === key);
+      return col ? String(col.sortValue(row) ?? '') === value : true;
+    }),
+  );
+}
+
 type Tab = 'actual' | 'plan';
 
 function pickActualRoute(r: RawActualRow) {
-  return {
-    date: r.transfer_date,
-    origin: r.origin_name,
-    dest: r.dest_name,
-    productGroup: r.product_group,
-    searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.sku_code} ${r.sku_name}`,
-  };
+  return { searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.sku_code} ${r.sku_name}` };
 }
 
 function pickPlanRoute(r: RawPlanRow) {
-  return {
-    date: r.production_date,
-    origin: r.origin_name,
-    dest: r.dest_name,
-    productGroup: r.product_group,
-    searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group}`,
-  };
+  return { searchText: `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group}` };
 }
 
 const tabClass = (active: boolean) =>
@@ -102,6 +127,19 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
   const [tab, setTab] = useState<Tab>('actual');
   const [actualFilter, setActualFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [planFilter, setPlanFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
+  const [actualColumnFilters, setActualColumnFilters] = useState<Record<string, string>>({});
+  const [planColumnFilters, setPlanColumnFilters] = useState<Record<string, string>>({});
+
+  // A filter set on one Week must not silently keep filtering a different
+  // Week's data once selected — the header dropdown would even show
+  // "ทั้งหมด" again (its old value isn't among the new Week's options),
+  // making the leftover filter invisible while it's still excluding rows.
+  useEffect(() => {
+    setActualFilter(EMPTY_ROUTE_FILTER);
+    setPlanFilter(EMPTY_ROUTE_FILTER);
+    setActualColumnFilters({});
+    setPlanColumnFilters({});
+  }, [weekId]);
 
   const actual = useRawActualRows(weekId);
   const plan = useRawPlanRows(weekId);
@@ -109,34 +147,19 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
   const actualRows = actual.data ?? [];
   const planRows = plan.data ?? [];
 
-  const actualOptions = useMemo(() => routeFilterOptions(actualRows, pickActualRoute), [actualRows]);
-  const planOptions = useMemo(() => routeFilterOptions(planRows, pickPlanRoute), [planRows]);
-
   const filteredActual = actualRows.filter((r) => matchesRouteFilter(actualFilter, pickActualRoute(r)));
   const filteredPlan = planRows.filter((r) => matchesRouteFilter(planFilter, pickPlanRoute(r)));
 
   // Grand totals pinned above their own column (see DrilldownTable/TrackingChannel for the same pattern) instead of a separate strip that would drift out of alignment on horizontal scroll.
-  const actualColumns: Column<RawActualRow>[] = useMemo(
+  const actualColumnsBase: Column<RawActualRow>[] = useMemo(
     () => [
       { key: 'transfer_date', label: 'วันที่โอน', sortValue: (r) => r.transfer_date, render: (r) => r.transfer_date },
-      {
-        key: 'origin',
-        label: 'ต้นทาง',
-        sortValue: (r) => r.origin_name,
-        render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
-      },
-      {
-        key: 'dest',
-        label: 'ปลายทาง',
-        sortValue: (r) => r.dest_name,
-        render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
-      },
-      {
-        key: 'sku',
-        label: 'สินค้า',
-        sortValue: (r) => r.sku_name,
-        render: (r) => <CodeName code={r.sku_code} name={r.sku_name} />,
-      },
+      { key: 'origin_code', label: 'รหัสต้นทาง', sortValue: (r) => r.origin_code, render: (r) => r.origin_code },
+      { key: 'origin', label: 'ต้นทาง', sortValue: (r) => r.origin_name, render: (r) => r.origin_name },
+      { key: 'dest_code', label: 'รหัสปลายทาง', sortValue: (r) => r.dest_code, render: (r) => r.dest_code },
+      { key: 'dest', label: 'ปลายทาง', sortValue: (r) => r.dest_name, render: (r) => r.dest_name },
+      { key: 'sku_code', label: 'รหัสสินค้า', sortValue: (r) => r.sku_code, render: (r) => r.sku_code },
+      { key: 'sku', label: 'สินค้า', sortValue: (r) => r.sku_name, render: (r) => r.sku_name },
       { key: 'product_group', label: 'กลุ่มสินค้า (P19)', sortValue: (r) => r.product_group, render: (r) => r.product_group },
       {
         key: 'weight_kg',
@@ -150,8 +173,16 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
     ],
     [filteredActual],
   );
+  const finalActual = useMemo(
+    () => applyColumnFilters(filteredActual, actualColumnsBase, actualColumnFilters),
+    [filteredActual, actualColumnsBase, actualColumnFilters],
+  );
+  const actualColumns = useMemo(
+    () => attachHeaderFilters(actualColumnsBase, filteredActual, actualColumnFilters, setActualColumnFilters),
+    [actualColumnsBase, filteredActual, actualColumnFilters],
+  );
 
-  const planColumns: Column<RawPlanRow>[] = useMemo(
+  const planColumnsBase: Column<RawPlanRow>[] = useMemo(
     () => [
       {
         key: 'source_file',
@@ -160,18 +191,10 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
         render: (r) => (r.source_file === 'weekly' ? 'Weekly' : 'Daily'),
       },
       { key: 'production_date', label: 'วันที่', sortValue: (r) => r.production_date, render: (r) => r.production_date },
-      {
-        key: 'origin',
-        label: 'ต้นทาง',
-        sortValue: (r) => r.origin_name,
-        render: (r) => <CodeName code={r.origin_code} name={r.origin_name} />,
-      },
-      {
-        key: 'dest',
-        label: 'ปลายทาง',
-        sortValue: (r) => r.dest_name,
-        render: (r) => <CodeName code={r.dest_code} name={r.dest_name} />,
-      },
+      { key: 'origin_code', label: 'รหัสต้นทาง', sortValue: (r) => r.origin_code, render: (r) => r.origin_code },
+      { key: 'origin', label: 'ต้นทาง', sortValue: (r) => r.origin_name, render: (r) => r.origin_name },
+      { key: 'dest_code', label: 'รหัสปลายทาง', sortValue: (r) => r.dest_code, render: (r) => r.dest_code },
+      { key: 'dest', label: 'ปลายทาง', sortValue: (r) => r.dest_name, render: (r) => r.dest_name },
       { key: 'product_group', label: 'กลุ่มสินค้า', sortValue: (r) => r.product_group, render: (r) => r.product_group },
       {
         key: 'origin_price',
@@ -207,6 +230,14 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
     ],
     [filteredPlan],
   );
+  const finalPlan = useMemo(
+    () => applyColumnFilters(filteredPlan, planColumnsBase, planColumnFilters),
+    [filteredPlan, planColumnsBase, planColumnFilters],
+  );
+  const planColumns = useMemo(
+    () => attachHeaderFilters(planColumnsBase, filteredPlan, planColumnFilters, setPlanColumnFilters),
+    [planColumnsBase, filteredPlan, planColumnFilters],
+  );
 
   return (
     <div className="space-y-4">
@@ -234,18 +265,22 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
               <p className="text-sm text-gray-500">กำลังโหลด...</p>
             ) : (
               <SortableTable
-                rows={filteredActual}
+                rows={finalActual}
                 columns={actualColumns}
                 rowKey={(r) => r.id}
                 defaultSortKey="transfer_date"
                 storageKey={`columnWidths:rawdata-${productLine}-actual`}
                 columnVisibilityKey={`columnVisibility:rawdata-${productLine}-actual`}
                 filterBar={
-                  <RouteFilterBar
-                    value={actualFilter}
-                    onChange={setActualFilter}
-                    options={actualOptions}
-                    resultCount={filteredActual.length}
+                  <RouteFilterBar value={actualFilter} onChange={setActualFilter} resultCount={finalActual.length} />
+                }
+                headerExtra={
+                  <ClearFilterButton
+                    active={actualFilter.search !== '' || Object.values(actualColumnFilters).some(Boolean)}
+                    onClear={() => {
+                      setActualFilter(EMPTY_ROUTE_FILTER);
+                      setActualColumnFilters({});
+                    }}
                   />
                 }
               />
@@ -256,18 +291,22 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
               <p className="text-sm text-gray-500">กำลังโหลด...</p>
             ) : (
               <SortableTable
-                rows={filteredPlan}
+                rows={finalPlan}
                 columns={planColumns}
                 rowKey={(r) => r.id}
                 defaultSortKey="production_date"
                 storageKey={`columnWidths:rawdata-${productLine}-plan`}
                 columnVisibilityKey={`columnVisibility:rawdata-${productLine}-plan`}
                 filterBar={
-                  <RouteFilterBar
-                    value={planFilter}
-                    onChange={setPlanFilter}
-                    options={planOptions}
-                    resultCount={filteredPlan.length}
+                  <RouteFilterBar value={planFilter} onChange={setPlanFilter} resultCount={finalPlan.length} />
+                }
+                headerExtra={
+                  <ClearFilterButton
+                    active={planFilter.search !== '' || Object.values(planColumnFilters).some(Boolean)}
+                    onClear={() => {
+                      setPlanFilter(EMPTY_ROUTE_FILTER);
+                      setPlanColumnFilters({});
+                    }}
                   />
                 }
               />

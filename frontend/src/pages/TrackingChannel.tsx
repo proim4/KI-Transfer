@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import ClearFilterButton from '../components/ClearFilterButton';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
 import PctBar from '../components/PctBar';
 import RemarkCell from '../components/RemarkCell';
@@ -76,6 +77,16 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
   const [weekId, setWeekId] = useDefaultedWeekId(productLine);
   const [search, setSearch] = useState('');
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+
+  // A filter set on one Week must not silently keep filtering a different
+  // Week's data once selected — the header dropdown would even show
+  // "ทั้งหมด" again (its old value isn't among the new Week's options),
+  // making the leftover filter invisible while it's still excluding rows.
+  useEffect(() => {
+    setSearch('');
+    setColumnFilters({});
+  }, [weekId]);
+
   const { data, isLoading } = useTrackingResults(weekId);
   const { data: weeks } = useWeeks(productLine);
   const thresholds = useStatusThresholds();
@@ -395,6 +406,15 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
               />
               <span className="text-xs text-gray-400">{filtered.length} รายการ</span>
             </div>
+          }
+          headerExtra={
+            <ClearFilterButton
+              active={search !== '' || Object.values(columnFilters).some(Boolean)}
+              onClear={() => {
+                setSearch('');
+                setColumnFilters({});
+              }}
+            />
           }
         />
       )}

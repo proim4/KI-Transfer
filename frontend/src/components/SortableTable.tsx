@@ -61,6 +61,8 @@ interface SortableTableProps<T> {
   columnVisibilityKey?: string;
   /** A filter bar (e.g. RouteFilterBar) rendered on the same row as the "คอลัม" button, to its left, instead of the caller stacking it above the table separately. */
   filterBar?: ReactNode;
+  /** Extra action(s) rendered next to the "คอลัม" column-visibility button — e.g. a "Clear Filter" button. */
+  headerExtra?: ReactNode;
 }
 
 function compareValues(a: string | number | null, b: string | number | null): number {
@@ -124,6 +126,7 @@ export default function SortableTable<T>({
   storageKey,
   columnVisibilityKey,
   filterBar,
+  headerExtra,
 }: SortableTableProps<T>) {
   const [sortKey, setSortKey] = useState(defaultSortKey);
   const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
@@ -190,7 +193,8 @@ export default function SortableTable<T>({
     <div>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         {filterBar}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {headerExtra}
           <ColumnVisibilityMenu columns={columns} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />
         </div>
       </div>
