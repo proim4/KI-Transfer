@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
+import AllDashboard from './pages/AllDashboard';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import ProductSelect from './pages/ProductSelect';
@@ -17,6 +18,7 @@ export default function App() {
       <Route element={<AuthGuard />}>
         <Route element={<Layout />}>
           <Route path="/" element={<ProductSelect />} />
+          <Route path="/all/dashboard" element={<AllDashboard />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/raw-data" element={<RawData />} />

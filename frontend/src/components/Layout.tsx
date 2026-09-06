@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { supabase } from '../lib/supabase';
@@ -34,18 +34,18 @@ function NavDropdown({ label, children }: { label: string; children: ReactNode }
  * primary nav only ever shows the 2 things most people need (Dashboard, Upload). */
 function MoreMenu({ showSettings }: { showSettings: boolean }) {
   return (
-    <NavDropdown label="เพิ่มเติม">
+    <NavDropdown label="🐔 เพิ่มเติม">
       <NavLink to="/raw-data" className={moreLinkClass}>
-        ข้อมูลดิบ
+        🐔 ข้อมูลดิบ
       </NavLink>
       <NavLink to="/tracking/weekly" className={moreLinkClass}>
-        ติดตามโอน Weekly
+        🐔 ติดตามโอน Weekly
       </NavLink>
       <NavLink to="/tracking/daily" className={moreLinkClass}>
-        ติดตามโอน Daily
+        🐔 ติดตามโอน Daily
       </NavLink>
       <NavLink to="/tracking/total" className={moreLinkClass}>
-        ติดตามโอนรวม
+        🐔 ติดตามโอนรวม
       </NavLink>
       {showSettings && (
         <NavLink to="/settings" className={moreLinkClass}>
@@ -56,23 +56,26 @@ function MoreMenu({ showSettings }: { showSettings: boolean }) {
   );
 }
 
-/** สินค้าหมู เป็นชุดข้อมูลคู่ขนานแยกจากไก่ทั้งหมด (weeks.product_line) — อยู่คนละเมนูหลัก
- * ไปเลยแทนที่จะปนกับเมนูไก่เดิม เพื่อไม่ให้กระทบ Nav/Function เดิมของไก่แม้แต่นิดเดียว. */
-function PorkMenu() {
+/**
+ * สินค้าหมู เป็นชุดข้อมูลคู่ขนานแยกจากไก่ทั้งหมด (weeks.product_line) — เมื่ออยู่
+ * ในหน้าหมูจริงๆ หรือหน้า ทั้งหมด นำ Dashboard/Upload Data ของหมูมาขึ้นเป็นเมนูหลัก
+ * แทน ไม่ซ่อนไว้ในดรอปดาวน์ เพื่อไม่ให้กระทบ Nav/Function เดิมของไก่แม้แต่นิดเดียว.
+ * เพิ่มเติม ฝั่งหมู — มีแค่ ติดตามโอน/ข้อมูลดิบ เพราะ Dashboard/Upload Data ของหมูขึ้นเป็นเมนูหลักแล้ว.
+ */
+function PorkMoreMenu({ showSettings }: { showSettings: boolean }) {
   return (
-    <NavDropdown label="หมู">
-      <NavLink to="/pork/dashboard" className={moreLinkClass}>
-        Dashboard (หมู)
-      </NavLink>
-      <NavLink to="/pork/upload" className={moreLinkClass}>
-        Upload Data (หมู)
-      </NavLink>
+    <NavDropdown label="🐷 เพิ่มเติม">
       <NavLink to="/pork/tracking/daily" className={moreLinkClass}>
-        ติดตามโอน (หมู)
+        🐷 ติดตามโอน (หมู)
       </NavLink>
       <NavLink to="/pork/raw-data" className={moreLinkClass}>
-        ข้อมูลดิบ (หมู)
+        🐷 ข้อมูลดิบ (หมู)
       </NavLink>
+      {showSettings && (
+        <NavLink to="/settings" className={moreLinkClass}>
+          Settings
+        </NavLink>
+      )}
     </NavDropdown>
   );
 }
@@ -84,6 +87,12 @@ export default function Layout() {
   // Settings must stay reachable when require_login is off (see AdminGuard) —
   // otherwise no one signed in could ever turn it back on.
   const showSettings = !requireLogin || isAdmin;
+  const location = useLocation();
+  const isPork = location.pathname.startsWith('/pork');
+  // ทั้งหมด shows both products' data at once, so its nav shows ไก่'s and
+  // หมู's own top-level Dashboard/Upload Data/เพิ่มเติม side by side instead
+  // of tucking หมู's away in a small dropdown.
+  const isAll = location.pathname.startsWith('/all');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -94,14 +103,38 @@ export default function Layout() {
               ติดตามโอนเทียบแผน
             </NavLink>
             <nav className="flex items-center gap-2">
-              <NavLink to="/dashboard" className={navLinkClass}>
-                Dashboard
-              </NavLink>
-              <NavLink to="/upload" className={navLinkClass}>
-                Upload Data
-              </NavLink>
-              <MoreMenu showSettings={showSettings} />
-              <PorkMenu />
+              {isPork ? (
+                <>
+                  <NavLink to="/pork/dashboard" className={navLinkClass}>
+                    🐷 Dashboard
+                  </NavLink>
+                  <NavLink to="/pork/upload" className={navLinkClass}>
+                    🐷 Upload Data
+                  </NavLink>
+                  <PorkMoreMenu showSettings={showSettings} />
+                </>
+              ) : (
+                <>
+                  <NavLink to="/dashboard" className={navLinkClass}>
+                    🐔 Dashboard
+                  </NavLink>
+                  <NavLink to="/upload" className={navLinkClass}>
+                    🐔 Upload Data
+                  </NavLink>
+                  <MoreMenu showSettings={showSettings} />
+                  {isAll && (
+                    <>
+                      <NavLink to="/pork/dashboard" className={navLinkClass}>
+                        🐷 Dashboard
+                      </NavLink>
+                      <NavLink to="/pork/upload" className={navLinkClass}>
+                        🐷 Upload Data
+                      </NavLink>
+                      <PorkMoreMenu showSettings={showSettings} />
+                    </>
+                  )}
+                </>
+              )}
             </nav>
           </div>
           <div className="flex items-center gap-4">

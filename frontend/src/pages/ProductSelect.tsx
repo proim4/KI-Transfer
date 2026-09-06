@@ -5,6 +5,11 @@ const PRODUCTS = [
   { key: 'pork', icon: '🐷', label: 'หมู', path: '/pork/dashboard' },
 ] as const;
 
+const ALL_PRODUCT = { key: 'all', icon: '📦', label: 'ทั้งหมด', path: '/all/dashboard' } as const;
+
+const cardClass =
+  'flex w-full flex-col items-center gap-3 rounded-lg border border-gray-200 bg-white p-8 shadow-sm transition hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md';
+
 /** Landing page after login — lets the user pick which product's data to
  * view before entering its Dashboard, instead of always defaulting straight
  * to the chicken pages. */
@@ -17,16 +22,21 @@ export default function ProductSelect() {
       <p className="mb-8 text-sm text-gray-500">เลือกสินค้าเพื่อเข้าดูข้อมูลการติดตามโอน</p>
       <div className="grid grid-cols-2 gap-4">
         {PRODUCTS.map((p) => (
-          <button
-            key={p.key}
-            type="button"
-            onClick={() => navigate(p.path)}
-            className="flex flex-col items-center gap-3 rounded-lg border border-gray-200 bg-white p-8 shadow-sm transition hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md"
-          >
+          <button key={p.key} type="button" onClick={() => navigate(p.path)} className={cardClass}>
             <span className="text-4xl">{p.icon}</span>
             <span className="text-base font-semibold text-gray-900">{p.label}</span>
           </button>
         ))}
+      </div>
+      <div className="mt-4 flex justify-center">
+        <button
+          type="button"
+          onClick={() => navigate(ALL_PRODUCT.path)}
+          className={`${cardClass} max-w-[calc(50%-0.5rem)]`}
+        >
+          <span className="text-4xl">{ALL_PRODUCT.icon}</span>
+          <span className="text-base font-semibold text-gray-900">{ALL_PRODUCT.label}</span>
+        </button>
       </div>
     </div>
   );
