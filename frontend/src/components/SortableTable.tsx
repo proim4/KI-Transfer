@@ -63,6 +63,8 @@ interface SortableTableProps<T> {
   filterBar?: ReactNode;
   /** Extra action(s) rendered next to the "คอลัม" column-visibility button — e.g. a "Clear Filter" button. */
   headerExtra?: ReactNode;
+  /** When given, each row becomes clickable (cursor-pointer + this handler) — e.g. to open a row detail view. */
+  onRowClick?: (row: T) => void;
 }
 
 function compareValues(a: string | number | null, b: string | number | null): number {
@@ -127,6 +129,7 @@ export default function SortableTable<T>({
   columnVisibilityKey,
   filterBar,
   headerExtra,
+  onRowClick,
 }: SortableTableProps<T>) {
   const [sortKey, setSortKey] = useState(defaultSortKey);
   const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
@@ -300,7 +303,13 @@ export default function SortableTable<T>({
               const row = sorted[virtualRow.index];
               const isTintRow = virtualRow.index % 2 === 1;
               return (
-                <tr key={rowKey(row)} data-index={virtualRow.index} ref={virtualizer.measureElement} className="group">
+                <tr
+                  key={rowKey(row)}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  className={`group ${onRowClick ? 'cursor-pointer' : ''}`}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                >
                   {visibleColumns.map((column) => (
                     <td
                       key={column.key}

@@ -4,17 +4,13 @@ import KpiCard, { formatPct } from '../components/KpiCard';
 import LastUpdatedLabel from '../components/LastUpdatedLabel';
 import RouteFilterBar, { EMPTY_ROUTE_FILTER, matchesRouteFilter, type RouteFilterValue } from '../components/RouteFilterBar';
 import SortableTable, { type Column } from '../components/SortableTable';
+import SupplyDailyDetailModal from '../components/SupplyDailyDetailModal';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useMasFactoryZones, useSupplyDailyResults } from '../hooks/useSupplyDailyResults';
 import { useUploads } from '../hooks/useUploads';
 import { lastUpdatedAt } from '../lib/lastUpdated';
-import {
-  EXCEPTION_LABELS,
-  computeSupplyDailyKpis,
-  matchesException,
-  type ExceptionKey,
-} from '../lib/supplyDailyAggregate';
+import { computeSupplyDailyKpis, matchesException, type ExceptionKey } from '../lib/supplyDailyAggregate';
 import type { ProductLine, SupplyDailyResultRow } from '../types/db';
 
 /** Attaches an Excel-style header filter dropdown to every column — mirrors RawData.tsx's own helper (kept local per page, same as TrackingChannel's headerFilterFor). */
@@ -68,6 +64,55 @@ function statusLabel(r: SupplyDailyResultRow): string {
   return labels.length > 0 ? labels.join(', ') : 'ปกติ';
 }
 
+/** Groups the calc engine's 7 fine-grained ExceptionKeys into the 4 severity buckets an operator actually triages by. */
+interface ExceptionGroup {
+  key: string;
+  label: string;
+  keys: ExceptionKey[];
+  dot: string;
+  activeRing: string;
+}
+
+const EXCEPTION_GROUPS: ExceptionGroup[] = [
+  {
+    key: 'off_plan',
+    label: '🔴 โอนนอกแผน',
+    keys: ['off_plan'],
+    dot: 'bg-red-500',
+    activeRing: 'border-red-500 bg-red-50 ring-1 ring-red-400',
+  },
+  {
+    key: 'bidding_pricing_off_system',
+    label: '🟠 Bidding / ลงราคา แต่ไม่เข้าระบบโอน',
+    keys: ['low_bid_off_plan', 'priced_down_off_plan'],
+    dot: 'bg-amber-500',
+    activeRing: 'border-amber-500 bg-amber-50 ring-1 ring-amber-400',
+  },
+  {
+    key: 'supply_no_plan',
+    label: '🟡 มี Supply แต่ไม่มีแผนโอน',
+    keys: ['supply_no_plan', 'plan_no_actual', 'actual_no_plan'],
+    dot: 'bg-yellow-400',
+    activeRing: 'border-yellow-500 bg-yellow-50 ring-1 ring-yellow-400',
+  },
+  {
+    key: 'unresolved',
+    label: '🟣 ข้อมูลไม่สมบูรณ์ / Match ไม่ได้',
+    keys: ['unresolved'],
+    dot: 'bg-purple-500',
+    activeRing: 'border-purple-500 bg-purple-50 ring-1 ring-purple-400',
+  },
+];
+
+function matchesExceptionGroup(row: SupplyDailyResultRow, group: ExceptionGroup): boolean {
+  return group.keys.some((k) => matchesException(row, k));
+}
+
+interface ProcessStage {
+  label: string;
+  value: number;
+}
+
 interface SupplyDailyTrackingProps {
   productLine?: ProductLine;
 }
@@ -80,13 +125,10 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
 
   const [routeFilter, setRouteFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
-  const [activeException, setActiveException] = useState<ExceptionKey | null>(null);
+  const [activeGroupKey, setActiveGroupKey] = useState<string | null>(null);
+  const [selectedRow, setSelectedRow] = useState<SupplyDailyResultRow | null>(null);
 
   const rows = results ?? [];
-  const kpis = computeSupplyDailyKpis(rows, factoryZones?.length ?? 0);
-
-  const exceptionFiltered = activeException ? rows.filter((r) => matchesException(r, activeException)) : rows;
-  const routeFiltered = exceptionFiltered.filter((r) => matchesRouteFilter(routeFilter, pickRoute(r)));
 
   const columnsBase: Column<SupplyDailyResultRow>[] = useMemo(
     () => [
@@ -162,24 +204,36 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
     [],
   );
 
-  const finalRows = useMemo(
-    () => applyColumnFilters(routeFiltered, columnsBase, columnFilters),
-    [routeFiltered, columnsBase, columnFilters],
-  );
-  const columns = useMemo(
-    () => attachHeaderFilters(columnsBase, routeFiltered, columnFilters, setColumnFilters),
-    [columnsBase, routeFiltered, columnFilters],
+  // The single filter pipeline: search box + per-column header filters narrow
+  // `searchFiltered`, which every KPI/Process/Exception count below is
+  // computed from — clicking an exception-group tile then narrows the table
+  // further without shrinking the other tiles' own counts.
+  const searchFiltered = useMemo(
+    () => applyColumnFilters(rows.filter((r) => matchesRouteFilter(routeFilter, pickRoute(r))), columnsBase, columnFilters),
+    [rows, routeFilter, columnsBase, columnFilters],
   );
 
-  const exceptionCards: { key: ExceptionKey; count: number }[] = [
-    { key: 'low_bid_off_plan', count: kpis.lowBidOffPlanCount },
-    { key: 'priced_down_off_plan', count: kpis.pricedDownOffPlanCount },
-    { key: 'actual_no_plan', count: kpis.actualNoPlanCount },
-    { key: 'supply_no_plan', count: kpis.supplyNoPlanCount },
-    { key: 'plan_no_actual', count: kpis.planNoActualCount },
-    { key: 'off_plan', count: kpis.offPlanCount },
-    { key: 'unresolved', count: kpis.unresolvedCount },
+  const activeGroup = EXCEPTION_GROUPS.find((g) => g.key === activeGroupKey) ?? null;
+  const finalRows = activeGroup ? searchFiltered.filter((r) => matchesExceptionGroup(r, activeGroup)) : searchFiltered;
+
+  const columns = useMemo(
+    () => attachHeaderFilters(columnsBase, rows.filter((r) => matchesRouteFilter(routeFilter, pickRoute(r))), columnFilters, setColumnFilters),
+    [columnsBase, rows, routeFilter, columnFilters],
+  );
+
+  const kpis = computeSupplyDailyKpis(searchFiltered, factoryZones?.length ?? 0);
+
+  const processStages: ProcessStage[] = [
+    { label: 'Supply Daily', value: kpis.filedRowCount },
+    { label: 'Bidding', value: kpis.biddingRecordCount },
+    { label: 'ลงราคา', value: kpis.pricedDownRecordCount },
+    { label: 'แผนโอน', value: kpis.planRecordCount },
+    { label: 'โอนจริง', value: kpis.actualRecordCount },
   ];
+
+  const groupCounts = new Map(EXCEPTION_GROUPS.map((g) => [g.key, searchFiltered.filter((r) => matchesExceptionGroup(r, g)).length]));
+
+  const filtersActive = routeFilter.search !== '' || Object.values(columnFilters).some(Boolean) || activeGroupKey !== null;
 
   return (
     <div className="space-y-4">
@@ -196,13 +250,18 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
 
       {weekId && !isLoading && (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-5">
             <KpiCard label="จำนวนโรงงานทั้งหมด" value={String(kpis.totalFactories)} />
-            <KpiCard label="โรงงานที่กรอก Supply" value={String(kpis.filedFactories)} sub={`${formatPct(kpis.filedPct)}`} />
+            <KpiCard label="โรงงานที่กรอก Supply" value={String(kpis.filedFactories)} sub={formatPct(kpis.filedPct)} />
+            <KpiCard
+              label="% Bidding เข้าระบบโอน"
+              value={formatPct(kpis.biddingEnteredSystemPct)}
+              tone={kpis.biddingEnteredSystemPct !== null && kpis.biddingEnteredSystemPct < 1 ? 'warn' : 'default'}
+            />
             <KpiCard
               label="โอนนอกแผน"
               value={String(kpis.offPlanCount)}
-              sub={`${formatPct(rows.length > 0 ? kpis.offPlanCount / rows.length : null)}`}
+              sub={formatPct(searchFiltered.length > 0 ? kpis.offPlanCount / searchFiltered.length : null)}
               tone={kpis.offPlanCount > 0 ? 'bad' : 'default'}
             />
             <KpiCard
@@ -213,52 +272,48 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
           </div>
 
           <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">
-              ภาพรวมกระบวนการ Supply → Bidding → ลงราคา → แผนโอน → โอนจริง
-            </h2>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-4">
-              <KpiCard label="ปริมาณ Supply ทั้งหมด" value={kpis.totalSupplyQty.toLocaleString('en-US')} />
-              <KpiCard label="จำนวนรายการ Bidding" value={String(kpis.biddingRecordCount)} />
-              <KpiCard label="จำนวนรายการลงราคา" value={String(kpis.pricedDownRecordCount)} />
-              <KpiCard label="จำนวนรายการมีแผนโอน" value={String(kpis.planRecordCount)} />
-              <KpiCard label="จำนวนรายการมีโอนจริง" value={String(kpis.actualRecordCount)} />
-              <KpiCard
-                label="% Bidding เข้าระบบโอน"
-                value={formatPct(kpis.biddingEnteredSystemPct)}
-                tone={kpis.biddingEnteredSystemPct !== null && kpis.biddingEnteredSystemPct < 1 ? 'warn' : 'default'}
-              />
-              <KpiCard
-                label="% Bidding ไม่เข้าระบบโอน"
-                value={formatPct(kpis.biddingNotEnteredSystemPct)}
-                tone={kpis.biddingNotEnteredSystemPct !== null && kpis.biddingNotEnteredSystemPct > 0 ? 'bad' : 'default'}
-              />
-              <KpiCard label="% โอนตามแผน" value={formatPct(kpis.onPlanPct)} tone="good" />
-              <KpiCard
-                label="% โอนนอกแผน"
-                value={formatPct(kpis.offPlanPct)}
-                tone={kpis.offPlanPct !== null && kpis.offPlanPct > 0 ? 'bad' : 'default'}
-              />
+            <h2 className="mb-3 text-sm font-semibold text-gray-900">ภาพรวมกระบวนการ</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              {processStages.map((stage, i) => (
+                <div key={stage.label} className="flex items-center gap-2">
+                  <div className="min-w-[104px] rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-center">
+                    <p className="text-xs text-gray-500">{stage.label}</p>
+                    <p className="text-lg font-semibold tabular-nums text-navy-900">{stage.value.toLocaleString('en-US')}</p>
+                  </div>
+                  {i < processStages.length - 1 && <span className="text-gray-300">▶</span>}
+                </div>
+              ))}
+              <span className="ml-2 text-xs text-gray-400">
+                % เข้าระบบโอน (Bidding → แผนโอน): {formatPct(kpis.biddingEnteredSystemPct)}
+              </span>
             </div>
           </div>
 
           <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <h2 className="mb-3 text-sm font-semibold text-gray-900">🚨 Exception</h2>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-7">
-              {exceptionCards.map(({ key, count }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setActiveException((prev) => (prev === key ? null : key))}
-                  className={`rounded-md border p-2 text-left text-xs transition-colors ${
-                    activeException === key
-                      ? 'border-navy-600 bg-navy-50 ring-1 ring-navy-400'
-                      : 'border-gray-200 bg-white hover:bg-gray-50'
-                  }`}
-                >
-                  <div className={`text-lg font-semibold ${count > 0 ? 'text-red-600' : 'text-gray-400'}`}>{count}</div>
-                  <div className="text-gray-600">{EXCEPTION_LABELS[key]}</div>
-                </button>
-              ))}
+            <h2 className="mb-3 text-sm font-semibold text-gray-900">Exception / รายการที่ต้องติดตาม</h2>
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+              {EXCEPTION_GROUPS.map((group) => {
+                const count = groupCounts.get(group.key) ?? 0;
+                const active = activeGroupKey === group.key;
+                return (
+                  <button
+                    key={group.key}
+                    type="button"
+                    onClick={() => setActiveGroupKey((prev) => (prev === group.key ? null : group.key))}
+                    className={`rounded-md border p-3 text-left transition-colors ${
+                      active ? group.activeRing : 'border-gray-200 bg-white hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 rounded-full ${group.dot}`} />
+                      <span className={`text-2xl font-semibold tabular-nums ${count > 0 ? 'text-gray-900' : 'text-gray-400'}`}>
+                        {count}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-gray-600">{group.label}</div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -270,19 +325,22 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
             storageKey={`columnWidths:supply-daily-${productLine}`}
             columnVisibilityKey={`columnVisibility:supply-daily-${productLine}`}
             filterBar={<RouteFilterBar value={routeFilter} onChange={setRouteFilter} resultCount={finalRows.length} />}
+            onRowClick={setSelectedRow}
             headerExtra={
               <ClearFilterButton
-                active={routeFilter.search !== '' || Object.values(columnFilters).some(Boolean) || activeException !== null}
+                active={filtersActive}
                 onClear={() => {
                   setRouteFilter(EMPTY_ROUTE_FILTER);
                   setColumnFilters({});
-                  setActiveException(null);
+                  setActiveGroupKey(null);
                 }}
               />
             }
           />
         </>
       )}
+
+      {selectedRow && <SupplyDailyDetailModal row={selectedRow} onClose={() => setSelectedRow(null)} />}
     </div>
   );
 }
