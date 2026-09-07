@@ -214,14 +214,24 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
   );
 
   const activeGroup = EXCEPTION_GROUPS.find((g) => g.key === activeGroupKey) ?? null;
-  const finalRows = activeGroup ? searchFiltered.filter((r) => matchesExceptionGroup(r, activeGroup)) : searchFiltered;
-
-  const columns = useMemo(
-    () => attachHeaderFilters(columnsBase, rows.filter((r) => matchesRouteFilter(routeFilter, pickRoute(r))), columnFilters, setColumnFilters),
-    [columnsBase, rows, routeFilter, columnFilters],
+  const finalRows = useMemo(
+    () => (activeGroup ? searchFiltered.filter((r) => matchesExceptionGroup(r, activeGroup)) : searchFiltered),
+    [searchFiltered, activeGroup],
   );
 
-  const kpis = computeSupplyDailyKpis(searchFiltered, factoryZones?.length ?? 0);
+  // Header-filter dropdown options are built from the full week (not
+  // re-narrowed by the search box) so typing in the search box doesn't
+  // re-scan every column over 15k+ rows on each keystroke — that rebuild was
+  // the main cause of visible input lag while typing.
+  const columns = useMemo(
+    () => attachHeaderFilters(columnsBase, rows, columnFilters, setColumnFilters),
+    [columnsBase, rows, columnFilters],
+  );
+
+  const kpis = useMemo(
+    () => computeSupplyDailyKpis(searchFiltered, factoryZones?.length ?? 0),
+    [searchFiltered, factoryZones],
+  );
 
   const processStages: ProcessStage[] = [
     { label: 'Supply Daily', value: kpis.filedRowCount },
@@ -231,7 +241,16 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
     { label: 'โอนจริง', value: kpis.actualRecordCount },
   ];
 
-  const groupCounts = new Map(EXCEPTION_GROUPS.map((g) => [g.key, searchFiltered.filter((r) => matchesExceptionGroup(r, g)).length]));
+  // Reuses the counts computeSupplyDailyKpis already tallied in one pass over
+  // searchFiltered, instead of re-filtering the (potentially 15k+ row) set
+  // once per group — that extra scan was the main cause of the page feeling
+  // laggy on every render (e.g. just opening the row detail modal).
+  const groupCounts = new Map<string, number>([
+    ['off_plan', kpis.offPlanCount],
+    ['bidding_pricing_off_system', kpis.lowBidOffPlanCount + kpis.pricedDownOffPlanCount],
+    ['supply_no_plan', kpis.supplyNoPlanCount + kpis.planNoActualCount + kpis.actualNoPlanCount],
+    ['unresolved', kpis.unresolvedCount],
+  ]);
 
   const filtersActive = routeFilter.search !== '' || Object.values(columnFilters).some(Boolean) || activeGroupKey !== null;
 
