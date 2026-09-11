@@ -127,6 +127,32 @@ export interface TrackingResultRow {
   reject_pct: number | null;
   remark: string | null;
 
+  /** Raw ABS0000-derived actual before any adjustment — null when actual_total has never been adjusted. */
+  actual_original: number | null;
+  is_adjusted: boolean;
+  adjusted_by: string | null;
+  adjusted_by_name: string | null;
+  adjusted_at: string | null;
+  adjustment_reason: string | null;
+
+  created_at: string;
+}
+
+/** One "โอนจริง" adjustment action — append-only audit log, one row per Save regardless of how many price-variant tracking_results rows it touched. */
+export interface TrackingActualAdjustmentRow {
+  id: string;
+  week_id: string;
+  production_date: string;
+  origin_code: string;
+  origin_name: string;
+  dest_code: string;
+  dest_name: string;
+  product_group: string;
+  previous_actual: number;
+  new_actual: number;
+  reason: string;
+  adjusted_by: string | null;
+  adjusted_by_name: string | null;
   created_at: string;
 }
 

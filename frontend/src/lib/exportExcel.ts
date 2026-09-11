@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import { aggregateChannel, aggregateReject, buildDailyTrend, dedupedActualTotal } from './aggregate';
 import { fetchAllRows } from './fetchAllRows';
 import { supabase } from './supabase';
-import type { TrackingResultRow } from '../types/db';
+import type { TrackingActualAdjustmentRow, TrackingResultRow } from '../types/db';
 
 interface PlanRowDb {
   source_file: 'weekly' | 'daily';
@@ -52,6 +52,29 @@ function trackingSheetRow(r: TrackingResultRow) {
     'Reject รวม (kg)': r.reject_total,
     '% Reject': r.reject_pct,
     'หมายเหตุ': r.remark ?? '',
+    'Original Actual (kg)': r.actual_original ?? r.actual_total,
+    'Adjusted Actual (kg)': r.is_adjusted ? r.actual_total : '',
+    'Adjustment Difference (kg)': r.is_adjusted && r.actual_original != null ? r.actual_total - r.actual_original : '',
+    'Last Adjusted By': r.adjusted_by_name ?? '',
+    'Last Adjusted Date': r.adjusted_at ?? '',
+    'Adjustment Reason': r.adjustment_reason ?? '',
+  };
+}
+
+function adjustmentLogSheetRow(r: TrackingActualAdjustmentRow) {
+  return {
+    วันที่: r.production_date,
+    'รหัสต้นทาง': r.origin_code,
+    'โรงงานต้นทาง': r.origin_name,
+    'รหัสปลายทาง': r.dest_code,
+    'โรงงานปลายทาง': r.dest_name,
+    'กลุ่มสินค้า': r.product_group,
+    'ค่าเดิม (kg)': r.previous_actual,
+    'ค่าใหม่ (kg)': r.new_actual,
+    'ส่วนต่าง (kg)': r.new_actual - r.previous_actual,
+    'ผู้แก้ไข': r.adjusted_by_name ?? '',
+    'วันเวลาแก้ไข': r.created_at,
+    'เหตุผล': r.reason,
   };
 }
 
@@ -85,9 +108,12 @@ function actualSheetRow(r: ActualRowDb) {
 }
 
 export async function exportWeekToExcel(weekId: string, weekLabel: string, trackingResults: TrackingResultRow[]) {
-  const [planRows, actualRows] = await Promise.all([
+  const [planRows, actualRows, adjustmentLog] = await Promise.all([
     fetchAllRows<PlanRowDb>((from, to) => supabase.from('plan_rows').select('*').eq('week_id', weekId).range(from, to)),
     fetchAllRows<ActualRowDb>((from, to) => supabase.from('actual_rows').select('*').eq('week_id', weekId).range(from, to)),
+    fetchAllRows<TrackingActualAdjustmentRow>((from, to) =>
+      supabase.from('tracking_actual_adjustments').select('*').eq('week_id', weekId).order('created_at', { ascending: false }).range(from, to),
+    ),
   ]);
 
   const weekly = aggregateChannel(trackingResults, 'weekly');
@@ -145,6 +171,11 @@ export async function exportWeekToExcel(weekId: string, weekLabel: string, track
   );
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(actualRows.map(actualSheetRow)), 'Actual Transfer');
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(lossAnalysisRows), 'Loss Analysis');
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.json_to_sheet(adjustmentLog.map(adjustmentLogSheetRow)),
+    'Adjustment Log',
+  );
 
   XLSX.writeFile(workbook, `Tracking_${weekLabel}.xlsx`);
 }

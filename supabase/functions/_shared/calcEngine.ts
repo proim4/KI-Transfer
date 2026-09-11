@@ -1,4 +1,5 @@
 import type {
+  ActualAdjustment,
   ActualRow,
   Channel,
   ChannelResult,
@@ -14,7 +15,7 @@ const TOLERANCE = 0.1;
  * matches origin, dest, transfer date and product group only — price is
  * never one of its criteria.
  */
-function matchKey(date: string, origin: string, dest: string, productGroup: string): string {
+export function matchKey(date: string, origin: string, dest: string, productGroup: string): string {
   return `${date}|${origin}|${dest}|${productGroup}`;
 }
 
@@ -34,6 +35,10 @@ function fullGroupKey(date: string, origin: string, dest: string, productGroup: 
 
 export function sum(values: number[]): number {
   return values.reduce((a, b) => a + b, 0);
+}
+
+function normalizeZero(value: number): number {
+  return value === 0 ? 0 : value;
 }
 
 /**
@@ -79,7 +84,19 @@ export interface ComputeTrackingResult {
  * exact SKU — the plan input itself carries no finer granularity, so this
  * mirrors the original workbook exactly.
  */
-export function computeTracking(planRows: PlanRow[], actualRows: ActualRow[]): ComputeTrackingResult {
+/**
+ * `adjustments` carries the latest manual override per route (see
+ * ActualAdjustment) so a user's correction to "โอนจริง" survives the next
+ * time this week is reprocessed (e.g. a re-upload of ABS0000) instead of
+ * being silently wiped by the fresh sum from actualRows. Each route's
+ * `actualOriginal` still reflects the current raw ABS0000 sum, so "original
+ * vs adjusted" always compares against the latest upload, not a stale one.
+ */
+export function computeTracking(
+  planRows: PlanRow[],
+  actualRows: ActualRow[],
+  adjustments: Map<string, ActualAdjustment> = new Map(),
+): ComputeTrackingResult {
   interface PlanGroup {
     productionDate: string;
     originCode: string;
@@ -144,7 +161,9 @@ export function computeTracking(planRows: PlanRow[], actualRows: ActualRow[]): C
   for (const group of planGroups.values()) {
     // Not deleted after use: two price-variant rows for the same route both
     // look up the same, undepleted actual total (see fullGroupKey above).
-    const actualTotal = actualByKey.get(group.matchKey) ?? 0;
+    const actualRaw = actualByKey.get(group.matchKey) ?? 0;
+    const adjustment = adjustments.get(group.matchKey);
+    const actualTotal = adjustment ? adjustment.newActual : actualRaw;
     const planTotal = group.planWeekly + group.planDaily;
     const suggestTotal = group.suggestWeekly + group.suggestDaily;
     const rejectWeekly = Math.max(group.suggestWeekly - group.planWeekly, 0);
@@ -164,12 +183,22 @@ export function computeTracking(planRows: PlanRow[], actualRows: ActualRow[]): C
       planDaily: group.planDaily,
       planTotal,
       actualTotal,
+      actualOriginal: adjustment ? actualRaw : null,
+      isAdjusted: !!adjustment,
+      adjustedBy: adjustment?.adjustedBy ?? null,
+      adjustedByName: adjustment?.adjustedByName ?? null,
+      adjustedAt: adjustment?.adjustedAt ?? null,
+      adjustmentReason: adjustment?.reason ?? null,
       weekly: computeChannel(actualTotal, group.planWeekly),
       daily: computeChannel(actualTotal, group.planDaily),
       total: computeChannel(actualTotal, planTotal),
       overage: Math.max(actualTotal - planTotal, 0),
-      profitRealized: (group.destPrice - group.originPrice) * actualTotal,
-      profitLost: -Math.max(0, planTotal - actualTotal) * Math.max(0, group.destPrice - group.originPrice),
+      // `=== 0 ? 0 : x` normalizes -0 (e.g. -1 * 0) to plain 0 — cosmetic in
+      // Postgres (numeric has no signed zero) but matters for the frontend's
+      // own mirror of this formula (rowCalc.ts), which renders a live
+      // preview straight from JS without a DB round-trip to normalize it.
+      profitRealized: normalizeZero((group.destPrice - group.originPrice) * actualTotal),
+      profitLost: normalizeZero(-Math.max(0, planTotal - actualTotal) * Math.max(0, group.destPrice - group.originPrice)),
       suggestWeekly: group.suggestWeekly,
       suggestDaily: group.suggestDaily,
       suggestTotal,

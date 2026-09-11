@@ -8,10 +8,11 @@
 // Invoke:  supabase.functions.invoke('process-week', { body: { weekId } })
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { computeTracking } from '../_shared/calcEngine.ts';
+import { computeTracking, matchKey } from '../_shared/calcEngine.ts';
 import { computeSupplyDailyResults } from '../_shared/supplyDailyCalcEngine.ts';
 import { fetchAllRows } from '../_shared/fetchAllRows.ts';
 import type {
+  ActualAdjustment,
   ActualRow,
   BiddingRow,
   PlanRow,
@@ -69,10 +70,19 @@ Deno.serve(async (req: Request) => {
 
   let planRowsRaw: Record<string, unknown>[];
   let actualRowsRaw: Record<string, unknown>[];
+  let adjustmentRowsRaw: Record<string, unknown>[];
   try {
-    [planRowsRaw, actualRowsRaw] = await Promise.all([
+    [planRowsRaw, actualRowsRaw, adjustmentRowsRaw] = await Promise.all([
       fetchAllRows((from, to) => supabase.from('plan_rows').select('*').eq('week_id', weekId).range(from, to)),
       fetchAllRows((from, to) => supabase.from('actual_rows').select('*').eq('week_id', weekId).range(from, to)),
+      fetchAllRows((from, to) =>
+        supabase
+          .from('tracking_actual_adjustments')
+          .select('*')
+          .eq('week_id', weekId)
+          .order('created_at', { ascending: true })
+          .range(from, to),
+      ),
     ]);
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : String(err));
@@ -104,7 +114,23 @@ Deno.serve(async (req: Request) => {
     productGroup: r.product_group,
   }));
 
-  const { results, unmatchedActual } = computeTracking(planRows, actualRows);
+  // Latest adjustment wins per route (rows were fetched ordered oldest-first,
+  // so a later row for the same key simply overwrites an earlier one here) —
+  // this is what makes a user's manual correction survive a later re-upload
+  // of ABS0000 for the same week instead of being silently recomputed away.
+  const adjustments = new Map<string, ActualAdjustment>();
+  for (const r of adjustmentRowsRaw as any[]) {
+    const key = matchKey(toIsoDate(r.production_date), r.origin_code, r.dest_code, r.product_group);
+    adjustments.set(key, {
+      newActual: Number(r.new_actual),
+      reason: r.reason,
+      adjustedBy: r.adjusted_by,
+      adjustedByName: r.adjusted_by_name,
+      adjustedAt: r.created_at,
+    });
+  }
+
+  const { results, unmatchedActual } = computeTracking(planRows, actualRows, adjustments);
 
   const trackingRows = results.map((r) => ({
     week_id: weekId,
@@ -120,6 +146,12 @@ Deno.serve(async (req: Request) => {
     plan_daily: r.planDaily,
     plan_total: r.planTotal,
     actual_total: r.actualTotal,
+    actual_original: r.actualOriginal,
+    is_adjusted: r.isAdjusted,
+    adjusted_by: r.adjustedBy,
+    adjusted_by_name: r.adjustedByName,
+    adjusted_at: r.adjustedAt,
+    adjustment_reason: r.adjustmentReason,
     weekly_capped: r.weekly.capped,
     weekly_tolerance_adj: r.weekly.toleranceAdj,
     weekly_diff: r.weekly.diff,

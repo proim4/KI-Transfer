@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import ActualAdjustCell from '../components/ActualAdjustCell';
 import ClearFilterButton from '../components/ClearFilterButton';
 import { formatBaht, formatKg, formatPct } from '../components/KpiCard';
 import LastUpdatedLabel from '../components/LastUpdatedLabel';
@@ -307,7 +308,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         total: totals.actual,
         headerFilter: headerFilterFor('actual_total', 'ทั้งหมด'),
         sortValue: (r) => r.actual_total,
-        render: (r) => formatKg(r.actual_total),
+        render: (r) => <ActualAdjustCell row={r} allRows={rows} weekId={weekId!} />,
       },
       {
         key: 'diff',
@@ -364,7 +365,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         render: (r) => <RemarkCell id={r.id} value={r.remark} />,
       },
     ],
-    [channel, planField, diffField, pctField, thresholds, totals, columnFilters, columnOptions],
+    [channel, planField, diffField, pctField, thresholds, totals, columnFilters, columnOptions, rows, weekId],
   );
 
   const weekSelector = (

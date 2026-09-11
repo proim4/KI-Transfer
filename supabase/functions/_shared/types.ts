@@ -62,7 +62,15 @@ export interface TrackingResult {
   planWeekly: number;
   planDaily: number;
   planTotal: number;
+  /** Effective actual used in every calc below — the latest user adjustment for this route, if any, else the raw ABS0000 sum. */
   actualTotal: number;
+  /** The raw ABS0000-derived sum for this route, regardless of any adjustment — null when no adjustment exists (actualTotal is already the original). */
+  actualOriginal: number | null;
+  isAdjusted: boolean;
+  adjustedBy: string | null;
+  adjustedByName: string | null;
+  adjustedAt: string | null;
+  adjustmentReason: string | null;
 
   weekly: ChannelResult;
   daily: ChannelResult;
@@ -84,6 +92,15 @@ export interface TrackingResult {
   rejectTotal: number;
   /** rejectTotal / suggestTotal, or null when suggestTotal is 0. */
   rejectPct: number | null;
+}
+
+/** The latest manual override of a route's actual_total, keyed the same way as matchKey (date, origin, dest, productGroup) — see calcEngine.ts's computeTracking. */
+export interface ActualAdjustment {
+  newActual: number;
+  reason: string;
+  adjustedBy: string | null;
+  adjustedByName: string | null;
+  adjustedAt: string;
 }
 
 /**
