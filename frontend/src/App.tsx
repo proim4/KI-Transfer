@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import AllDashboard from './pages/AllDashboard';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import Manual from './pages/Manual';
 import ProductSelect from './pages/ProductSelect';
 import RawData from './pages/RawData';
 import Settings from './pages/Settings';
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/upload" element={<Upload />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/raw-data" element={<RawData />} />
+          <Route path="/manual" element={<Manual />} />
           <Route
             path="/tracking/weekly"
             element={<TrackingChannel channel="weekly" title="ติดตามโอน Weekly เทียบแผน" />}

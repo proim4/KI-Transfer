@@ -141,6 +141,9 @@ export default function Layout() {
                   )}
                 </>
               )}
+              <NavLink to="/manual" className={navLinkClass}>
+                📖 คู่มือ
+              </NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-4">

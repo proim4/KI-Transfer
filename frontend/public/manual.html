@@ -1,0 +1,1430 @@
+<!doctype html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>คู่มือ %โอนเทียบแผน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: corporate manual — sticky section index on the left, one reading column on the right; collapses to a single column on phones. */
+:root {
+  --bg: #f6f8fb;
+  --paper: #ffffff;
+  --ink: #142235;
+  --ink-2: #44546a;
+  --ink-3: #6b7a8f;
+  --rule: #dbe3ec;
+  --navy: #0d1b2e;
+  --navy-2: #1e3a5c;
+  --navy-soft: #eef2f7;
+  --soft: #e6eef8;
+  --soft-2: #c9d9ec;
+  --soft-line: #a9c1dd;
+  --soft-ink: #24496f;
+  --accent: #2a4d73;
+  --excel-green: #375623;
+  --excel-amber: #ffc000;
+  --good: #15803d;
+  --good-bg: #e8f5ec;
+  --warn: #b45309;
+  --warn-bg: #fdf3e2;
+  --bad: #b91c1c;
+  --bad-bg: #fbeaea;
+  --info: #1d4ed8;
+  --info-bg: #e9effc;
+  --zero: #1e3a5c;
+  --gray: #8a96a6;
+  --mark: #d9480f;
+  --code-bg: #f0f3f8;
+  --font-display: "Bai Jamjuree", "IBM Plex Sans Thai", "Leelawadee UI", Tahoma, sans-serif;
+  --font-body: "IBM Plex Sans Thai", "Leelawadee UI", Tahoma, sans-serif;
+  --font-mono: "IBM Plex Mono", "IBM Plex Sans Thai", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1420; --paper: #111d2c; --ink: #e5ecf4; --ink-2: #b4c1d1; --ink-3: #8c9bb0; --rule: #263749;
+    --navy: #07101b; --navy-2: #2d4f78; --navy-soft: #172638; --soft: #1a2c42; --soft-2: #24405f; --soft-line: #3a5a80; --soft-ink: #cfe0f3;  --accent: #8fb3dc;
+    --excel-green: #6aa84f; --excel-amber: #f2b705;
+    --good: #4ade80; --good-bg: #12301f; --warn: #fbbf24; --warn-bg: #33260d; --bad: #f87171; --bad-bg: #3a1616;
+    --info: #93b4f5; --info-bg: #15233f; --zero: #9db8da; --gray: #7d8a9c; --mark: #ff8a4c; --code-bg: #0d1826;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1420; --paper: #111d2c; --ink: #e5ecf4; --ink-2: #b4c1d1; --ink-3: #8c9bb0; --rule: #263749;
+  --navy: #07101b; --navy-2: #2d4f78; --navy-soft: #172638; --soft: #1a2c42; --soft-2: #24405f; --soft-line: #3a5a80; --soft-ink: #cfe0f3;  --accent: #8fb3dc;
+  --excel-green: #6aa84f; --excel-amber: #f2b705;
+  --good: #4ade80; --good-bg: #12301f; --warn: #fbbf24; --warn-bg: #33260d; --bad: #f87171; --bad-bg: #3a1616;
+  --info: #93b4f5; --info-bg: #15233f; --zero: #9db8da; --gray: #7d8a9c; --mark: #ff8a4c; --code-bg: #0d1826;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15.5px; line-height: 1.75; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 0 64px; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 40px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; line-height: 1.3; color: var(--ink); }
+h2 { font-size: 1.75rem; margin: 0 0 6px; }
+h3 { font-size: 1.22rem; margin: 30px 0 8px; }
+h4 { font-size: 1.05rem; margin: 20px 0 6px; }
+p { margin: 0 0 12px; max-width: 72ch; }
+ul, ol { margin: 0 0 12px; padding-left: 1.4em; max-width: 72ch; }
+li { margin-bottom: 4px; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--font-mono); font-size: 0.88em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+strong { font-weight: 600; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- side index ---------- */
+.toc { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; padding-block: 28px; font-size: 0.86rem; }
+.toc .brand { font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--ink); margin-bottom: 4px; }
+.toc .brand-sub { color: var(--ink-3); font-size: 0.78rem; margin-bottom: 18px; }
+.toc ol { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 0; }
+.toc a { display: grid; grid-template-columns: 2.2em 1fr; padding: 4px 8px; border-radius: 6px; color: var(--ink-2); text-decoration: none; line-height: 1.45; }
+.toc a:hover { background: var(--navy-soft); color: var(--ink); }
+.toc a span { font-family: var(--font-mono); color: var(--ink-3); font-size: 0.78rem; padding-top: 2px; }
+.toc .grp { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin: 14px 8px 4px; font-weight: 600; }
+@media (max-width: 900px) {
+  .toc { position: static; max-height: none; border-bottom: 1px solid var(--rule); padding-block: 16px; }
+  .toc ol { columns: 2; column-gap: 8px; }
+  .toc .grp { display: none; }
+}
+@media (max-width: 480px) { .toc ol { columns: 1; } }
+
+main { min-width: 0; padding-top: 28px; }
+
+/* ---------- cover ---------- */
+.cover { background: linear-gradient(135deg, var(--soft) 0%, var(--navy-soft) 100%); border: 1px solid var(--soft-2); color: var(--ink); border-radius: 14px; padding: 40px 36px 32px; position: relative; overflow: hidden; }
+.cover::after { content: ""; position: absolute; right: -60px; top: -60px; width: 280px; height: 280px; border-radius: 50%; border: 36px solid rgba(255,192,0,0.18); }
+.cover .eyebrow { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.1em; color: var(--warn); text-transform: uppercase; }
+.cover h1 { color: var(--soft-ink); font-size: clamp(2rem, 5vw, 2.9rem); margin: 8px 0 6px; }
+.cover .sub { color: var(--ink-2); font-size: 1.05rem; max-width: 60ch; }
+.cover-meta { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 26px; font-size: 0.85rem; color: var(--ink-2); position: relative; z-index: 1; }
+.cover-meta b { display: block; color: var(--ink); font-weight: 600; font-size: 0.95rem; }
+
+/* ---------- sections ---------- */
+section.sec { margin-top: 56px; scroll-margin-top: 16px; }
+.sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--soft-line); padding-bottom: 8px; margin-bottom: 18px; }
+.sec-no { font-family: var(--font-mono); font-size: 0.9rem; color: var(--ink-3); flex-shrink: 0; }
+.lede { color: var(--ink-2); font-size: 1.02rem; }
+
+/* ---------- callouts ---------- */
+.callout { border-radius: 10px; padding: 14px 18px; margin: 16px 0; border: 1px solid var(--rule); background: var(--paper); }
+.callout > :last-child { margin-bottom: 0; }
+.callout .ttl { font-weight: 600; font-family: var(--font-display); display: block; margin-bottom: 4px; }
+.callout.note { background: var(--info-bg); border-color: transparent; }
+.callout.note .ttl { color: var(--info); }
+.callout.warn { background: var(--warn-bg); border-color: transparent; }
+.callout.warn .ttl { color: var(--warn); }
+.callout.bad { background: var(--bad-bg); border-color: transparent; }
+.callout.bad .ttl { color: var(--bad); }
+.callout.good { background: var(--good-bg); border-color: transparent; }
+.callout.good .ttl { color: var(--good); }
+.callout.owner { background: var(--paper); border: 1.5px dashed var(--ink-3); }
+.callout.owner .ttl { color: var(--ink-2); }
+
+.verify { display: inline-block; font-size: 0.82rem; color: var(--ink-2); background: var(--paper); border: 1.5px dashed var(--ink-3); border-radius: 6px; padding: 0 7px; white-space: normal; }
+
+/* ---------- formula box ---------- */
+.formula { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; margin: 14px 0; overflow: hidden; }
+.formula .f-head { background: var(--soft); color: var(--soft-ink); border-bottom: 1px solid var(--soft-2); font-family: var(--font-display); font-weight: 600; padding: 8px 16px; font-size: 0.95rem; }
+.formula .f-body { padding: 14px 18px; font-family: var(--font-body); font-size: 0.95rem; line-height: 2; overflow-x: auto; white-space: pre-wrap; color: var(--ink); font-variant-numeric: tabular-nums; }
+.formula .f-foot { padding: 10px 16px; border-top: 1px solid var(--rule); font-size: 0.88rem; color: var(--ink-2); }
+
+/* ---------- tables ---------- */
+.tbl { overflow-x: auto; margin: 14px 0 18px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { background: var(--navy-soft); font-weight: 600; font-family: var(--font-display); color: var(--ink); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.total td { font-weight: 600; background: var(--navy-soft); }
+td .muted, .muted { color: var(--ink-3); }
+
+/* ---------- tags for logic types ---------- */
+.tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 999px; white-space: nowrap; vertical-align: 1px; }
+.tag.biz { background: var(--warn-bg); color: var(--warn); }
+.tag.prog { background: var(--info-bg); color: var(--info); }
+.tag.user { background: var(--good-bg); color: var(--good); }
+.tag.out { background: var(--navy-soft); color: var(--ink-2); border: 1px solid var(--rule); }
+
+/* ---------- status dots ---------- */
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+.d-green { background: #22c55e; } .d-amber { background: #f59e0b; } .d-red { background: #ef4444; } .d-navy { background: #1e3a5c; } .d-gray { background: #9ca3af; } .d-blue { background: #3b82f6; } .d-purple { background: #a855f7; } .d-yellow { background: #facc15; } .d-orange { background: #f97316; }
+:root[data-theme="dark"] .d-navy { background: #7ea3cf; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .d-navy { background: #7ea3cf; } }
+
+/* ---------- step lists ---------- */
+.steps { counter-reset: st; list-style: none; padding: 0; max-width: 80ch; }
+.steps > li { counter-increment: st; position: relative; padding: 2px 0 12px 48px; margin: 0; }
+.steps > li::before { content: counter(st); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--soft-2); color: var(--soft-ink); font-family: var(--font-display); font-weight: 700; display: grid; place-items: center; font-size: 0.95rem; }
+.steps > li::after { content: ""; position: absolute; left: 15px; top: 34px; bottom: 0; width: 2px; background: var(--rule); }
+.steps > li:last-child::after { display: none; }
+.steps > li > b:first-child { display: block; font-family: var(--font-display); }
+
+/* ---------- flow (vertical) ---------- */
+.flow { display: flex; flex-direction: column; align-items: stretch; max-width: 640px; margin: 16px 0 20px; }
+.flow .node { background: var(--paper); border: 1.5px solid var(--soft-line); border-radius: 10px; padding: 10px 16px; }
+.flow .node b { font-family: var(--font-display); display: block; }
+.flow .node small { color: var(--ink-2); font-size: 0.86rem; line-height: 1.55; display: block; }
+.flow .node.key { background: var(--soft); color: var(--soft-ink); border-color: var(--soft-line); }
+.flow .node.key small { color: var(--ink-2); }
+.flow .arrow { align-self: center; width: 2px; height: 22px; background: var(--ink-3); position: relative; }
+.flow .arrow::after { content: ""; position: absolute; bottom: -2px; left: -5px; border: 6px solid transparent; border-top-color: var(--ink-3); border-bottom: 0; }
+.flow .decision { align-self: center; background: var(--warn-bg); border: 1.5px solid var(--warn); border-radius: 10px; padding: 10px 18px; text-align: center; font-weight: 600; max-width: 460px; }
+.flow .branch { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.flow .branch .node { border-style: dashed; }
+.flow .branch .lbl { font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-3); display: block; margin-bottom: 2px; }
+@media (max-width: 520px) { .flow .branch { grid-template-columns: 1fr; } }
+
+/* ---------- horizontal pipeline ---------- */
+.pipe { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 16px 0 20px; }
+.pipe .p { flex: 1 1 130px; background: var(--paper); border: 1px solid var(--rule); border-top: 4px solid var(--soft-line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+.pipe .p b { font-family: var(--font-display); display: block; font-size: 0.95rem; }
+.pipe .p small { color: var(--ink-2); font-size: 0.82rem; line-height: 1.5; display: block; }
+.pipe .p.hl { border-top-color: var(--excel-amber); }
+.pipe .p.gr { border-top-color: var(--excel-green); }
+
+/* ---------- architecture diagram ---------- */
+.arch { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 16px 0; }
+.arch .col { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 12px; min-width: 0; }
+.arch .col h5 { margin: 0 0 8px; font-family: var(--font-display); font-size: 0.82rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.arch .chip { display: block; background: var(--navy-soft); border-radius: 6px; padding: 6px 8px; font-size: 0.82rem; margin-bottom: 6px; line-height: 1.45; }
+.arch .chip.k { background: var(--soft-2); color: var(--soft-ink); font-weight: 600; }
+.arch .chip code { background: transparent; padding: 0; }
+@media (max-width: 980px) { .arch { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .arch { grid-template-columns: 1fr; } }
+
+/* ---------- screen mockups ---------- */
+.shot { margin: 18px 0 8px; border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; background: var(--paper); }
+.shot-cap { font-size: 0.78rem; color: var(--ink-3); padding: 6px 12px; border-bottom: 1px solid var(--rule); background: var(--navy-soft); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.shot-scroll { overflow-x: auto; }
+.ui { min-width: 860px; font-size: 12.5px; line-height: 1.45; background: #f9fafb; color: #111827; font-family: var(--font-body); }
+.ui .bar { background: #0d1b2e; color: #dbe4ee; display: flex; align-items: center; gap: 6px; padding: 8px 14px; }
+.ui .bar .logo { color: #fff; font-weight: 600; margin-right: 12px; }
+.ui .bar .nv { padding: 4px 9px; border-radius: 5px; }
+.ui .bar .nv.on { background: #1e3a5c; color: #fff; }
+.ui .bar .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.ui .bar .btn-out { border: 1px solid #2a4d73; background: #152a44; color: #fff; padding: 2px 8px; border-radius: 5px; }
+.ui .pad { padding: 14px; }
+.ui .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ui .h { font-size: 16px; font-weight: 600; }
+.ui .s { color: #6b7280; }
+.ui .sel, .ui .btn { border: 1px solid #d1d5db; background: #fff; border-radius: 6px; padding: 5px 10px; color: #111827; }
+.ui .btn.pri { background: #152a44; color: #fff; border-color: #152a44; }
+.ui .btn.ghost { color: #cbd5e1; background: #f9fafb; border-color: #e5e7eb; }
+.ui .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+.ui .kpis.small { grid-template-columns: repeat(5, 1fr); }
+.ui .kpi { border: 1px solid #dbe4ee; background: #eef2f7; border-radius: 10px; padding: 10px; }
+.ui .kpis.small .kpi { background: #fff; border-color: #e5e7eb; }
+.ui .kpi .l { font-size: 10px; font-weight: 600; color: #3c6690; letter-spacing: 0.04em; }
+.ui .kpis.small .kpi .l { color: #6b7280; }
+.ui .kpi .v { font-size: 20px; font-weight: 600; color: #0d1b2e; font-variant-numeric: tabular-nums; }
+.ui .kpi .v.red { color: #b91c1c; } .ui .kpi .v.amb { color: #b45309; }
+.ui .kpi .sb { font-size: 10px; color: #93adcc; }
+.ui .panel { border: 1px solid #fde68a; background: #fffbeb; border-radius: 8px; padding: 10px; margin-top: 12px; }
+.ui .card { border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 10px; margin-top: 12px; }
+.ui table { font-size: 10.5px; border: 0; }
+.ui th, .ui td { white-space: nowrap; padding: 4px 5px; border-bottom: 1px solid #f3f4f6; color: #111827; background: transparent; font-family: var(--font-body); font-weight: 400; }
+.ui .b-route { background: #fff8e1; } .ui .b-plan { background: #ffc000; color: #451a03; } .ui .b-act { background: #375623; color: #fff; } .ui .b-diff { background: #dc2626; color: #fff; } .ui .b-pro { background: #14532d; color: #fff; } .ui .b-rem { background: #1e3a5c; color: #fff; }
+.ui .tot td { font-weight: 700; background: #fffbeb; }
+.ui .st { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 500; }
+.ui .st i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.ui .pb { position: relative; border-radius: 3px; overflow: hidden; text-align: right; padding: 0 4px; }
+.ui .pb span { position: absolute; left: 0; top: 0; bottom: 0; z-index: 0; }
+.ui .pb em { position: relative; z-index: 1; font-style: normal; font-weight: 500; }
+.ui .note-b { color: #1d4ed8; font-size: 10px; } .ui .note-a { color: #b45309; font-size: 10px; }
+.ui .zone { border: 1px dashed #d1d5db; border-radius: 6px; padding: 10px; margin-top: 8px; }
+.ui .pill { border-radius: 999px; padding: 1px 7px; font-size: 10px; font-weight: 500; }
+.ui .pill.ok { background: #dcfce7; color: #15803d; } .ui .pill.err { background: #fee2e2; color: #b91c1c; }
+.ui .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ui .exc { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ui .exc div { border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; background: #fff; }
+.ui .exc b { font-size: 18px; display: block; }
+.ui .stage { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ui .stage div { border: 1px solid #e5e7eb; background: #f9fafb; border-radius: 6px; padding: 4px 10px; text-align: center; min-width: 78px; }
+.ui .stage b { display: block; font-size: 14px; color: #0d1b2e; }
+.ui .tab { padding: 6px 10px; border-bottom: 2px solid transparent; color: #6b7280; }
+.ui .tab.on { border-color: #152a44; color: #0d1b2e; font-weight: 600; }
+.ui .tile { border: 1px solid #e5e7eb; background: #fff; border-radius: 10px; padding: 22px; text-align: center; font-weight: 600; }
+.ui .tile .ic { font-size: 28px; display: block; }
+
+/* numbered markers on mockups */
+.mk { position: relative; }
+.mk::before { content: attr(data-n); position: absolute; top: -9px; left: -9px; z-index: 5; width: 20px; height: 20px; border-radius: 50%; background: #d9480f; color: #fff; font: 700 11px/20px var(--font-mono); text-align: center; box-shadow: 0 0 0 2px #fff; }
+.mk.r::before { left: auto; right: -9px; }
+.mk.ring { outline: 2px solid #d9480f; outline-offset: 2px; border-radius: 6px; }
+
+.legend { list-style: none; padding: 0; margin: 10px 0 18px; display: grid; gap: 6px; max-width: 80ch; }
+.legend li { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: start; margin: 0; }
+.legend .n { width: 22px; height: 22px; border-radius: 50%; background: var(--mark); color: #fff; font: 700 11.5px/22px var(--font-mono); text-align: center; margin-top: 3px; }
+
+/* ---------- page cards (guide for each page) ---------- */
+.page-card { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 4px 22px 18px; margin: 22px 0; }
+.page-card > h3 { margin-top: 18px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.page-card > h3 .path { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-3); font-weight: 400; }
+.qa { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 6px 18px; margin: 10px 0; }
+.qa dt { font-weight: 600; color: var(--ink-2); font-size: 0.9rem; padding-top: 2px; }
+.qa dd { margin: 0; }
+@media (max-width: 640px) { .qa { grid-template-columns: 1fr; } .qa dd { margin-bottom: 8px; } }
+
+.readme { border-left: 4px solid var(--excel-amber); background: var(--paper); padding: 12px 18px; border-radius: 0 10px 10px 0; margin: 16px 0; }
+.readme .ttl { font-family: var(--font-display); font-weight: 700; display: block; margin-bottom: 6px; }
+.readme .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; font-size: 0.9rem; }
+.readme .cols b { display: block; font-size: 0.82rem; color: var(--ink-3); letter-spacing: 0.04em; }
+@media (max-width: 640px) { .readme .cols { grid-template-columns: 1fr; } }
+
+/* quick start */
+.qs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+.qs .q { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 14px; min-width: 0; }
+.qs .q .k { font-family: var(--font-mono); color: var(--mark); font-size: 0.82rem; font-weight: 500; }
+.qs .q b { font-family: var(--font-display); display: block; margin: 2px 0 4px; }
+.qs .q p { font-size: 0.88rem; color: var(--ink-2); margin: 0; }
+@media (max-width: 760px) { .qs { grid-template-columns: 1fr; } }
+
+.faq details { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 0 16px; margin-bottom: 8px; }
+.faq summary { cursor: pointer; padding: 12px 0; font-weight: 600; font-family: var(--font-display); list-style: none; display: flex; gap: 10px; }
+.faq summary::before { content: "Q"; font-family: var(--font-mono); color: var(--mark); }
+.faq summary::-webkit-details-marker { display: none; }
+.faq details[open] summary { border-bottom: 1px solid var(--rule); margin-bottom: 10px; }
+.faq details > div { padding-bottom: 12px; }
+
+.check { list-style: none; padding: 0; columns: 2; column-gap: 28px; max-width: none; }
+.check li { break-inside: avoid; padding-left: 26px; position: relative; font-size: 0.92rem; }
+.check li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--good); font-weight: 700; }
+@media (max-width: 640px) { .check { columns: 1; } }
+
+.foot { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--rule); color: var(--ink-3); font-size: 0.85rem; }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<nav class="toc" aria-label="สารบัญ">
+  <div class="brand">คู่มือ %โอนเทียบแผน</div>
+  <div class="brand-sub">User Manual &amp; Program Logic</div>
+  <ol>
+    <li class="grp">เริ่มต้น</li>
+    <li><a href="#control"><span>00</span>Document Control</a></li>
+    <li><a href="#quickstart"><span>QS</span>Quick Start</a></li>
+    <li class="grp">เข้าใจระบบ</li>
+    <li><a href="#about"><span>01</span>ระบบนี้คืออะไร / ทำไม / ใคร</a></li>
+    <li><a href="#concept"><span>02</span>ภาพรวม Process</a></li>
+    <li><a href="#kpi"><span>03</span>%โอนเทียบแผน คืออะไร</a></li>
+    <li><a href="#dataflow"><span>04</span>Data Flow</a></li>
+    <li><a href="#dictionary"><span>05</span>Data Dictionary</a></li>
+    <li class="grp">Logic</li>
+    <li><a href="#logic"><span>06</span>ระบบทำงานอย่างไร</a></li>
+    <li><a href="#calc"><span>07</span>Calculation Logic</a></li>
+    <li><a href="#gap"><span>08</span>GAP / ส่วนต่าง</a></li>
+    <li><a href="#status"><span>09</span>Status / สี</a></li>
+    <li><a href="#rules"><span>10</span>Business Rules</a></li>
+    <li><a href="#refresh"><span>11</span>Data Refresh</a></li>
+    <li><a href="#flowchart"><span>12</span>Logic Flowchart</a></li>
+    <li class="grp">ใช้งาน</li>
+    <li><a href="#pages"><span>13</span>วิธีใช้งานแต่ละหน้า</a></li>
+    <li><a href="#filter"><span>14</span>วิธีใช้ Filter</a></li>
+    <li><a href="#read"><span>15</span>อ่าน Dashboard / Drill Down</a></li>
+    <li><a href="#export"><span>16</span>วิธี Export</a></li>
+    <li><a href="#buttons"><span>17</span>ทุกปุ่มในระบบ</a></li>
+    <li><a href="#scenarios"><span>18</span>ตัวอย่างการใช้งานจริง</a></li>
+    <li><a href="#e2e"><span>19</span>ตัวอย่างการคำนวณ</a></li>
+    <li class="grp">ช่วยเหลือ</li>
+    <li><a href="#trouble"><span>20</span>Troubleshooting</a></li>
+    <li><a href="#faq"><span>21</span>FAQ</a></li>
+    <li><a href="#glossary"><span>22</span>Glossary</a></li>
+    <li><a href="#contact"><span>23</span>Contact / System Owner</a></li>
+    <li><a href="#qc"><span>24</span>Quality Check</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ===================== COVER ===================== -->
+<header class="cover" id="top">
+  <div class="eyebrow">User Manual · Program Logic</div>
+  <h1>คู่มือการใช้งานเว็บไซต์<br>“ติดตามโอนเทียบแผน”</h1>
+  <p class="sub">อธิบายว่าระบบทำขึ้นมาทำไม ตัวเลขมาจากไหน คำนวณอย่างไร ต้องกดอะไร ผลลัพธ์หมายถึงอะไร และต้องทำอะไรต่อ สำหรับผู้ใช้งานที่ไม่เคยใช้ระบบมาก่อน</p>
+  <div class="cover-meta">
+    <div><b>ระบบ</b>Tracking โอนเทียบแผน (Transfer Performance Tracking)</div>
+    <div><b>ขอบเขต</b>สินค้าไก่ 🐔 และหมู 🐷</div>
+    <div><b>อ้างอิง Logic</b>Source code ณ commit 2601b3f</div>
+    <div><b>วันที่จัดทำ</b>5 ต.ค. 2026</div>
+  </div>
+</header>
+
+<!-- ===================== DOCUMENT CONTROL ===================== -->
+<section class="sec" id="control">
+  <div class="sec-head"><span class="sec-no">00</span><h2>Document Control</h2></div>
+  <div class="tbl"><table>
+    <tr><th>หัวข้อ</th><th>รายละเอียด</th></tr>
+    <tr><td>ชื่อเอกสาร</td><td>คู่มือการใช้งานเว็บไซต์ “ติดตามโอนเทียบแผน” และเอกสารอธิบาย Program Logic</td></tr>
+    <tr><td>Version</td><td>1.0 (ฉบับแรก)</td></tr>
+    <tr><td>แหล่งข้อมูลที่ใช้จัดทำ</td><td>Source code ของระบบ (Frontend React, Supabase Edge Function <code>process-week</code>, Calculation Engine <code>calcEngine.ts</code> / <code>supplyDailyCalcEngine.ts</code>, Database migrations 0001–0019) และ README ของโปรเจกต์</td></tr>
+    <tr><td>ผู้จัดทำ</td><td><span class="verify">ต้องระบุโดยเจ้าของเอกสาร</span></td></tr>
+    <tr><td>ผู้อนุมัติ</td><td><span class="verify">ต้องระบุโดยเจ้าของเอกสาร</span></td></tr>
+    <tr><td>URL ของเว็บไซต์</td><td><span class="verify">ไม่พบในข้อมูลที่ได้รับ — ต้องตรวจสอบกับ System Owner</span> (ระบบ Deploy บน Vercel ตามไฟล์ <code>vercel.json</code>)</td></tr>
+  </table></div>
+
+  <h3>สัญลักษณ์ที่ใช้ในเอกสารนี้</h3>
+  <div class="tbl"><table>
+    <tr><th>สัญลักษณ์</th><th>ความหมาย</th></tr>
+    <tr><td><span class="tag biz">Business Logic</span></td><td>ระบบควรทำงานอย่างไรตาม Business Requirement (เหตุผลทางธุรกิจ)</td></tr>
+    <tr><td><span class="tag prog">Program Logic</span></td><td>ระบบนำข้อมูลมาคำนวณอย่างไร (สิ่งที่โปรแกรมทำจริง)</td></tr>
+    <tr><td><span class="tag user">User Action</span></td><td>สิ่งที่ผู้ใช้ต้องทำ</td></tr>
+    <tr><td><span class="tag out">Output</span></td><td>สิ่งที่ระบบแสดงผล</td></tr>
+    <tr><td><span class="verify">ต้องตรวจสอบกับ System Owner</span></td><td>ข้อมูลที่ไม่พบหลักฐานยืนยันในระบบ — เอกสารนี้จะไม่เดา</td></tr>
+    <tr><td><span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:var(--mark);color:#fff;font:700 11px/20px var(--font-mono);text-align:center">1</span></td><td>หมายเลขกำกับจุดสำคัญบนภาพหน้าจอ</td></tr>
+  </table></div>
+  <div class="callout warn"><span class="ttl">เกี่ยวกับภาพหน้าจอในเอกสารนี้</span>
+  <p>ภาพหน้าจอทั้งหมดเป็น <strong>ภาพจำลองที่วาดตามโครงสร้างหน้าจอจริงจาก Source code</strong> (ชื่อปุ่ม ชื่อคอลัมน์ ลำดับองค์ประกอบตรงกับระบบ) ตัวเลขในภาพเป็นตัวอย่างประกอบการอธิบาย ไม่ใช่ข้อมูลจริงของบริษัท แนะนำให้ผู้ดูแลเอกสารแทนที่ด้วย Screenshot จริงเมื่อนำไปเผยแพร่</p></div>
+</section>
+
+<!-- ===================== QUICK START ===================== -->
+<section class="sec" id="quickstart">
+  <div class="sec-head"><span class="sec-no">QS</span><h2>Quick Start — ใช้งานได้ทันทีในหน้าเดียว</h2></div>
+  <p class="lede">ถ้าต้องการดู %โอนเทียบแผนของสัปดาห์ ให้ทำตาม 6 ขั้นนี้ รายละเอียดของแต่ละขั้นอยู่ใน Section 13–16</p>
+
+  <ol class="steps">
+    <li><b>Login และเลือกสินค้า</b>เข้าสู่ระบบด้วย Username / Password แล้วกดเลือก <strong>🐔 ไก่</strong>, <strong>🐷 หมู</strong> หรือ <strong>📦 ทั้งหมด</strong></li>
+    <li><b>เลือก Week</b>ที่ Dashboard ระบบเลือก Week ที่มีการอัปโหลดล่าสุดให้อัตโนมัติ ถ้าต้องการ Week อื่นให้เปลี่ยนที่ช่อง <strong>เลือก Week</strong> มุมขวาบน</li>
+    <li><b>กรอง Factory / Product (ถ้าต้องการ)</b>ใช้ช่อง <strong>ค้นหา...</strong> หรือลูกศร ▾ บนหัวคอลัมน์ของตาราง Tracking Data (เช่น ต้นทาง, ปลายทาง, กลุ่มสินค้า) — ไม่มีปุ่ม Search/Apply ระบบกรองทันทีที่เลือก และ KPI ด้านบนจะคำนวณตาม Filter ด้วย</li>
+    <li><b>ดู Achievement %</b>คือ %โอนเทียบแผนรวม (Total) สีตัวเลขบอกสถานะ — เขียว = ตามแผน, เหลือง = ต่ำกว่าแผน, แดง = ต่ำกว่าแผนมาก</li>
+    <li><b>ถ้าต่ำกว่าแผน → ดูส่วนต่าง</b>เทียบ <strong>ปริมาณแผนโอน</strong> กับ <strong>ปริมาณโอนจริงตามแผน</strong> และดู <strong>มูลค่าสูญเสีย</strong> (บาท) จากนั้นเรียงคอลัมน์ <strong>% เทียบแผน</strong> หรือ <strong>สูญเสีย</strong> ในตารางเพื่อหาเส้นทางที่มีปัญหา</li>
+    <li><b>Drill Down หาสาเหตุ</b>คลิกที่แถวในตาราง เพื่อดูรายการ SKU ที่โอนจริงของเส้นทางนั้น ถ้ายังไม่ชัด ไปที่เมนู <strong>เพิ่มเติม → ข้อมูลดิบ</strong> เพื่อตรวจข้อมูลต้นทาง</li>
+  </ol>
+
+  <div class="qs">
+    <div class="q"><span class="k">ผู้อัปโหลดข้อมูล</span><b>ก่อนดู Dashboard ต้องมีข้อมูล</b><p>Upload Data → เลือก Week → อัปโหลด ABS0000 + BSR030 (ไก่) + BDR130 → กด <strong>ประมวลผล</strong> (ดู Section 13.4)</p></div>
+    <div class="q"><span class="k">เมื่อเห็นกล่องสีเหลือง</span><b>โอนจริงต่างวันจากแผน ±1 วัน</b><p>ตรวจรายการแล้วกด <strong>ยืนยัน</strong> หรือ <strong>ไม่นับ</strong> — ระบบจะไม่นับรวมจนกว่าจะยืนยัน (ดู Section 10)</p></div>
+    <div class="q"><span class="k">ต้องการไฟล์ไปวิเคราะห์ต่อ</span><b>Export Excel</b><p>ตั้ง Filter ให้เรียบร้อยก่อน แล้วกด <strong>Export Excel</strong> ไฟล์จะออกตาม Filter บนหน้าจอ (ดู Section 16)</p></div>
+  </div>
+
+  <div class="callout bad"><span class="ttl">ข้อที่ผู้ใช้ใหม่เข้าใจผิดบ่อยที่สุด</span>
+  <p><strong>Achievement % ไม่ใช่ โอนจริง ÷ แผน</strong> ระบบนับโอนจริงของแต่ละเส้นทางไม่เกินแผน (ส่วนเกินไม่ชดเชยเส้นทางอื่น) และถ้าขาดไม่ถึง 10% ของแผนให้ถือว่าครบแผน จึงต้องอ่านคู่กับค่า “โอนจริง ÷ แผน (ไม่ปรับ)” ที่แสดงตัวเล็กใต้ตัวเลข — ดู Section 3 และ 7</p></div>
+</section>
+
+<!-- ===================== 01 ABOUT ===================== -->
+<section class="sec" id="about">
+  <div class="sec-head"><span class="sec-no">01</span><h2>About This System</h2></div>
+
+  <h3>ระบบนี้คืออะไร</h3>
+  <p>เว็บไซต์ <strong>“ติดตามโอนเทียบแผน”</strong> (Tracking โอนเทียบแผน) คือเครื่องมือสำหรับตรวจว่า <strong>การโอนสินค้าระหว่างโรงงานที่เกิดขึ้นจริง เป็นไปตามแผนการโอนที่วางไว้หรือไม่</strong> ในแต่ละสัปดาห์ แยกตามวัน โรงงานต้นทาง โรงงานปลายทาง และกลุ่มสินค้า</p>
+  <p>ผู้ใช้อัปโหลดไฟล์ที่ Export จากระบบ Smart Sales (แผนการโอน และ การโอนจริง) ระบบจะจับคู่แผนกับการโอนจริงให้อัตโนมัติ คำนวณ %โอนเทียบแผน ปริมาณที่ขาด/เกิน และมูลค่ากำไรที่สูญเสียจากการโอนไม่ครบแผน แล้วแสดงเป็น Dashboard</p>
+  <p>นอกจากนี้ยังมีส่วน <strong>“ติดตามการกรอก Supply Daily”</strong> ที่ใช้ตรวจว่าโรงงานกรอก Supply รายวันครบหรือไม่ และมีการโอนนอกแผนหรือไม่</p>
+
+  <h3>ระบบนี้สร้างขึ้นเพื่ออะไร</h3>
+  <p>ตาม README ของโปรเจกต์ ระบบนี้สร้างขึ้นเพื่อ <strong>แทนที่ Workflow Excel เดิม</strong> (<code>Tracking_โอนเทียบแผน_WK36.xlsx</code>) ปัญหาด้านล่างเป็นปัญหาที่พบหลักฐานในเอกสาร/โค้ดของระบบ</p>
+  <div class="tbl"><table>
+    <tr><th>ก่อนมีระบบ (Excel)</th><th>ปัญหาที่พบ</th><th>ระบบช่วยอย่างไร</th></tr>
+    <tr><td>นำไฟล์ Export มาวางใน Excel แล้วใช้สูตร SUMIFS / Pivot คำนวณเอง</td><td>สูตรลากไม่ครบ — README ระบุว่า Excel เดิมมีบั๊ก “สูตรลากไม่ครบ 7 แถวสุดท้าย” ทำให้ตัวเลขรวม WK36 ต่ำกว่าความจริง</td><td>คำนวณด้วย Program เดียวกันทุกแถว ทุก Week ไม่ต้องลากสูตร</td></tr>
+    <tr><td>ไฟล์โอนจริง (ABS0000) Export ได้สูงสุด 5,000 แถว/ไฟล์ ต้องแบ่งหลายไฟล์</td><td>เสี่ยงลืมไฟล์ หรือวางไฟล์เดียวกันซ้ำจนนับโอนจริงซ้ำ</td><td>รวมหลายไฟล์อัตโนมัติ เตือนเมื่อไฟล์มี 5,000 แถวพอดี และปฏิเสธไฟล์ที่ซ้ำกับไฟล์เดิม ≥ 90%</td></tr>
+    <tr><td>เส้นทางเดียวกันมีหลายราคาในวันเดียวกัน</td><td>โอนจริงของเส้นทางถูกนับซ้ำทุกแถวราคา</td><td>แบ่งโอนจริงให้แต่ละราคาตามสัดส่วนแผน ยอดรวมไม่นับซ้ำ</td></tr>
+    <tr><td>โอนจริงคนละวันกับแผน 1 วัน</td><td>ไม่ถูกนับ หรือต้องปรับเองแบบไม่มีบันทึก</td><td>ระบบแนะนำการจับคู่ ±1 วัน ให้ผู้ใช้กดยืนยัน และบันทึกชื่อผู้ยืนยัน</td></tr>
+    <tr><td>แก้ตัวเลขโอนจริงใน Excel โดยตรง</td><td>ไม่รู้ว่าใครแก้ แก้เพราะอะไร และค่าหายเมื่อนำข้อมูลใหม่มาวาง</td><td>แก้ผ่านหน้าปรับค่า ต้องใส่เหตุผล มีประวัติ (Adjustment Log) และค่าที่แก้ยังอยู่แม้อัปโหลดใหม่</td></tr>
+  </table></div>
+  <p><strong>สิ่งที่ผู้ใช้ได้</strong>: เห็น %โอนเทียบแผนของทั้ง Week ทันทีหลังอัปโหลด, รู้ว่าเส้นทาง/สินค้าใดโอนไม่ครบและเสียกำไรเท่าใด (บาท), เห็นการโอนที่ไม่อยู่ในแผนเลย, และ Export ไฟล์สรุปไปใช้ประชุมหรือวิเคราะห์ต่อได้</p>
+  <div class="callout owner"><span class="ttl">ต้องตรวจสอบกับ System Owner</span><p>ระยะเวลาที่ใช้ทำงานแบบ Excel เดิม, เป้าหมาย KPI ทางธุรกิจ และการตัดสินใจที่ใช้ตัวเลขนี้ประกอบ ไม่พบในข้อมูลที่ได้รับ</p></div>
+
+  <h3>ใครควรใช้ระบบนี้</h3>
+  <p>ระบบมีสิทธิ์ผู้ใช้ 2 ระดับ คือ <strong>admin</strong> และ <strong>user</strong> (ตาราง <code>profiles</code>) ส่วนการแบ่งตามหน่วยงานด้านล่างเป็นการแนะนำการใช้งานตามลักษณะงาน ไม่ใช่สิทธิ์ในระบบ</p>
+  <div class="tbl"><table>
+    <tr><th>กลุ่มผู้ใช้</th><th>เข้ามาดูอะไร</th><th>หน้าที่ใช้บ่อย</th></tr>
+    <tr><td>Supply Planning</td><td>แผนที่วางถูกนำไปโอนจริงครบหรือไม่, % Reject ของแผนที่ระบบแนะนำ, การกรอก Supply Daily</td><td>Dashboard, ติดตามการกรอก Supply Daily</td></tr>
+    <tr><td>Factory Planning / โรงงาน</td><td>เส้นทางของโรงงานตัวเองโอนครบแผนหรือไม่ ขาดวันไหน สินค้าไหน</td><td>Dashboard (กรองต้นทาง/ปลายทาง), ติดตามโอน Weekly / Daily</td></tr>
+    <tr><td>Supply Chain / ผู้รับผิดชอบการโอน</td><td>อัปโหลดข้อมูลรายสัปดาห์, ยืนยันการโอนต่างวัน ±1 วัน, ปรับค่าโอนจริงที่ผิด</td><td>Upload Data, Dashboard, ติดตามโอน, ข้อมูลดิบ</td></tr>
+    <tr><td>Management</td><td>ภาพรวม Achievement % และมูลค่าสูญเสีย (บาท) ของแต่ละ Week</td><td>Dashboard, หน้า “ทั้งหมด”, ไฟล์ Export (Sheet Summary)</td></tr>
+    <tr><td>ผู้ดูแลระบบ (admin)</td><td>จัดการผู้ใช้, เกณฑ์สีสถานะ, Master Data</td><td>Settings</td></tr>
+  </table></div>
+</section>
+
+<!-- ===================== 02 CONCEPT ===================== -->
+<section class="sec" id="concept">
+  <div class="sec-head"><span class="sec-no">02</span><h2>Business Concept — เข้าใจระบบก่อนใช้งาน</h2></div>
+  <p class="lede">อ่านจากบนลงล่าง แต่ละกล่องคือหนึ่งขั้นตอนของงาน และชื่อไฟล์จริงที่เกี่ยวข้อง</p>
+  <div class="flow">
+    <div class="node"><b>1. Supply / Plan</b><small>โรงงานมีสินค้า (Supply) ที่ต้องกระจาย ระบบ Smart Sales แนะนำปริมาณโอน (<code>suggest</code>) แล้วผู้วางแผนปรับเป็นแผนสุดท้าย (<code>supplyAfter</code>)</small></div>
+    <div class="arrow"></div>
+    <div class="node"><b>2. แผนการโอน (Transfer Plan)</b><small>แผนรายสัปดาห์ <strong>BSR030 Weekly</strong> (เฉพาะไก่) + แผนรายวัน <strong>BDR130 Daily</strong> — ระบุวันที่, โรงต้นทาง, โรงปลายทาง, กลุ่มสินค้า, ปริมาณ และราคาต้นทาง/ปลายทาง</small></div>
+    <div class="arrow"></div>
+    <div class="node"><b>3. การโอนจริง (Actual Transfer)</b><small>ไฟล์ <strong>ABS0000_StockTransfers</strong> — รายการ SKU ที่โอนจริง วันที่โอน และน้ำหนัก (kg)</small></div>
+    <div class="arrow"></div>
+    <div class="node key"><b>4. เปรียบเทียบ Plan vs Actual</b><small>ระบบจับคู่ด้วย วันที่ + โรงต้นทาง + โรงปลายทาง + กลุ่มสินค้า (ไม่ใช้ราคาและไม่ใช้รหัส SKU)</small></div>
+    <div class="arrow"></div>
+    <div class="node key"><b>5. %โอนเทียบแผน</b><small>คำนวณแยก Weekly / Daily / Total โดยนับโอนจริงไม่เกินแผน และปัดขึ้นเป็นครบแผนถ้าขาดไม่ถึง 10%</small></div>
+    <div class="arrow"></div>
+    <div class="node"><b>6. วิเคราะห์ GAP</b><small>ดูปริมาณที่ขาด (Diff แผนโอน), ส่วนที่โอนเกินแผน, กำไรที่ได้ และ “สูญเสียกำไร” (บาท) ของแต่ละเส้นทาง</small></div>
+    <div class="arrow"></div>
+    <div class="node"><b>7. ติดตาม / ตัดสินใจ</b><small>หาเส้นทาง/โรงงาน/สินค้าที่ไม่ตามแผน ใส่หมายเหตุ ยืนยันการโอนต่างวัน และ Export ไปใช้ประชุม</small></div>
+  </div>
+  <div class="callout note"><span class="ttl">ทำไมไก่กับหมูต่างกัน</span><p>สินค้าไก่ใช้แผน 2 แหล่ง (Weekly BSR030 + Daily BDR130) ส่วนสินค้าหมูใช้เฉพาะแผน Daily BDR130 ข้อมูลไก่และหมูแยกกันคนละชุด มี Week ของตัวเอง และไม่นำตัวเลขมารวมกัน แม้ในหน้า “ทั้งหมด” ก็แสดง Dashboard ของแต่ละสินค้าซ้อนกัน</p></div>
+</section>
+
+<!-- ===================== 03 KPI ===================== -->
+<section class="sec" id="kpi">
+  <div class="sec-head"><span class="sec-no">03</span><h2>What Does “%โอนเทียบแผน” Mean?</h2></div>
+  <p class="lede"><strong>%โอนเทียบแผน</strong> คือตัวชี้วัดว่าการโอนจริงสามารถทำได้ <strong>ตามแผน</strong> มากน้อยเพียงใด โดยนับเฉพาะส่วนที่โอนตรงกับแผน (ส่วนที่โอนเกินแผนไม่ถูกนับเป็นผลงาน)</p>
+
+  <h3>สูตรที่ระบบใช้จริง</h3>
+  <p>คำขอให้ตรวจสอบสูตร <code>โอนจริง ÷ แผน × 100</code> — <strong>ผลการตรวจสอบจาก Program: ระบบไม่ได้ใช้สูตรนี้ตรง ๆ</strong> สูตรจริงใน <code>calcEngine.ts → computeChannel()</code> มี 2 ขั้น คือ ตัดเพดานที่แผน และ ปัดเศษ 10%</p>
+  <div class="formula">
+    <div class="f-head">%โอนเทียบแผน (ต่อ 1 เส้นทาง)</div>
+    <div class="f-body"><b>ขั้น 0</b> ถ้า แผน ≤ 0 → % = “-” (ไม่มีแผน)
+<b>ขั้น 1</b> นับได้ = MIN(โอนจริง, แผน)  ← ตัดส่วนที่เกินแผนทิ้ง
+<b>ขั้น 2</b> นับตามแผน =
+    • 0  เมื่อ นับได้ = 0
+    • แผน  เมื่อ (แผน − นับได้) &lt; 10% × แผน  ← “ปัดหน่วยหยิบ”
+    • นับได้  กรณีอื่น
+<b>ขั้น 3</b> %โอนเทียบแผน = นับตามแผน ÷ แผน × 100</div>
+    <div class="f-foot">ค่าที่ได้อยู่ระหว่าง 0% ถึง 100% เสมอ <strong>ไม่มีทางเกิน 100%</strong> ส่วนที่โอนเกินแผนแสดงแยกในคอลัมน์ “โอนเกินแผน”</div>
+  </div>
+
+  <div class="formula">
+    <div class="f-head">Achievement % (ภาพรวมหลายเส้นทาง)</div>
+    <div class="f-body">Achievement % = ผลรวม “นับตามแผน” ของทุกเส้นทาง ÷ ผลรวม “แผน” ของทุกเส้นทาง × 100</div>
+    <div class="f-foot">เป็นอัตราส่วนของผลรวม (Ratio of sums) ตรงกับ Grand Total ของ Excel เดิม — <strong>ไม่ใช่</strong> ค่าเฉลี่ยของ % แต่ละแถว</div>
+  </div>
+
+  <h3>ตัวอย่าง 3 กรณี</h3>
+  <div class="tbl"><table>
+    <tr><th>กรณี</th><th class="num">แผน</th><th class="num">โอนจริง</th><th>ขั้นคำนวณ</th><th class="num">%โอนเทียบแผน</th></tr>
+    <tr><td>ขาดมาก</td><td class="num">1,000</td><td class="num">800</td><td>ขาด 200 ≥ 100 (10%) → นับ 800</td><td class="num">80.00%</td></tr>
+    <tr><td>ขาดเล็กน้อย</td><td class="num">1,000</td><td class="num">950</td><td>ขาด 50 &lt; 100 → ปัดเป็น 1,000</td><td class="num">100.00%</td></tr>
+    <tr><td>โอนเกินแผน</td><td class="num">1,000</td><td class="num">1,300</td><td>MIN(1,300, 1,000) = 1,000 · เกิน 300 แสดงที่ “โอนเกินแผน”</td><td class="num">100.00%</td></tr>
+  </table></div>
+  <p><strong>Interpretation</strong>: กรณีแรกหมายถึงโอนได้ 80% ของแผน ขาด 200 kg · กรณีที่สองระบบถือว่าครบแผนเพราะขาดไม่ถึง 10% · กรณีที่สามได้ 100% และมีส่วนที่โอนเกิน 300 kg ซึ่งไม่ถูกนำไปชดเชยเส้นทางอื่น</p>
+
+  <div class="callout note"><span class="ttl">ทำไมต้องปัด 10%</span><p>Program เรียกกฎนี้ว่า “ปัดหน่วยหยิบ” และระบุว่าเป็นสูตรที่ยกมาจาก Excel เดิมทุกประการ (คอลัมน์ O/P/Q/R ของ Sheet Tracking) เหตุผลทางธุรกิจโดยละเอียดของตัวเลข 10% <span class="verify">ต้องตรวจสอบกับ System Owner</span></p></div>
+</section>
+
+<!-- ===================== 04 DATA FLOW ===================== -->
+<section class="sec" id="dataflow">
+  <div class="sec-head"><span class="sec-no">04</span><h2>Data Flow Diagram</h2></div>
+  <p class="lede">เส้นทางของข้อมูลจากไฟล์ต้นทางจนถึงหน้าจอผู้ใช้ ตาม Architecture จริงของระบบ</p>
+  <div class="arch">
+    <div class="col"><h5>1 · Source Data</h5>
+      <span class="chip">ABS0000_StockTransfers<br><span class="muted">โอนจริง · Smart Sales</span></span>
+      <span class="chip">BSR030_BsTransferReport<br><span class="muted">แผน Weekly · ไก่</span></span>
+      <span class="chip">BDR130_BsTransferReport<br><span class="muted">แผน Daily</span></span>
+      <span class="chip">BSD010 / ราคารายวัน / TC05<br><span class="muted">Supply Daily (ไม่บังคับ)</span></span>
+    </div>
+    <div class="col"><h5>2 · Upload (Browser)</h5>
+      <span class="chip">อ่าน Sheet แรกของไฟล์ .xls/.xlsx</span>
+      <span class="chip">ตรวจคอลัมน์บังคับ</span>
+      <span class="chip">ตรวจข้อมูลรายแถว</span>
+      <span class="chip">ตรวจวันที่อยู่ใน Week ±1 วัน</span>
+      <span class="chip">ตรวจไฟล์ซ้ำ</span>
+    </div>
+    <div class="col"><h5>3 · Database</h5>
+      <span class="chip">Supabase Postgres</span>
+      <span class="chip"><code>plan_rows</code> · <code>actual_rows</code></span>
+      <span class="chip">การปรับค่า · การยืนยัน ±1 วัน</span>
+      <span class="chip">ไฟล์ต้นฉบับเก็บใน Storage</span>
+    </div>
+    <div class="col"><h5>4 · Calculation</h5>
+      <span class="chip k">Edge Function <code>process-week</code></span>
+      <span class="chip">calcEngine → <code>tracking_results</code>, <code>unmatched_actual</code></span>
+      <span class="chip">supplyDailyCalcEngine → <code>supply_daily_results</code></span>
+    </div>
+    <div class="col"><h5>5 · Web / User</h5>
+      <span class="chip">Dashboard · Tracking · ข้อมูลดิบ · Supply Daily</span>
+      <span class="chip">รวมยอดตาม Filter บนหน้าจอ</span>
+      <span class="chip">Export Excel</span>
+    </div>
+  </div>
+  <div class="callout note"><span class="ttl">จุดสำคัญของ Architecture</span>
+  <ul>
+    <li>ตัวเลขรายแถวผลิตจาก <strong>ที่เดียว</strong> คือ Edge Function <code>process-week</code> หน้าเว็บไม่คำนวณแล้วบันทึกเอง</li>
+    <li>ยอดรวมบน Dashboard / Tracking คำนวณที่หน้าเว็บจากแถวที่ผ่าน Filter ด้วยสูตรเดียวกับ Engine (<code>aggregate.ts</code> ใช้ฟังก์ชันเดียวกัน)</li>
+    <li>การประมวลผลใหม่แทนที่ผลลัพธ์ของทั้ง Week ใน Transaction เดียว และ <strong>เก็บหมายเหตุของผู้ใช้ไว้</strong></li>
+  </ul></div>
+</section>
+
+<!-- ===================== 05 DICTIONARY ===================== -->
+<section class="sec" id="dictionary">
+  <div class="sec-head"><span class="sec-no">05</span><h2>Data Dictionary</h2></div>
+  <p class="lede">เฉพาะ Field ที่พบจริงในระบบ ชื่อคอลัมน์ในไฟล์ต้นทางอ้างอิงจาก <code>excelParser.ts</code></p>
+
+  <h3>5.1 ข้อมูลหลักบนหน้า Tracking / Dashboard</h3>
+  <div class="tbl"><table>
+    <tr><th>Field (บนหน้าจอ)</th><th>ความหมาย</th><th>มาจากไหน</th><th>ใช้ทำอะไร</th></tr>
+    <tr><td>Week</td><td>สัปดาห์ของข้อมูล (ISO Week จันทร์–อาทิตย์) เช่น WK36</td><td>ผู้ใช้สร้างที่หน้า Upload Data</td><td>กำหนดช่วงข้อมูล และตรวจวันที่ในไฟล์</td></tr>
+    <tr><td>วันที่</td><td>วันที่ตามแผน</td><td>คอลัมน์ <code>productionDate</code> ใน BSR030/BDR130</td><td>Key จับคู่กับวันที่โอนจริง</td></tr>
+    <tr><td>รหัสต้นทาง / ต้นทาง</td><td>โรงงานต้นทาง (Factory)</td><td>แผน: <code>รหัสโรงงานต้นทาง</code>, <code>โรงงานต้นทาง</code></td><td>Key จับคู่ · Filter</td></tr>
+    <tr><td>รหัสปลายทาง / ปลายทาง</td><td>โรงงานปลายทาง</td><td>แผน: <code>รหัสโรงงานปลายทาง</code>, <code>โรงงานปลายทาง</code></td><td>Key จับคู่ · Filter</td></tr>
+    <tr><td>กลุ่มสินค้า</td><td>กลุ่มชิ้นส่วน (Product Group / P19)</td><td>แผน: <code>productForPlan19</code> · โอนจริง: <code>P19</code></td><td>Key จับคู่ (ระดับกลุ่ม ไม่ใช่ SKU)</td></tr>
+    <tr><td>ราคาต้นทาง / ราคาปลายทาง</td><td>ราคาต่อ kg ที่ต้นทาง/ปลายทาง</td><td>แผน: <code>ราคาต้นทาง</code>, <code>ราคาปลายทาง</code> (ว่าง = 0)</td><td>คำนวณกำไร/สูญเสีย (บาท) · แยกแถวเมื่อมีหลายราคา</td></tr>
+    <tr><td>แผน (Weekly / Daily / รวม)</td><td>ปริมาณตามแผนสุดท้าย (kg)</td><td>คอลัมน์ <code>supplyAfter</code></td><td>ตัวตั้งในการเปรียบเทียบ</td></tr>
+    <tr><td>Suggest</td><td>ปริมาณที่ระบบต้นทางแนะนำก่อนปรับ</td><td>คอลัมน์ <code>suggest</code></td><td>คำนวณ Reject</td></tr>
+    <tr><td>จริง / โอนจริงทั้งหมด</td><td>ปริมาณโอนจริง (kg)</td><td>ABS0000: ผลรวม <code>น้ำหนักสินค้า (KG)</code> ของเส้นทาง/วัน/กลุ่มเดียวกัน</td><td>เทียบกับแผน</td></tr>
+    <tr><td>โอนเกินแผน</td><td>ส่วนที่โอนเกินแผนรวม (kg)</td><td>System Calculation</td><td>ดูการโอนเกิน (ไม่นับเป็นผลงาน)</td></tr>
+    <tr><td>Diff แผนโอน</td><td>ส่วนต่าง (GAP) ระหว่างโอนตามแผนกับแผน (kg, ≤ 0)</td><td>System Calculation</td><td>ดูปริมาณที่ขาด</td></tr>
+    <tr><td>% เทียบแผน / % โอนเทียบแผน</td><td>%โอนเทียบแผน</td><td>System Calculation</td><td>วัดผลการโอน · กำหนดสถานะ</td></tr>
+    <tr><td>สถานะ</td><td>ตามแผน / ต่ำกว่าแผน / ต่ำกว่าแผนมาก / ไม่โอนตามแผน / ไม่มีแผน</td><td>System Calculation + เกณฑ์ใน Settings</td><td>มองหาจุดผิดปกติด้วยสี</td></tr>
+    <tr><td>กำไรที่ได้</td><td>กำไรจากส่วนต่างราคาของปริมาณที่โอนจริง (บาท)</td><td>System Calculation</td><td>มูลค่าที่เกิดขึ้นจริง</td></tr>
+    <tr><td>สูญเสีย / สูญเสียกำไร</td><td>กำไรที่เสียไปเพราะโอนไม่ครบแผน (บาท, ≤ 0)</td><td>System Calculation</td><td>จัดลำดับความสำคัญของปัญหา</td></tr>
+    <tr><td>หมายเหตุ</td><td>ข้อความที่ผู้ใช้พิมพ์ + หมายเหตุระบบ (โอนต่างวัน ±1)</td><td>ผู้ใช้ / ระบบ</td><td>บันทึกสาเหตุ</td></tr>
+    <tr><td>ปรับแล้ว</td><td>ป้ายแสดงว่าโอนจริงของเส้นทางนี้ถูกแก้ไขด้วยมือ</td><td>หน้าแก้ไขโอนจริง</td><td>ตรวจสอบย้อนหลัง</td></tr>
+  </table></div>
+
+  <h3>5.2 คอลัมน์บังคับในไฟล์ที่อัปโหลด</h3>
+  <p>ระบบตรวจเฉพาะคอลัมน์ที่ใช้งานจริง คอลัมน์อื่นหรือลำดับคอลัมน์ที่เปลี่ยนไม่ทำให้อัปโหลดไม่ผ่าน ชื่อหัวคอลัมน์ต้องตรงตามนี้ (อยู่ใน Sheet แรก แถวที่ 1)</p>
+  <div class="tbl"><table>
+    <tr><th>ไฟล์</th><th>คอลัมน์ที่ต้องมี</th></tr>
+    <tr><td>BSR030 Weekly / BDR130 Daily (แผน)</td><td><code>productionDate</code>, <code>รหัสโรงงานต้นทาง</code>, <code>โรงงานต้นทาง</code>, <code>รหัสโรงงานปลายทาง</code>, <code>โรงงานปลายทาง</code>, <code>productForPlan19</code>, <code>suggest</code>, <code>supplyAfter</code>, <code>ราคาต้นทาง</code>, <code>ราคาปลายทาง</code></td></tr>
+    <tr><td>ABS0000 (โอนจริง)</td><td><code>รหัสโรงงานต้นทาง</code>, <code>ชื่อโรงงานต้นทาง</code>, <code>รหัสโรงงานปลายทาง</code>, <code>ชื่อโรงงานปลายทาง</code>, <code>วันที่โอน</code>, <code>รหัสสินค้า</code>, <code>ชื่อสินค้า</code>, <code>น้ำหนักสินค้า (KG)</code>, <code>P19</code></td></tr>
+    <tr><td>BSD010 (Supply Daily)</td><td><code>วันที่โอน</code>, <code>รหัสโรงงาน</code>, <code>โรงงาน</code>, <code>กลุ่มชิ้นส่วน</code>, <code>กลุ่มชิ้นส่วน(Custom)</code>, <code>Rev. ปริมาณของเหลือ</code></td></tr>
+    <tr><td>ราคารายวัน</td><td><code>VendorGroup</code>, <code>ProductCode</code>, <code>CostZ</code>, <code>Margin</code> · ชื่อไฟล์ต้องมีวันที่ <code>DD.MM.YYYY</code> เช่น <code>ChickenW2_26.08.2026.xlsx</code></td></tr>
+    <tr><td>Bidding TC05</td><td><code>Sales date</code>, <code>Plant code</code>, <code>Product code</code>, <code>Allocate sp type</code></td></tr>
+  </table></div>
+
+  <h3>5.3 ข้อมูลบนหน้า ติดตามการกรอก Supply Daily</h3>
+  <div class="tbl"><table>
+    <tr><th>Field</th><th>ความหมาย</th><th>มาจากไหน</th></tr>
+    <tr><td>กรอก Supply</td><td>✓ กรอกแล้ว / ✗ ไม่ได้กรอก — มีแถวใน BSD010 ของ วันที่+โรงงาน+กลุ่มสินค้า นี้หรือไม่</td><td>BSD010</td></tr>
+    <tr><td>ปริมาณของเหลือ</td><td>Supply คงเหลือหลังการปรับทั้งหมด (รวมทุกแถวของ Key เดียวกัน)</td><td>BSD010 <code>Rev. ปริมาณของเหลือ</code></td></tr>
+    <tr><td>แผนโอนออก</td><td>ผลรวมแผนโอนออกจากโรงงานนี้ ทุกปลายทาง — <strong>ใช้เฉพาะแผน Daily (BDR130)</strong></td><td>BDR130 <code>supplyAfter</code></td></tr>
+    <tr><td>โอนออกจริง</td><td>ผลรวมโอนจริงออกจากโรงงานนี้ ไม่รวม SKU พิเศษ, คู่ฝากตัดแต่ง และโรงงานที่ไม่มีในตาราง Zone</td><td>ABS0000 + Master Data</td></tr>
+    <tr><td>สถานะโอน / สถานะ Bidding</td><td>โอนนอกแผน / มี Bidding นอกระบบ</td><td>System Calculation</td></tr>
+  </table></div>
+</section>
+
+<!-- ===================== 06 PROGRAM LOGIC ===================== -->
+<section class="sec" id="logic">
+  <div class="sec-head"><span class="sec-no">06</span><h2>Program Logic — ระบบทำงานอย่างไร</h2></div>
+  <p class="lede">ลำดับการทำงานจริงตั้งแต่อัปโหลดไฟล์จนแสดงบน Dashboard แต่ละขั้นตอบ 5 คำถาม: ทำอะไร · ใช้ข้อมูลอะไร · Logic อะไร · Output คืออะไร · ทำเพื่ออะไร</p>
+
+  <div class="pipe">
+    <div class="p"><b>A</b><small>Source Data</small></div>
+    <div class="p"><b>B</b><small>Data Validation</small></div>
+    <div class="p"><b>C</b><small>จัดกลุ่มแผน</small></div>
+    <div class="p"><b>D</b><small>รวม Actual</small></div>
+    <div class="p hl"><b>E</b><small>จับคู่ ±1 วัน</small></div>
+    <div class="p hl"><b>F</b><small>ปรับค่าด้วยมือ</small></div>
+    <div class="p gr"><b>G</b><small>แบ่ง Weekly/Daily และราคา</small></div>
+    <div class="p gr"><b>H</b><small>คำนวณ % / GAP / บาท</small></div>
+    <div class="p"><b>I</b><small>Status · Filter · Dashboard</small></div>
+  </div>
+
+  <div class="tbl"><table>
+    <tr><th>ขั้น</th><th>ระบบทำอะไร</th><th>ใช้ข้อมูลอะไร</th><th>ใช้ Logic อะไร</th><th>Output</th><th>ทำไปเพื่ออะไร</th></tr>
+    <tr><td><b>A</b> Source Data <span class="tag user">User Action</span></td><td>รับไฟล์ที่ผู้ใช้อัปโหลดเข้า Week ที่เลือก</td><td>.xls / .xlsx (Sheet แรก)</td><td>ไก่ต้องมี ABS0000 + BSR030 + BDR130 · หมูต้องมี ABS0000 + BDR130</td><td>ไฟล์ในสถานะ “กำลังตรวจสอบ...”</td><td>ให้ระบบมีข้อมูลแผนและโอนจริงของ Week เดียวกัน</td></tr>
+    <tr><td><b>B</b> Data Validation <span class="tag prog">Program</span></td><td>ตรวจไฟล์ก่อนบันทึก</td><td>หัวคอลัมน์และทุกแถว</td><td>
+      • ขาดคอลัมน์บังคับ → ไม่ผ่าน<br>
+      • แถวผิด (วันที่อ่านไม่ได้, รหัสว่าง, กลุ่มสินค้าว่าง, ตัวเลขผิด) → ไม่ผ่านทั้งไฟล์ พร้อมรายการแถวที่ผิด<br>
+      • ABS0000 ที่ไม่มีรหัสโรงงานปลายทาง → ข้าม (เป็นการขายตรงให้ลูกค้า)<br>
+      • วันที่นอก Week ±1 วัน → แผน: ไม่ผ่าน · ABS0000: ถ้าเกินครึ่งไฟล์ไม่ผ่าน ถ้าไม่ถึงครึ่ง ตัดแถวนั้นออก<br>
+      • ABS0000 ซ้ำกับไฟล์เดิม ≥ 90% / BDR130 วันที่ซ้ำกับไฟล์เดิม → ไม่ผ่าน</td><td>สถานะ “✓ สำเร็จ” + จำนวนแถว / “พบข้อผิดพลาด” + ปุ่มดาวน์โหลด Error</td><td>กันข้อมูลผิด Week และกันนับซ้ำ</td></tr>
+    <tr><td><b>C</b> จัดกลุ่มแผน <span class="tag prog">Program</span></td><td>รวมแผนเป็นแถวผลลัพธ์</td><td>แผน Weekly + Daily</td><td>1 แถว = วันที่ + ต้นทาง + ปลายทาง + กลุ่มสินค้า + ราคาต้นทาง + ราคาปลายทาง · รวม <code>supplyAfter</code> แยกเป็น แผน Weekly / แผน Daily</td><td>แถว Tracking พร้อม แผน Weekly, แผน Daily, แผนรวม, Suggest</td><td>ได้ระดับรายละเอียดเดียวกับ Pivot ใน Excel เดิม</td></tr>
+    <tr><td><b>D</b> รวม Actual Transfer <span class="tag prog">Program</span></td><td>รวมน้ำหนักโอนจริง</td><td>ABS0000 ทุกไฟล์ใน Week</td><td>ผลรวม <code>น้ำหนักสินค้า (KG)</code> ต่อ วันที่โอน + ต้นทาง + ปลายทาง + กลุ่มสินค้า (ไม่ดูราคา)</td><td>ยอดโอนจริงต่อเส้นทาง/วัน/กลุ่ม</td><td>เทียบกับแผนแบบเดียวกับ SUMIFS เดิม</td></tr>
+    <tr><td><b>E</b> จับคู่ ±1 วัน <span class="tag biz">Business</span> <span class="tag user">User Action</span></td><td>หาโอนจริงที่วันที่ไม่ตรงแผน</td><td>ยอดโอนจริงที่ไม่มีแผนในวันนั้นเลย</td><td>ตรวจวันถัดไป/ก่อนหน้า 1 วัน (เช็ก “โอนช้า 1 วัน” ก่อน) ถ้าเส้นทาง+กลุ่มสินค้ามีแผนวันนั้นและยังโอนไม่ครบ → แนะนำ · <strong>นับเมื่อผู้ใช้กดยืนยันเท่านั้น</strong></td><td>กล่องรอยืนยันบน Dashboard + หมายเหตุระบบในแถวแผน</td><td>ให้เครดิตการโอนที่ช้า/เร็ว 1 วัน โดยมีคนรับผิดชอบการตัดสินใจ</td></tr>
+    <tr><td><b>F</b> ปรับค่าโอนจริง <span class="tag user">User Action</span></td><td>ใช้ค่าที่ผู้ใช้แก้แทนยอดจากไฟล์</td><td>ประวัติการปรับ (ค่าล่าสุดต่อเส้นทาง)</td><td>ถ้าเส้นทางเคยถูกปรับ → ใช้ค่าใหม่ล่าสุดแทนยอด ABS0000 (รวมถึงตอนอัปโหลดใหม่)</td><td>ป้าย “ปรับแล้ว” · Adjustment Log</td><td>แก้ข้อมูลต้นทางที่ผิดโดยตรวจสอบย้อนหลังได้</td></tr>
+    <tr><td><b>G</b> แบ่งโอนจริง <span class="tag biz">Business</span> <span class="tag prog">Program</span></td><td>แบ่งโอนจริงให้ช่องทางและราคา</td><td>โอนจริง, แผน Weekly/Daily ของเส้นทาง</td><td>• <strong>Weekly ก่อน</strong>: โอนจริงนับให้แผน Weekly ก่อน ส่วนที่เหลือจึงนับให้ Daily<br>• <strong>หลายราคา</strong>: แบ่งโอนจริงให้แต่ละราคาตามสัดส่วนแผน</td><td>โอนจริงของแต่ละแถว (<code>actual_alloc</code>)</td><td>ไม่นับโอนจริงก้อนเดียวกันซ้ำ</td></tr>
+    <tr><td><b>H</b> คำนวณ <span class="tag prog">Program</span></td><td>คำนวณทุกตัวชี้วัด</td><td>แผน, โอนจริงที่แบ่งแล้ว, ราคา</td><td>%โอนเทียบแผน, Diff, โอนเกินแผน, กำไรที่ได้, สูญเสียกำไร, Reject (สูตรใน Section 7)</td><td>ตาราง <code>tracking_results</code> + <code>unmatched_actual</code></td><td>ผลลัพธ์รายแถวที่ถูกต้องตรงกันทุกหน้า</td></tr>
+    <tr><td><b>I</b> แสดงผล <span class="tag out">Output</span></td><td>แสดง Dashboard และตาราง</td><td>ผลลัพธ์ + Filter ของผู้ใช้ + เกณฑ์สถานะ</td><td>รวมยอดแบบ Ratio of sums เฉพาะแถวที่ผ่าน Filter · ใส่สีตามเกณฑ์ใน Settings</td><td>KPI, ตาราง, Export</td><td>ให้ผู้ใช้เห็นภาพรวมและเจาะหาปัญหาได้</td></tr>
+  </table></div>
+
+  <h3>ระบบประมวลผลเมื่อใด</h3>
+  <div class="tbl"><table>
+    <tr><th>เหตุการณ์</th><th>ประมวลผลอัตโนมัติ?</th></tr>
+    <tr><td>อัปโหลดไฟล์ ABS0000, BDR130, BSD010, ราคารายวัน, TC05 (กล่องที่เลือกได้หลายไฟล์)</td><td>ใช่ — หลังอัปโหลดครบทั้งชุดที่เลือก</td></tr>
+    <tr><td>อัปโหลดไฟล์ BSR030 Weekly</td><td><strong>ไม่</strong> — ต้องกดปุ่ม <strong>ประมวลผล</strong> เอง</td></tr>
+    <tr><td>ลบไฟล์</td><td>ใช่ — ลบข้อมูลของไฟล์นั้นแล้วคำนวณใหม่ทันที</td></tr>
+    <tr><td>กดยืนยัน / ไม่นับ / ยกเลิกการตัดสิน ±1 วัน</td><td>ใช่</td></tr>
+    <tr><td>แก้ไขโอนจริง (ยืนยันการแก้ไข)</td><td>บันทึกและปรับตัวเลขของเส้นทางนั้นทันที (สูตรเดียวกับ Engine)</td></tr>
+    <tr><td>พิมพ์หมายเหตุ</td><td>ไม่กระทบตัวเลข บันทึกเมื่อคลิกออกจากช่อง</td></tr>
+  </table></div>
+</section>
+
+<!-- ===================== 07 CALCULATION ===================== -->
+<section class="sec" id="calc">
+  <div class="sec-head"><span class="sec-no">07</span><h2>Calculation Logic</h2></div>
+  <p class="lede">ทุกสูตรด้านล่างตรงกับ <code>calcEngine.ts</code>, <code>aggregate.ts</code> และ <code>supplyDailyCalcEngine.ts</code></p>
+
+  <h3>7.1 % โอนเทียบแผน (Weekly / Daily / Total)</h3>
+  <p><strong>ความหมาย:</strong> สัดส่วนของแผนที่โอนได้ตามแผน แยก 3 ช่องทาง</p>
+  <p><strong>Input:</strong> แผนของช่องทางนั้น, โอนจริงที่นับให้ช่องทางนั้น</p>
+  <div class="formula">
+    <div class="f-head">โอนจริงที่นับให้แต่ละช่องทาง (Weekly-first)</div>
+    <div class="f-body">โอนจริงช่อง Weekly = โอนจริงของเส้นทาง
+โอนจริงช่อง Daily  = MAX(โอนจริงของเส้นทาง − แผน Weekly ของเส้นทาง, 0)
+โอนจริงช่อง Total  = โอนจริงของเส้นทาง
+
+แล้วนำไปเข้าสูตร %โอนเทียบแผน (Section 3) กับแผนของช่องทางนั้น</div>
+    <div class="f-foot">Daily คือแผนเสริมบนแผน Weekly ระบบจึงนำโอนจริงไปเติมแผน Weekly ให้เต็มก่อน (README: เดิมนับโอนจริงก้อนเดียวกันให้ทั้งสองช่อง) — % Total ไม่เปลี่ยน</div>
+  </div>
+  <p><strong>ตัวอย่าง:</strong> แผน Weekly = 600 kg, แผน Daily = 400 kg, โอนจริง = 900 kg</p>
+  <div class="tbl"><table>
+    <tr><th>ช่องทาง</th><th class="num">แผน</th><th class="num">โอนจริงที่นับให้</th><th>ขั้นคำนวณ</th><th class="num">%</th></tr>
+    <tr><td>Weekly</td><td class="num">600</td><td class="num">900</td><td>MIN(900, 600) = 600</td><td class="num">100.00%</td></tr>
+    <tr><td>Daily</td><td class="num">400</td><td class="num">300</td><td>900 − 600 = 300 · ขาด 100 ≥ 40 → นับ 300</td><td class="num">75.00%</td></tr>
+    <tr><td>Total</td><td class="num">1,000</td><td class="num">900</td><td>ขาด 100 ไม่น้อยกว่า 100 (10%) → นับ 900</td><td class="num">90.00%</td></tr>
+  </table></div>
+  <p><strong>Interpretation:</strong> แผน Weekly ทำได้ครบ ส่วนที่ขาดทั้งหมด 100 kg อยู่ที่แผน Daily</p>
+
+  <h3>7.2 Achievement % และ ปริมาณโอนจริงตามแผน</h3>
+  <p><strong>ความหมาย:</strong> %โอนเทียบแผนของกลุ่มแถวที่แสดงอยู่ (ทั้ง Week หรือตาม Filter)</p>
+  <div class="formula">
+    <div class="f-head">สูตร</div>
+    <div class="f-body">ปริมาณโอนจริงตามแผน = Σ “นับตามแผน” ของแต่ละเส้นทาง  (คำนวณใหม่ต่อเส้นทาง)
+Achievement %  = ปริมาณโอนจริงตามแผน ÷ Σ แผน × 100
+โอนจริง ÷ แผน (ไม่ปรับ) = Σ โอนจริง ÷ Σ แผน × 100  (แสดงตัวเล็กใต้ Achievement %)</div>
+    <div class="f-foot">“เส้นทาง” ในที่นี้ = วันที่ + ต้นทาง + ปลายทาง + กลุ่มสินค้า (รวมทุกราคาของเส้นทางนั้นเป็นก้อนเดียวก่อนคำนวณ)</div>
+  </div>
+
+  <h3>7.3 ปริมาณโอนจริง (Actual) และการแบ่งตามราคา</h3>
+  <div class="formula">
+    <div class="f-head">โอนจริงของแต่ละแถวราคา (actual_alloc)</div>
+    <div class="f-body">โอนจริงของแถว = โอนจริงทั้งเส้นทาง × (แผนรวมของแถวนี้ ÷ แผนรวมของเส้นทาง)
+ถ้าเส้นทางไม่มีแผนเลย → แบ่งเท่า ๆ กันตามจำนวนแถวราคา
+
+KPI “ปริมาณโอนจริง (Actual)” = Σ โอนจริงของแถว</div>
+    <div class="f-foot">ตัวอย่าง: เส้นทางเดียวมี 2 ราคา แผน 300 และ 100 kg (รวม 400) โอนจริงทั้งเส้นทาง 360 kg → แถวแรกได้ 270 kg แถวที่สองได้ 90 kg รวมกลับได้ 360 kg พอดี ในตารางจะแสดง “270 kg / 360 kg”</div>
+  </div>
+
+  <h3>7.4 โอนเกินแผน (Overage)</h3>
+  <div class="formula"><div class="f-head">สูตร</div><div class="f-body">โอนเกินแผน = MAX(โอนจริงของแถว − แผนรวมของแถว, 0)</div><div class="f-foot">ตัวอย่าง: แผน 400, โอนจริง 600 → โอนเกินแผน 200 kg · %โอนเทียบแผนยังเป็น 100% เพราะส่วนเกินไม่นับเป็นผลงาน</div></div>
+
+  <h3>7.5 กำไรที่ได้ และ สูญเสียกำไร (บาท)</h3>
+  <div class="formula">
+    <div class="f-head">สูตร</div>
+    <div class="f-body">กำไรที่ได้  = (ราคาปลายทาง − ราคาต้นทาง) × โอนจริงของแถว
+สูญเสียกำไร = −MAX(0, แผนรวม − โอนจริงของแถว) × MAX(0, ราคาปลายทาง − ราคาต้นทาง)
+มูลค่าสูญเสีย (KPI) = Σ สูญเสียกำไร</div>
+    <div class="f-foot"><strong>สำคัญ:</strong> “สูญเสียกำไร” <strong>ไม่ได้รับการปัด 10%</strong> เหมือนคอลัมน์ % — README ระบุว่าตั้งใจให้ตรงกับพฤติกรรม Excel เดิม จึงอาจเห็นแถวที่ % = 100% แต่ยังมีสูญเสียกำไร · ถ้าราคาปลายทางไม่สูงกว่าต้นทาง สูญเสีย = 0 · กำไรที่ได้ไม่ตัดเพดาน (คิดจากโอนจริงทั้งหมดรวมส่วนเกิน)</div>
+  </div>
+  <p><strong>ตัวอย่าง:</strong> แผน 500 kg, โอนจริง 470 kg, ราคาต้นทาง 60 บาท, ราคาปลายทาง 64 บาท</p>
+  <ul>
+    <li>%โอนเทียบแผน = ขาด 30 &lt; 50 → <strong>100%</strong></li>
+    <li>กำไรที่ได้ = (64 − 60) × 470 = <strong>1,880 บาท</strong></li>
+    <li>สูญเสียกำไร = −(500 − 470) × 4 = <strong>−120 บาท</strong></li>
+  </ul>
+
+  <h3>7.6 ปริมาณ Reject และ % Reject</h3>
+  <div class="formula"><div class="f-head">สูตร</div><div class="f-body">Reject  = MAX(Suggest − แผนสุดท้าย (supplyAfter), 0)
+% Reject = Σ Reject ÷ Σ Suggest × 100  (“-” ถ้า Σ Suggest = 0)</div><div class="f-foot">ความหมาย: ส่วนของปริมาณที่ระบบแนะนำแต่ถูกตัดออกตอนปรับแผน — เป็นตัวเลขฝั่งแผนล้วน ไม่เกี่ยวกับโอนจริง · ตัวอย่าง: Suggest 1,200, แผนสุดท้าย 1,000 → Reject 200 kg, % Reject 16.67%</div></div>
+
+  <h3>7.7 โอนไม่ตรงแผนเลย</h3>
+  <div class="formula"><div class="f-head">สูตร</div><div class="f-body">โอนไม่ตรงแผนเลย = Σ น้ำหนักโอนจริงของ (วันที่ + ต้นทาง + ปลายทาง + กลุ่มสินค้า) ที่ไม่มีแผนเลยในสัปดาห์
+(ไม่รวมรายการ ±1 วันที่ยืนยันแล้ว เพราะย้ายไปนับในแผนแล้ว)</div><div class="f-foot">เป็นยอดทั้ง Week เสมอ ไม่เปลี่ยนตาม Filter ในตาราง</div></div>
+
+  <h3>7.8 ตัวชี้วัดหน้า ติดตามการกรอก Supply Daily</h3>
+  <div class="tbl"><table>
+    <tr><th>KPI / Flag</th><th>สูตรที่ระบบใช้</th></tr>
+    <tr><td>โอนนอกแผน</td><td>ปริมาณของเหลือ ≥ 0 และ (โอนออกจริง − แผนโอนออก) &gt; (ปริมาณของเหลือ − แผนโอนออก) + 100 kg<br><span class="muted">ซึ่งเทียบเท่ากับ โอนออกจริง &gt; ปริมาณของเหลือ + 100 kg · ค่า 100 kg มาจากสูตร Excel เดิม</span></td></tr>
+    <tr><td>โอนนอกแผนนอกโซน</td><td>นับจำนวน “แถวโอนจริง” ของ Key ที่เป็นโอนนอกแผน และภาคต้นทาง ≠ ภาคปลายทาง</td></tr>
+    <tr><td>ลงราคา</td><td>ราคา Net เฉลี่ยวันนี้ − ราคา Net เฉลี่ยพรุ่งนี้ ≥ 1 บาท (Net Price = CostZ + Margin, จับคู่ด้วย Vendor Group ของโรงงาน + กลุ่มสินค้า)</td></tr>
+    <tr><td>ลงราคาแล้วนอกแผน</td><td>ปริมาณของเหลือ ≤ 0 และ เป็นโอนนอกแผน และ ลงราคา</td></tr>
+    <tr><td>Bidding / Bidding แล้วนอกระบบ</td><td>มีรายการ TC05 ที่ <code>Allocate sp type = PICKUP_LOW_BIDDING</code> · “นอกระบบ” เมื่อปริมาณของเหลือ ≤ 0 ด้วย</td></tr>
+    <tr><td>% Bidding เข้าระบบโอน</td><td>(จำนวนรายการ Bidding − Bidding แล้วนอกระบบ) ÷ จำนวนรายการ Bidding</td></tr>
+    <tr><td>จำนวนโรงงานทั้งหมด / โรงงานที่กรอก Supply</td><td>จำนวนโรงงานในตาราง Master Zone / จำนวนโรงงานต้นทางที่มีอย่างน้อย 1 รายการกรอกแล้ว (และ % ของสองค่านี้)</td></tr>
+  </table></div>
+  <p class="muted">หมายเหตุ: เหตุผลทางธุรกิจของค่า 100 kg และ 1 บาท ไม่พบในระบบ นอกจากระบุว่ามาจากสูตร Excel เดิม <span class="verify">ต้องตรวจสอบกับ System Owner</span></p>
+</section>
+
+<!-- ===================== 08 GAP ===================== -->
+<section class="sec" id="gap">
+  <div class="sec-head"><span class="sec-no">08</span><h2>อธิบาย GAP (ส่วนต่าง)</h2></div>
+  <p class="lede">ระบบมี GAP 2 แบบที่แยกกัน ห้ามนำมาหักลบกัน</p>
+  <div class="formula">
+    <div class="f-head">Definition ที่ระบบใช้จริง</div>
+    <div class="f-body">Diff แผนโอน (GAP ขาด) = นับตามแผน − แผน  → ค่า ≤ 0 เสมอ
+โอนเกินแผน (GAP เกิน) = MAX(โอนจริง − แผนรวม, 0)  → ค่า ≥ 0 เสมอ</div>
+    <div class="f-foot">ระบบใช้รูปแบบ “Actual − Plan” (ติดลบ = ขาด) แต่ใช้ “นับตามแผน” ที่ผ่านการตัดเพดานและปัด 10% แล้ว ไม่ใช่โอนจริงดิบ</div>
+  </div>
+  <div class="tbl"><table>
+    <tr><th>ตัวอย่าง</th><th class="num">แผน</th><th class="num">โอนจริง</th><th class="num">Diff แผนโอน</th><th class="num">โอนเกินแผน</th><th>อ่านว่า</th></tr>
+    <tr><td>ขาดมาก</td><td class="num">1,000</td><td class="num">800</td><td class="num">−200</td><td class="num">0</td><td>โอนจริงต่ำกว่าแผน 200 kg</td></tr>
+    <tr><td>ขาดน้อย</td><td class="num">1,000</td><td class="num">950</td><td class="num">0</td><td class="num">0</td><td>ขาด 50 kg แต่ไม่ถึง 10% ระบบถือว่าครบ (Diff เป็น 0)</td></tr>
+    <tr><td>เกิน</td><td class="num">1,000</td><td class="num">1,300</td><td class="num">0</td><td class="num">300</td><td>ครบแผน และโอนเกินอีก 300 kg</td></tr>
+  </table></div>
+  <p>Diff แผนโอนแสดงในหน้า <strong>ติดตามโอน Weekly / Daily / รวม</strong> (ตัวแดงเมื่อติดลบ) · โอนเกินแผนแสดงในตาราง Tracking Data บน Dashboard</p>
+  <div class="callout note"><span class="ttl">อยากรู้ว่าขาดจริงเท่าไรแบบไม่ปัด</span><p>ใช้คอลัมน์ <strong>สูญเสียกำไร</strong> (ไม่ปัด 10%) หรือเปรียบเทียบคอลัมน์ “แผน” กับ “จริง” ด้วยตัวเอง หรือดูค่า “โอนจริง ÷ แผน (ไม่ปรับ)” ใต้ Achievement %</p></div>
+</section>
+
+<!-- ===================== 09 STATUS ===================== -->
+<section class="sec" id="status">
+  <div class="sec-head"><span class="sec-no">09</span><h2>Status / สี / Flag</h2></div>
+  <p class="lede">สถานะคำนวณจาก %โอนเทียบแผน ตาม Logic ใน <code>statusBadge.ts</code> เกณฑ์และสีแก้ได้ที่หน้า Settings (admin) — ตารางด้านล่างคือค่าเริ่มต้นของระบบ</p>
+  <div class="tbl"><table>
+    <tr><th>ลำดับตรวจ</th><th>เงื่อนไข (%โอนเทียบแผน)</th><th>Status</th><th>สีเริ่มต้น</th><th>ความหมาย</th></tr>
+    <tr><td>1</td><td>ไม่มีแผน (แผน ≤ 0, แสดง “-”)</td><td>ไม่มีแผน</td><td><span class="dot d-gray"></span>เทา</td><td>แถวนี้ไม่มีแผนในช่องทางที่ดู</td></tr>
+    <tr><td>2</td><td>≤ 0%</td><td>ไม่โอนตามแผน</td><td><span class="dot d-navy"></span>กรมท่า</td><td>มีแผนแต่ไม่มีโอนจริงเลย — รุนแรงที่สุด</td></tr>
+    <tr><td>3</td><td>≥ 100% (เกณฑ์ “ตามแผน”)</td><td>ตามแผน</td><td><span class="dot d-green"></span>เขียว</td><td>โอนครบแผน (รวมกรณีขาดไม่ถึง 10%)</td></tr>
+    <tr><td>4</td><td>≥ 90% และ &lt; 100% (เกณฑ์ “ต่ำกว่าแผน”)</td><td>ต่ำกว่าแผน</td><td><span class="dot d-amber"></span>เหลือง/ส้ม</td><td>ต่ำกว่าแผนเล็กน้อย</td></tr>
+    <tr><td>5</td><td>&gt; 0% และ &lt; 90%</td><td>ต่ำกว่าแผนมาก</td><td><span class="dot d-red"></span>แดง</td><td>โอนได้บ้างแต่ต่ำกว่าเป้ามาก</td></tr>
+  </table></div>
+  <div class="callout warn"><span class="ttl">ทำไมแทบไม่เห็นสีเหลืองในระดับแถว</span>
+  <p>เพราะกฎปัด 10%: แถวที่ขาดน้อยกว่า 10% ถูกปัดเป็น 100% ไปแล้ว ค่า % ของแถวจึงเป็น 100% หรือ ≤ 90% เกือบทั้งหมด สีเหลืองระดับแถวเกิดเฉพาะเมื่อขาดพอดี 10% (เท่ากับ 90.00%) ส่วนในระดับภาพรวม (Achievement % บน Dashboard) ค่าระหว่าง 90–99.99% เกิดได้ตามปกติ</p></div>
+  <div class="callout note"><span class="ttl">“เกินแผน” ไม่มีสถานะแยก</span><p>ระบบไม่มีสถานะ “เกินแผน” (🔵) เพราะ % สูงสุดคือ 100% การโอนเกินแผนดูได้จากคอลัมน์ <strong>โอนเกินแผน</strong> และข้อความ “มีการโอนเกินแผนบางเส้นทาง” ใต้ Achievement %</p></div>
+  <h4>สถานะใช้ % ของช่องทางใด</h4>
+  <ul>
+    <li><strong>Dashboard</strong> (คอลัมน์สถานะ และสีของ Achievement %) → % Total</li>
+    <li><strong>ติดตามโอน Weekly / Daily / รวม</strong> → % ของช่องทางของหน้านั้น</li>
+  </ul>
+  <h4>สีอื่นในระบบ</h4>
+  <div class="tbl"><table>
+    <tr><th>จุดที่เห็น</th><th>สี</th><th>ความหมาย</th></tr>
+    <tr><td>มูลค่าสูญเสีย / สูญเสียกำไร</td><td>ตัวแดง</td><td>มีกำไรที่เสียไป (ค่าติดลบ)</td></tr>
+    <tr><td>Diff แผนโอน</td><td>ตัวแดง</td><td>โอนต่ำกว่าแผน</td></tr>
+    <tr><td>หมายเหตุระบบ “…รอยืนยัน”</td><td>ตัวส้ม</td><td>มีโอนจริงต่างวัน ±1 วันรอการยืนยัน</td></tr>
+    <tr><td>หมายเหตุระบบ “รวมโอนจริง… ยืนยันโดย…”</td><td>ตัวน้ำเงิน</td><td>นับรวมแล้ว พร้อมชื่อผู้ยืนยัน</td></tr>
+    <tr><td>ป้าย “ปรับแล้ว”</td><td>พื้นเหลือง</td><td>โอนจริงถูกแก้ด้วยมือ (วางเมาส์เพื่อดูผู้แก้และเหตุผล)</td></tr>
+    <tr><td>Exception หน้า Supply Daily</td><td><span class="dot d-red"></span>แดง <span class="dot d-orange"></span>ส้ม <span class="dot d-yellow"></span>เหลือง <span class="dot d-purple"></span>ม่วง</td><td>โอนนอกแผน · Bidding/ลงราคาแต่ไม่เข้าระบบโอน · มี Supply แต่ไม่มีแผนโอน · ข้อมูลไม่สมบูรณ์/Match ไม่ได้</td></tr>
+  </table></div>
+</section>
+
+<!-- ===================== 10 BUSINESS RULES ===================== -->
+<section class="sec" id="rules">
+  <div class="sec-head"><span class="sec-no">10</span><h2>Business Rules ที่ผู้ใช้ต้องรู้</h2></div>
+  <div class="tbl"><table>
+    <tr><th>หัวข้อ</th><th>กฎที่ระบบใช้</th></tr>
+    <tr><td>ระบบใช้ข้อมูล Week ใด</td><td>ISO Week (จันทร์–อาทิตย์) ที่ผู้ใช้สร้างที่หน้า Upload · ไฟล์ต้องมีวันที่อยู่ในช่วง Week ± 1 วัน · หน้าจอเปิดมาจะเลือก Week ที่มีการอัปโหลดล่าสุดให้อัตโนมัติ</td></tr>
+    <tr><td>Plan ใช้ Version ใด</td><td>ใช้ไฟล์ที่อัปโหลดอยู่ในระบบตอนนั้น · BSR030 มีได้ 1 ไฟล์ต่อ Week (อัปใหม่ = แทนที่) · BDR130 มีได้หลายไฟล์ แต่ห้ามมีวันที่ซ้ำกัน (ต้องลบไฟล์เก่าก่อนอัปฉบับใหม่) · ตัวเลขแผนที่ใช้คือคอลัมน์ <code>supplyAfter</code> (แผนสุดท้าย) · <span class="verify">นโยบายว่าต้องใช้แผนฉบับใดเป็นทางการ — ต้องตรวจสอบกับ System Owner</span></td></tr>
+    <tr><td>Actual ใช้ข้อมูลจากไหน</td><td>ABS0000_StockTransfers จาก Smart Sales ทุกไฟล์ใน Week รวมกัน · ข้ามแถวที่ไม่มีรหัสโรงงานปลายทาง (ขายตรงลูกค้า) · ถ้าเส้นทางเคยถูกปรับค่า ใช้ค่าที่ปรับล่าสุด</td></tr>
+    <tr><td>Key ในการจับคู่</td><td>วันที่ + รหัสโรงงานต้นทาง + รหัสโรงงานปลายทาง + กลุ่มสินค้า (P19) · ไม่ใช้ราคาและไม่ใช้รหัส SKU</td></tr>
+    <tr><td>Plan = 0</td><td>% แสดง “-”, สถานะ “ไม่มีแผน”, Diff = 0 · ไม่ถูกนับในตัวหารของ Achievement %</td></tr>
+    <tr><td>Actual = 0 (มีแผน)</td><td>% = 0%, สถานะ “ไม่โอนตามแผน”, Diff = −แผน, สูญเสียกำไร = −แผน × ส่วนต่างราคา</td></tr>
+    <tr><td>Actual &gt; Plan</td><td>% = 100% (ตัดเพดาน) · ส่วนเกินอยู่ที่ “โอนเกินแผน” · ไม่ชดเชยเส้นทางอื่น · กำไรที่ได้คิดจากโอนจริงทั้งหมด</td></tr>
+    <tr><td>ขาดไม่ถึง 10% ของแผน</td><td>ถือว่าครบแผน (100%) สำหรับ % และ Diff — แต่ “สูญเสียกำไร” ยังคิดจากส่วนที่ขาดจริง</td></tr>
+    <tr><td>โอนจริงต่างวันจากแผน ±1 วัน</td><td>เกิดเมื่อโอนจริงไม่มีแผนในวันนั้นเลย แต่เส้นทาง+กลุ่มสินค้ามีแผนวันก่อนหรือวันถัดไปและยังโอนไม่ครบ · ระบบตรวจ “โอนช้า 1 วัน” ก่อน “โอนก่อน 1 วัน” · <strong>ไม่ถูกนับจนกว่าจะกดยืนยัน</strong> · ระหว่างรอแสดง “รอยืนยัน” · กด “ไม่นับ” = คงเป็นโอนไม่ตรงแผน</td></tr>
+    <tr><td>เส้นทางมีหลายราคาในวันเดียว</td><td>แยกเป็นหลายแถว · โอนจริงของเส้นทางเป็นยอดเดียว แบ่งให้แต่ละราคาตามสัดส่วนแผน</td></tr>
+    <tr><td>Daily กับ Weekly ของเส้นทางเดียวกัน</td><td>โอนจริงนับให้ Weekly ก่อน ส่วนที่เหลือนับให้ Daily</td></tr>
+    <tr><td>Blank Data</td><td>ราคาว่าง = 0 (กระทบเฉพาะกำไร/สูญเสีย) · รหัสโรงงาน/กลุ่มสินค้า/วันที่ว่างหรืออ่านไม่ได้ = ไฟล์ไม่ผ่าน · รหัสปลายทางว่างใน ABS0000 = ข้ามแถว</td></tr>
+    <tr><td>ไฟล์ซ้ำ</td><td>ชื่อไฟล์ซ้ำในกล่องหลายไฟล์ = แทนที่ไฟล์เดิม · ABS0000 ที่ข้อมูลซ้ำกับไฟล์เดิม ≥ 90% = ปฏิเสธ · ไฟล์ ABS0000 ที่มี 5,000 แถวพอดี = เตือนว่าอาจถูกตัด</td></tr>
+    <tr><td>ข้อมูลที่ยังไม่ครบ</td><td>ปุ่ม “ประมวลผล” กดไม่ได้จนกว่าไฟล์บังคับผ่านครบ · Dashboard แสดงจำนวน “x/y ประเภทไฟล์” ที่มีแล้ว · การอัปโหลดแบบหลายไฟล์จะประมวลผลอัตโนมัติแม้ไฟล์ประเภทอื่นยังไม่ครบ ให้ดูตัวเลข x/y ก่อนสรุปผล</td></tr>
+    <tr><td>หมายเหตุของผู้ใช้</td><td>คงอยู่เมื่อประมวลผลใหม่ (จับคู่แถวเดิมก่อน ถ้าแถวเปลี่ยนจะรวมหมายเหตุของเส้นทางเดียวกัน)</td></tr>
+    <tr><td>สิทธิ์การเข้าถึง</td><td>เมื่อเปิด “บังคับ Login” เฉพาะผู้ใช้ที่ Login และสถานะ active เข้าถึงข้อมูลได้ · ตารางผลลัพธ์แก้ได้เฉพาะหมายเหตุ · แก้โอนจริงได้ผ่านหน้าแก้ไข (มี Log) เท่านั้น · Settings เข้าได้เฉพาะ admin</td></tr>
+    <tr><td>Cut-off Time</td><td><span class="verify">ไม่พบข้อมูลยืนยันจากระบบ — ต้องตรวจสอบกับ System Owner</span></td></tr>
+  </table></div>
+</section>
+
+<!-- ===================== 11 REFRESH ===================== -->
+<section class="sec" id="refresh">
+  <div class="sec-head"><span class="sec-no">11</span><h2>Data Refresh</h2></div>
+  <div class="tbl"><table>
+    <tr><th>คำถาม</th><th>คำตอบจากระบบ</th></tr>
+    <tr><td>ข้อมูล Update เวลาใด</td><td>ระบบ <strong>ไม่มีการดึงข้อมูลอัตโนมัติตามเวลา</strong> ข้อมูลเปลี่ยนเมื่อมีผู้ใช้อัปโหลด/ลบไฟล์ ยืนยัน ±1 วัน หรือแก้ไขโอนจริง เท่านั้น</td></tr>
+    <tr><td>ข้อมูล Real-time หรือไม่</td><td>ไม่ใช่ Real-time · ตัวเลขทันสมัยเท่ากับไฟล์ที่อัปโหลดล่าสุด ดูเวลาได้จากข้อความ <strong>“อัปเดตล่าสุด …”</strong> ข้างตัวเลือก Week (เวลาไฟล์ล่าสุดของ Week นั้น)</td></tr>
+    <tr><td>ผู้ใช้ต้องกด Refresh หรือไม่</td><td>ไม่มีปุ่ม Refresh ในหน้าจอ · หน้าเว็บจะโหลดข้อมูลใหม่เมื่อสลับกลับมาที่หน้าต่างเบราว์เซอร์ (ค่าเริ่มต้นของ React Query) หรือกด F5 ของเบราว์เซอร์</td></tr>
+    <tr><td>ข้อมูลมี Delay หรือไม่</td><td>ขึ้นกับเวลาที่ผู้รับผิดชอบ Export จาก Smart Sales และนำมาอัปโหลด · <span class="verify">รอบการอัปโหลดมาตรฐาน — ต้องตรวจสอบกับ System Owner</span></td></tr>
+    <tr><td>ถ้าข้อมูลไม่ Update</td><td>1) ดู “อัปเดตล่าสุด” ว่าตรงกับที่คาดหรือไม่ · 2) ที่หน้า Upload Data ดูว่าไฟล์อยู่ในสถานะ “✓ สำเร็จ” · 3) ถ้าอัปโหลด BSR030 ใหม่ ต้องกด <strong>ประมวลผล</strong> · 4) กด F5 · 5) ติดต่อผู้ดูแลระบบ</td></tr>
+  </table></div>
+  <div class="callout owner"><span class="ttl">ยังไม่พบข้อมูลจากระบบต้นทาง</span><p>เวลาที่ Smart Sales / Supply Planning มีข้อมูลพร้อม Export ของแต่ละวัน — กรุณาตรวจสอบกับผู้ดูแลระบบ</p></div>
+</section>
+
+<!-- ===================== 12 FLOWCHART ===================== -->
+<section class="sec" id="flowchart">
+  <div class="sec-head"><span class="sec-no">12</span><h2>Logic Flow Diagram</h2></div>
+  <p class="lede">การคำนวณ 1 เส้นทาง (วันที่ + ต้นทาง + ปลายทาง + กลุ่มสินค้า) ใน 1 ช่องทาง</p>
+  <div class="flow">
+    <div class="node key"><b>Start — ผู้ใช้เลือก Week และระบบประมวลผล</b></div>
+    <div class="arrow"></div>
+    <div class="node"><b>ดึง Plan</b><small>รวม supplyAfter ต่อ เส้นทาง + ราคา แยก Weekly/Daily</small></div>
+    <div class="arrow"></div>
+    <div class="node"><b>ดึง Actual Transfer</b><small>รวมน้ำหนัก ABS0000 ต่อเส้นทาง</small></div>
+    <div class="arrow"></div>
+    <div class="decision">โอนจริงนี้มีแผนในวันเดียวกันหรือไม่?</div>
+    <div class="branch">
+      <div class="node"><span class="lbl">NO</span><b>ตรวจ ±1 วัน</b><small>มีแผนวันก่อน/ถัดไปที่ยังไม่ครบ → แสดง “รอยืนยัน” · ผู้ใช้กดยืนยัน → นับเข้าแผนวันนั้น · ไม่มี/ไม่นับ → “โอนไม่ตรงแผนเลย”</small></div>
+      <div class="node"><span class="lbl">YES</span><b>ใช้กับแผนวันนั้น</b><small>ถ้ามีการปรับค่าด้วยมือ → ใช้ค่าที่ปรับล่าสุด</small></div>
+    </div>
+    <div class="arrow"></div>
+    <div class="node"><b>แบ่งโอนจริง</b><small>Weekly ก่อน → ส่วนที่เหลือให้ Daily · แบ่งตามสัดส่วนแผนของแต่ละราคา</small></div>
+    <div class="arrow"></div>
+    <div class="decision">แผนของช่องทางนี้ &gt; 0 หรือไม่?</div>
+    <div class="branch">
+      <div class="node"><span class="lbl">NO</span><b>% = “-”</b><small>สถานะ “ไม่มีแผน” · Diff = 0</small></div>
+      <div class="node"><span class="lbl">YES</span><b>นับได้ = MIN(โอนจริง, แผน)</b><small>ถ้าขาด &lt; 10% ของแผน → นับเป็นครบแผน</small></div>
+    </div>
+    <div class="arrow"></div>
+    <div class="node"><b>คำนวณ % / Diff / โอนเกินแผน / กำไร / สูญเสีย / Reject</b></div>
+    <div class="arrow"></div>
+    <div class="node"><b>กำหนด Status</b><small>ไม่มีแผน → ไม่โอนตามแผน (≤0%) → ตามแผน (≥100%) → ต่ำกว่าแผน (≥90%) → ต่ำกว่าแผนมาก</small></div>
+    <div class="arrow"></div>
+    <div class="node key"><b>แสดง Dashboard</b><small>รวมยอดตาม Filter แบบ Ratio of sums</small></div>
+  </div>
+</section>
+
+<!-- ===================== 13 PAGES ===================== -->
+<section class="sec" id="pages">
+  <div class="sec-head"><span class="sec-no">13</span><h2>User Guide — วิธีใช้งานแต่ละหน้า</h2></div>
+  <p class="lede">แผนผังเมนู: แถบด้านบนมี <strong>🐔 Dashboard</strong>, <strong>🐔 Upload Data</strong> และ <strong>🐔 เพิ่มเติม ▾</strong> (ข้อมูลดิบ, ติดตามโอน Weekly / Daily / รวม, ติดตามการกรอก Supply Daily, Settings) เมื่ออยู่ในหน้าหมูเมนูจะเปลี่ยนเป็น 🐷 · คลิกชื่อ “ติดตามโอนเทียบแผน” ซ้ายบนเพื่อกลับหน้าเลือกสินค้า</p>
+
+  <!-- 13.1 Login -->
+  <div class="page-card">
+    <h3>13.1 หน้า Login <span class="path">/login</span></h3>
+    <dl class="qa">
+      <dt>หน้านี้ใช้ทำอะไร?</dt><dd>ยืนยันตัวตนก่อนเข้าใช้ (เมื่อ admin เปิด “บังคับ Login ก่อนใช้งาน” ซึ่งเป็นค่าเริ่มต้น)</dd>
+      <dt>เข้าเมื่อไหร่?</dt><dd>ทุกครั้งที่เปิดเว็บและยังไม่ได้ Login</dd>
+      <dt>มีข้อมูลอะไร?</dt><dd>ช่อง Username, Password, ปุ่ม <strong>Login</strong> · ถ้าระบบยังไม่มีผู้ใช้ระดับ admin จะมีลิงก์ “ยังไม่มีผู้ใช้งานในระบบ? ลงทะเบียนผู้ดูแลระบบคนแรก”</dd>
+    </dl>
+    <ol class="steps">
+      <li><b>กรอก Username และ Password</b>Username เป็นตัวอักษรอังกฤษ ตัวเลข หรือ _ (ไม่ต้องพิมพ์ตัวพิมพ์ใหญ่ ระบบแปลงเป็นตัวเล็กให้)</li>
+      <li><b>กด Login</b>ถ้าขึ้น “Username หรือรหัสผ่านไม่ถูกต้อง” ให้ตรวจการพิมพ์ · ถ้าขึ้น “บัญชีนี้ถูกระงับการใช้งาน” ให้ติดต่อ admin</li>
+    </ol>
+  </div>
+
+  <!-- 13.2 Product select -->
+  <div class="page-card">
+    <h3>13.2 หน้าเลือกสินค้า <span class="path">/</span></h3>
+    <dl class="qa">
+      <dt>หน้านี้ใช้ทำอะไร?</dt><dd>เลือกชุดข้อมูลที่จะดู</dd>
+      <dt>มีข้อมูลอะไร?</dt><dd>ปุ่ม <strong>🐔 ไก่</strong> → Dashboard ไก่ · <strong>🐷 หมู</strong> → Dashboard หมู · <strong>📦 ทั้งหมด</strong> → แสดง Dashboard ไก่และหมูซ้อนกัน (เลือก Week แยกกันได้ ไม่รวมตัวเลข)</dd>
+    </dl>
+  </div>
+
+  <!-- 13.3 Dashboard -->
+  <div class="page-card">
+    <h3>13.3 หน้า Dashboard — Tracking โอนเทียบแผน <span class="path">/dashboard · /pork/dashboard</span></h3>
+    <dl class="qa">
+      <dt>หน้านี้ใช้ทำอะไร?</dt><dd>ดูภาพรวม %โอนเทียบแผนของ Week, ยืนยันการโอนต่างวัน ±1 วัน, เจาะดูรายเส้นทาง และ Export</dd>
+      <dt>เข้าเมื่อไหร่?</dt><dd>หลังข้อมูลของ Week ถูกประมวลผลแล้ว — ใช้ติดตามประจำวัน/ประจำสัปดาห์ หรือก่อนประชุม</dd>
+      <dt>มีข้อมูลอะไร?</dt><dd>ดูภาพด้านล่างและคำอธิบายตามหมายเลข</dd>
+    </dl>
+
+    <figure class="shot" style="margin-left:0;margin-right:0">
+      <div class="shot-cap"><span>ภาพจำลองหน้า Dashboard (ไก่) — วาดตามโครงสร้างหน้าจริง</span><span>ตัวเลขเป็นตัวอย่าง</span></div>
+      <div class="shot-scroll"><div class="ui">
+        <div class="bar"><span class="logo">ติดตามโอนเทียบแผน</span><span class="nv on">🐔 Dashboard</span><span class="nv">🐔 Upload Data</span><span class="nv">🐔 เพิ่มเติม ▾</span><span class="right"><span>05/10/2026 09:41</span><span>👤 planner01</span><span class="btn-out">ออกจากระบบ</span></span></div>
+        <div class="pad">
+          <div class="row" style="justify-content:space-between">
+            <div><div class="h">Tracking โอนเทียบแผน</div><div class="s">Transfer Performance Tracking</div></div>
+            <div class="row"><span class="s mk" data-n="1">📅 WK36 · อัปเดตล่าสุด 04/09/2026 16:20 · 3/3 ประเภทไฟล์</span><span class="sel mk ring" data-n="2">WK36 (2026) ▾</span><span class="btn mk ring" data-n="8">Export Excel</span></div>
+          </div>
+          <div class="kpis mk" data-n="3">
+            <div class="kpi"><div class="l">ปริมาณแผนโอน (PLAN)</div><div class="v">1,900 kg</div></div>
+            <div class="kpi"><div class="l">ปริมาณโอนจริง (ACTUAL)</div><div class="v">1,870 kg</div></div>
+            <div class="kpi"><div class="l">ACHIEVEMENT % ⓘ</div><div class="v red">89.47%</div><div class="sb">โอนจริง ÷ แผน (ไม่ปรับ) 98.42% · มีการโอนเกินแผนบางเส้นทาง</div></div>
+            <div class="kpi"><div class="l">มูลค่าสูญเสีย <span style="float:right">▴</span></div><div class="v red">-1,120 บาท</div></div>
+          </div>
+          <div class="kpis small mk" data-n="4" style="margin-top:8px">
+            <div class="kpi"><div class="l">% โอนเทียบแผน WEEKLY ⓘ</div><div class="v">92.31%</div></div>
+            <div class="kpi"><div class="l">% โอนเทียบแผน DAILY ⓘ</div><div class="v">83.33%</div></div>
+            <div class="kpi"><div class="l">ปริมาณโอนจริงตามแผน ⓘ</div><div class="v">1,700 kg</div></div>
+            <div class="kpi"><div class="l">ปริมาณ REJECT</div><div class="v">200 kg</div><div class="sb" style="color:#9ca3af">% Reject: 9.52%</div></div>
+            <div class="kpi"><div class="l">โอนไม่ตรงแผนเลย</div><div class="v">320 kg</div><div class="sb" style="color:#9ca3af">สินค้า/เส้นทางที่ไม่มีในแผน · รอยืนยัน ±1 วัน 1 รายการ</div></div>
+          </div>
+          <div class="panel mk" data-n="5">
+            <div class="row" style="justify-content:space-between"><div><b>โอนจริงต่างวันจากแผน ±1 วัน</b><div class="s" style="font-size:11px">เส้นทางและกลุ่มสินค้าตรงกับแผนแต่วันที่ต่างกัน 1 วัน — จะนับรวมในแผนวันนั้นเมื่อกด "ยืนยัน" เท่านั้น</div></div><span class="btn pri">ยืนยันทั้งหมด (1)</span></div>
+            <div style="margin-top:6px">รอยืนยัน 1 รายการ · 120 kg</div>
+            <table style="width:100%;background:#fff;margin-top:4px"><tr><th>วันที่โอน</th><th>นับเป็นแผนวันที่</th><th>ต้นทาง → ปลายทาง</th><th>กลุ่มสินค้า</th><th style="text-align:right">น้ำหนัก</th><th></th></tr>
+            <tr><td>03/09</td><td>02/09 <span class="s">(โอนช้า 1 วัน)</span></td><td>โรงงาน G → โรงงาน H</td><td>ปีก</td><td style="text-align:right">120 kg</td><td style="text-align:right"><span class="btn" style="color:#15803d;padding:1px 6px">ยืนยัน</span> <span class="btn" style="padding:1px 6px">ไม่นับ</span></td></tr></table>
+          </div>
+          <div class="card mk" data-n="6">
+            <div class="row"><b>Tracking Data</b><span class="sel" style="width:120px;color:#9ca3af">ค้นหา...</span><span class="s">3 รายการ</span><span style="margin-left:auto" class="row"><span class="btn ghost">Clear Filter</span><span class="btn">คอลัม ▾</span></span></div>
+            <table style="width:100%;margin-top:6px">
+              <tr><th class="b-route">วันที่ ▲</th><th class="b-route">สถานะ ▾</th><th class="b-route">ต้นทาง ▾</th><th class="b-route">ปลายทาง ▾</th><th class="b-route">กลุ่มสินค้า ▾</th><th class="b-plan" style="text-align:right">แผน</th><th class="b-act" style="text-align:right">จริง</th><th class="b-diff" style="text-align:right">โอนเกินแผน</th><th class="b-act" style="text-align:right">% เทียบแผน</th><th class="b-pro" style="text-align:right">กำไรที่ได้</th><th class="b-diff" style="text-align:right">สูญเสีย</th><th class="b-rem">หมายเหตุ</th></tr>
+              <tr class="tot"><td></td><td></td><td></td><td></td><td></td><td style="text-align:right">1,900 kg</td><td style="text-align:right">1,870 kg</td><td style="text-align:right">200 kg</td><td style="text-align:right">89.47%</td><td style="text-align:right;color:#15803d">7,680 บาท</td><td style="text-align:right;color:#b91c1c">-1,120 บาท</td><td></td></tr>
+              <tr><td>2026-09-01</td><td><span class="st" style="color:#b91c1c"><i style="background:#ef4444"></i>ต่ำกว่าแผนมาก</span></td><td>โรงงาน A</td><td>โรงงาน B</td><td>อกไก่</td><td style="text-align:right">1,000 kg</td><td style="text-align:right">800 kg</td><td style="text-align:right">0 kg</td><td><div class="pb"><span style="width:80%;background:#fecaca"></span><em style="color:#b91c1c">80.00%</em></div></td><td style="text-align:right">4,000 บาท</td><td style="text-align:right;color:#dc2626">-1,000 บาท</td><td class="s" style="font-size:10px">พิมพ์หมายเหตุ...</td></tr>
+              <tr><td class="mk" data-n="7">2026-09-01</td><td><span class="st" style="color:#15803d"><i style="background:#22c55e"></i>ตามแผน</span></td><td>โรงงาน A</td><td>โรงงาน C</td><td>น่อง</td><td style="text-align:right">500 kg</td><td style="text-align:right">470 kg</td><td style="text-align:right">0 kg</td><td><div class="pb"><span style="width:100%;background:#bbf7d0"></span><em style="color:#15803d">100.00%</em></div></td><td style="text-align:right">1,880 บาท</td><td style="text-align:right;color:#dc2626">-120 บาท</td><td class="s" style="font-size:10px">พิมพ์หมายเหตุ...</td></tr>
+              <tr><td colspan="12" style="background:#f9fafb;padding:6px 10px"><span class="s" style="font-size:10px;font-weight:600">รายละเอียด SKU ที่โอนจริงในกลุ่มนี้</span><br>รหัสสินค้า · ชื่อสินค้า · น้ำหนัก → 1100xxx · น่องไก่ติดสะโพก · 470 kg</td></tr>
+              <tr><td>2026-09-02</td><td><span class="st" style="color:#15803d"><i style="background:#22c55e"></i>ตามแผน</span></td><td>โรงงาน A</td><td>โรงงาน D</td><td>สะโพก</td><td style="text-align:right">400 kg</td><td style="text-align:right">600 kg</td><td style="text-align:right">200 kg</td><td><div class="pb"><span style="width:100%;background:#bbf7d0"></span><em style="color:#15803d">100.00%</em></div></td><td style="text-align:right">1,800 บาท</td><td style="text-align:right">0 บาท</td><td class="s" style="font-size:10px">พิมพ์หมายเหตุ...</td></tr>
+            </table>
+          </div>
+        </div>
+      </div></div>
+    </figure>
+    <ul class="legend">
+      <li><span class="n">1</span><div><strong>ข้อมูล Week</strong> — Week ที่กำลังดู, เวลาอัปโหลดไฟล์ล่าสุด และจำนวนประเภทไฟล์บังคับที่มีแล้ว (ไก่ 3 ประเภท / หมู 2 ประเภท) ถ้าไม่ครบ เช่น 2/3 ตัวเลขยังไม่สมบูรณ์</div></li>
+      <li><span class="n">2</span><div><strong>เลือก Week</strong> — Filter หลักของหน้า เปลี่ยนแล้วทุกตัวเลขเปลี่ยนตาม และ Filter ในตารางจะถูกล้าง</div></li>
+      <li><span class="n">3</span><div><strong>KPI หลัก</strong> — ปริมาณแผนโอน, ปริมาณโอนจริง, Achievement % (สีตามสถานะ + ค่าโอนจริง ÷ แผนแบบไม่ปรับ) และมูลค่าสูญเสีย ปุ่ม ▴/▾ มุมขวาของการ์ดมูลค่าสูญเสียใช้ซ่อน/แสดงแถว KPI รอง (ระบบจำค่าไว้ในเบราว์เซอร์)</div></li>
+      <li><span class="n">4</span><div><strong>KPI รอง</strong> — % Weekly (เฉพาะไก่), % Daily, ปริมาณโอนจริงตามแผน (ตัวตั้งของ Achievement %), ปริมาณ Reject / % Reject, โอนไม่ตรงแผนเลย (ยอดทั้ง Week) · วางเมาส์ที่ ⓘ เพื่ออ่านสูตร</div></li>
+      <li><span class="n">5</span><div><strong>กล่อง ±1 วัน</strong> — แสดงเมื่อมีรายการรอยืนยันหรือเคยตัดสินแล้ว กด <strong>ยืนยัน</strong> / <strong>ไม่นับ</strong> รายแถว หรือ <strong>ยืนยันทั้งหมด</strong> · ลิงก์ “ตัดสินแล้ว x รายการ” เปิดรายการเดิมพร้อมปุ่ม <strong>ยกเลิกการตัดสิน</strong></div></li>
+      <li><span class="n">6</span><div><strong>ตาราง Tracking Data</strong> — 1 แถวต่อ วันที่ + เส้นทาง + กลุ่มสินค้า + ราคา · แถวที่ 2 ของหัวตารางคือยอดรวมของแถวที่ผ่าน Filter · ช่องค้นหา, ลูกศร ▾ บนหัวคอลัมน์สำหรับกรอง, คลิกชื่อคอลัมน์เพื่อเรียง, ลากขอบหัวคอลัมน์เพื่อปรับความกว้าง, ปุ่ม <strong>คอลัม ▾</strong> ซ่อน/แสดงคอลัมน์, ช่องหมายเหตุพิมพ์ได้</div></li>
+      <li><span class="n">7</span><div><strong>Drill Down</strong> — คลิกแถวเพื่อเปิด “รายละเอียด SKU ที่โอนจริงในกลุ่มนี้” คลิกอีกครั้งเพื่อปิด</div></li>
+      <li><span class="n">8</span><div><strong>Export Excel</strong> — สร้างไฟล์ตาม Filter ที่ตั้งอยู่ (ดู Section 16)</div></li>
+    </ul>
+
+    <h4>วิธีใช้งาน</h4>
+    <ol class="steps">
+      <li><b>ตรวจ Week</b>ดูหมายเลข ① ว่าเป็น Week ที่ต้องการและไฟล์ครบ (เช่น 3/3) ถ้าไม่ใช่ให้เปลี่ยนที่ ②</li>
+      <li><b>อ่าน KPI หลัก</b>ดู Achievement % และสีของตัวเลข เทียบกับ “โอนจริง ÷ แผน (ไม่ปรับ)” ใต้ตัวเลข</li>
+      <li><b>จัดการรายการ ±1 วัน (ถ้ามี)</b>ตรวจว่าเป็นการโอนช้า/เร็วจริงแล้วกดยืนยัน — ตัวเลขจะเปลี่ยนหลังระบบประมวลผลใหม่</li>
+      <li><b>กรองตาราง</b>เลือกต้นทาง/ปลายทาง/กลุ่มสินค้า/สถานะ จากลูกศร ▾ — KPI ด้านบนจะเปลี่ยนตาม และมีแถบสีฟ้าแจ้งว่า “KPI และ Export คำนวณตาม Filter”</li>
+      <li><b>หาแถวที่มีปัญหา</b>คลิกหัวคอลัมน์ <strong>สูญเสีย</strong> หรือ <strong>% เทียบแผน</strong> เพื่อเรียง</li>
+      <li><b>Drill Down และบันทึก</b>คลิกแถวเพื่อดู SKU · พิมพ์สาเหตุในช่องหมายเหตุ (บันทึกเมื่อคลิกออก)</li>
+    </ol>
+    <div class="readme"><span class="ttl">อ่านหน้านี้อย่างไร</span><div class="cols">
+      <div><b>สิ่งที่ต้องดู</b>Plan → Actual → Achievement % → มูลค่าสูญเสีย → สถานะในตาราง</div>
+      <div><b>ถ้าเจอปัญหา</b>กรอง ต้นทาง → กลุ่มสินค้า → คลิกแถวดู SKU → ข้อมูลดิบ</div>
+      <div><b>ถ้าต้องการ Export</b>ตั้ง Filter ก่อน แล้วกด Export Excel</div>
+    </div></div>
+  </div>
+
+  <!-- 13.4 Upload -->
+  <div class="page-card">
+    <h3>13.4 หน้า Upload Data <span class="path">/upload · /pork/upload</span></h3>
+    <dl class="qa">
+      <dt>หน้านี้ใช้ทำอะไร?</dt><dd>สร้าง Week, อัปโหลดไฟล์แผนและโอนจริง, สั่งประมวลผล</dd>
+      <dt>เข้าเมื่อไหร่?</dt><dd>เมื่อมีไฟล์ Export ใหม่จาก Smart Sales / Supply Planning หรือเมื่อต้องเปลี่ยนไฟล์ที่ผิด</dd>
+      <dt>มีข้อมูลอะไร?</dt><dd>กล่องซ้าย “Upload Excel Files” (ไฟล์บังคับ) และกล่องขวา “Upload — ติดตามการกรอก Supply Daily” (ไม่บังคับ)</dd>
+    </dl>
+    <figure class="shot" style="margin-left:0;margin-right:0">
+      <div class="shot-cap"><span>ภาพจำลองหน้า Upload Data (ไก่)</span><span>ชื่อไฟล์เป็นตัวอย่าง</span></div>
+      <div class="shot-scroll"><div class="ui"><div class="pad">
+        <div class="h">Upload Data</div>
+        <div class="row" style="margin-top:6px"><span class="sel mk ring" data-n="1">WK36 (2026) ▾</span><span class="btn mk ring" data-n="2">+ สร้าง Week ใหม่</span><span class="s">อัปเดตล่าสุด 04/09/2026 16:20</span><span class="btn pri mk ring" data-n="3">ประมวลผล</span><span style="background:#f0fdf4;color:#15803d;padding:4px 8px;border-radius:6px">ประมวลผลสำเร็จ: 1,284 แถว (พบการโอนที่ไม่ตรงกับแผน 37 กลุ่ม) <u>ไปที่ Dashboard</u></span></div>
+        <div class="grid2" style="margin-top:10px">
+          <div class="card mk" data-n="4"><b>Upload Excel Files</b><div class="s" style="font-size:11px">รองรับการอัปโหลดหลายไฟล์ — ลากไฟล์มาวางหรือกดเลือกไฟล์ทีละรายการ</div>
+            <div class="zone"><div class="row" style="justify-content:space-between"><b>โอนจริง (ABS0000)</b><span class="btn">เลือกไฟล์ (เลือกได้หลายไฟล์)</span></div>
+              <div style="margin-top:4px" class="row"><span class="pill ok">✓ สำเร็จ</span><span>ABS0000_StockTransfers (92).xls</span><span class="s">5,000 แถว (ข้าม 1,210 แถวที่ไม่เกี่ยวข้อง)</span><span class="btn mk r" data-n="5" style="padding:0 6px">⬇</span><span class="btn" style="padding:0 6px;color:#dc2626">🗑</span></div>
+              <div style="color:#b45309;font-size:10.5px">⚠ ไฟล์นี้มี 5,000 แถวพอดี — อาจถูกตัดที่เพดาน Export ของระบบต้นทาง</div></div>
+            <div class="zone"><div class="row" style="justify-content:space-between"><b>แผนโอนรายสัปดาห์ (BSR030 Weekly)</b><span class="btn">อัพโหลดไฟล์ใหม่</span></div><div style="margin-top:4px" class="row"><span class="pill ok">✓ สำเร็จ</span><span>BSR030_Weekly 36.xls</span><span class="s">2,140 แถว</span></div></div>
+            <div class="zone mk" data-n="6"><div class="row" style="justify-content:space-between"><b>แผนโอนรายวัน (BDR130 Daily)</b><span class="btn">เลือกไฟล์ (เลือกได้หลายไฟล์)</span></div><div style="margin-top:4px" class="row"><span class="pill err">พบข้อผิดพลาด</span><span>BDR130_Daily 36 (1).xls</span><span class="btn" style="color:#b91c1c;border-color:#fca5a5;padding:0 6px">ดาวน์โหลด Error</span></div><div style="color:#dc2626;font-size:10.5px">แถว 1: แผน Daily ของวันเดียวกันมีอยู่แล้วในไฟล์ "BDR130_Daily 36.xls" (วันที่ 31/08) — ...</div></div>
+          </div>
+          <div class="card"><b>Upload — ติดตามการกรอก Supply Daily</b><div class="s" style="font-size:11px">ไม่บังคับสำหรับการประมวลผลแผนโอน</div>
+            <div class="zone"><b>กรอก Supply Daily (BSD010)</b></div><div class="zone"><b>ราคารายวัน</b><div class="s" style="font-size:10.5px">ชื่อไฟล์ ChickenW2_DD.MM.YYYY.xlsx</div></div><div class="zone"><b>รายการ Bidding (TC05)</b></div></div>
+        </div>
+      </div></div></div>
+    </figure>
+    <ul class="legend">
+      <li><span class="n">1</span><div><strong>เลือก Week</strong> — Week ที่จะอัปโหลดข้อมูลเข้า (หน้านี้ไม่เลือกให้อัตโนมัติ)</div></li>
+      <li><span class="n">2</span><div><strong>+ สร้าง Week ใหม่</strong> — กรอกปี และ WK (ค่าเริ่มต้นคือสัปดาห์ปัจจุบัน) แล้วกด <strong>สร้าง</strong> หรือ <strong>ยกเลิก</strong></div></li>
+      <li><span class="n">3</span><div><strong>ประมวลผล</strong> — กดได้เมื่อไฟล์บังคับผ่านครบ (ไก่ 3 ไฟล์ / หมู 2 ไฟล์) ระหว่างทำงานแสดง “กำลังประมวลผล...” เมื่อเสร็จมีจำนวนแถวและลิงก์ <strong>ไปที่ Dashboard</strong></div></li>
+      <li><span class="n">4</span><div><strong>กล่องไฟล์บังคับ</strong> — ลากไฟล์มาวาง หรือกดปุ่มเลือกไฟล์ รับเฉพาะ .xls / .xlsx · สถานะ: อัพโหลดแล้ว / กำลังตรวจสอบ... / ✓ สำเร็จ / พบข้อผิดพลาด</div></li>
+      <li><span class="n">5</span><div><strong>⬇ ดาวน์โหลดไฟล์ต้นฉบับ</strong> และ <strong>🗑 ลบไฟล์นี้</strong> — การลบจะลบข้อมูลของไฟล์นั้นและคำนวณใหม่ทันที (มีหน้าต่างยืนยัน)</div></li>
+      <li><span class="n">6</span><div><strong>ไฟล์ที่ไม่ผ่าน</strong> — แสดงสาเหตุ 10 แถวแรก และปุ่ม <strong>ดาวน์โหลด Error</strong> (ไฟล์ CSV: แถวที่, สาเหตุ)</div></li>
+    </ul>
+    <h4>วิธีใช้งาน</h4>
+    <ol class="steps">
+      <li><b>เลือกหรือสร้าง Week</b>ตรวจให้ตรงกับวันที่ในไฟล์ — ถ้าผิด Week ระบบจะปฏิเสธไฟล์</li>
+      <li><b>อัปโหลดโอนจริง (ABS0000)</b>เลือกทุกไฟล์ของสัปดาห์พร้อมกันได้ ถ้าไฟล์ใดมี 5,000 แถวพอดี ให้ Export แบ่งช่วงวันที่เพิ่ม</li>
+      <li><b>อัปโหลดแผน</b>ไก่: BSR030 Weekly 1 ไฟล์ + BDR130 Daily · หมู: BDR130 Daily เท่านั้น</li>
+      <li><b>ตรวจว่าทุกไฟล์ “✓ สำเร็จ”</b>ไฟล์ที่ “พบข้อผิดพลาด” ให้กดดาวน์โหลด Error แก้แล้วอัปใหม่</li>
+      <li><b>กด ประมวลผล</b>จำเป็นเสมอหลังอัปโหลด BSR030 (กล่องหลายไฟล์ประมวลผลให้เองแล้ว แต่กดซ้ำได้ไม่มีผลเสีย)</li>
+      <li><b>กด ไปที่ Dashboard</b>ตรวจผลลัพธ์</li>
+    </ol>
+    <div class="callout warn"><span class="ttl">อัปโหลดแผน Daily ฉบับใหม่ของวันเดิม</span><p>ระบบจะปฏิเสธเพื่อกันแผนถูกนับซ้ำ ให้ลบไฟล์เดิม (🗑) ก่อน แล้วจึงอัปโหลดไฟล์ใหม่ · ส่วน BSR030 การอัปโหลดใหม่จะแทนที่ไฟล์เดิมทั้งช่อง (ถ้าชื่อไฟล์เดียวกันจะถาม “เพิ่มเป็นเวอร์ชันใหม่”)</p></div>
+  </div>
+
+  <!-- 13.5 Tracking -->
+  <div class="page-card">
+    <h3>13.5 หน้า ติดตามโอน Weekly / Daily / รวม <span class="path">/tracking/weekly · /tracking/daily · /tracking/total · /pork/tracking/daily</span></h3>
+    <dl class="qa">
+      <dt>หน้านี้ใช้ทำอะไร?</dt><dd>ดูตารางรายเส้นทางแยกตามช่องทาง พร้อม Diff แผนโอน, ราคาต้นทาง/ปลายทาง และ <strong>แก้ไขโอนจริง</strong></dd>
+      <dt>เข้าเมื่อไหร่?</dt><dd>เมื่อต้องการวิเคราะห์เฉพาะแผน Weekly หรือ Daily หรือเมื่อพบโอนจริงที่ผิดและต้องแก้</dd>
+      <dt>มีข้อมูลอะไร?</dt><dd>เลือก Week, ค้นหา, จำนวนรายการ, ⓘ วิธีคำนวณ %, ปุ่ม Export Excel, Clear Filter, คอลัม · คอลัมน์: วันที่, สถานะ, รหัสต้นทาง, ต้นทาง, รหัสปลายทาง, ปลายทาง, กลุ่มสินค้า, ราคาต้นทาง, ราคาปลายทาง, แผนโอน (ของช่องทาง), โอนจริงทั้งหมด, Diff แผนโอน, % โอนเทียบแผน, กำไรที่ได้, สูญเสียกำไร, หมายเหตุ</dd>
+      <dt>ขอบเขตแถว</dt><dd>Weekly แสดงเฉพาะแถวที่มีแผน Weekly &gt; 0 · Daily แสดงเฉพาะแถวที่มีแผน Daily &gt; 0 · รวม แสดงทุกแถว · หมูมีเฉพาะหน้า Daily</dd>
+    </dl>
+    <figure class="shot" style="margin-left:0;margin-right:0">
+      <div class="shot-cap"><span>ภาพจำลองหน้า ติดตามโอน Daily เทียบแผน + หน้าต่างแก้ไขโอนจริง</span><span>ตัวเลขเป็นตัวอย่าง</span></div>
+      <div class="shot-scroll"><div class="ui"><div class="pad">
+        <div class="h">ติดตามโอน Daily เทียบแผน</div>
+        <div class="row" style="margin-top:6px"><span class="sel">WK36 (2026) ▾</span><span class="sel" style="width:110px;color:#9ca3af">ค้นหา...</span><span class="s">412 รายการ</span><span class="s mk" data-n="1">ⓘ วิธีคำนวณ %</span><span style="margin-left:auto" class="row"><span class="btn">คอลัม ▾</span><span class="btn">Export Excel</span><span class="btn ghost">Clear Filter</span></span></div>
+        <table style="width:100%;margin-top:8px;background:#fff">
+          <tr><th class="b-route">วันที่</th><th class="b-route">สถานะ</th><th class="b-route">ต้นทาง</th><th class="b-route">ปลายทาง</th><th class="b-route">กลุ่มสินค้า</th><th class="b-route">ราคาต้นทาง</th><th class="b-route">ราคาปลายทาง</th><th class="b-plan" style="text-align:right">แผนโอน Daily</th><th class="b-act" style="text-align:right">โอนจริงทั้งหมด</th><th class="b-diff" style="text-align:right">Diff แผนโอน</th><th class="b-act" style="text-align:right">% โอนเทียบแผน</th></tr>
+          <tr><td>2026-09-01</td><td><span class="st" style="color:#b91c1c"><i style="background:#ef4444"></i>ต่ำกว่าแผนมาก</span></td><td>โรงงาน E</td><td>โรงงาน F</td><td>ปีก</td><td>58</td><td>63</td><td style="text-align:right">400 kg</td><td style="text-align:right" class="mk" data-n="2"><span style="background:#fef3c7;color:#b45309;font-size:9.5px;padding:0 3px;border-radius:3px">ปรับแล้ว</span> 900 kg <u style="color:#2563eb">แก้ไข</u></td><td style="text-align:right;color:#dc2626">-100 kg</td><td><div class="pb"><span style="width:75%;background:#fecaca"></span><em style="color:#b91c1c">75.00%</em></div></td></tr>
+        </table>
+        <div class="card mk" data-n="3" style="max-width:430px;margin-left:auto;margin-right:auto;box-shadow:0 6px 20px rgba(0,0,0,.12)">
+          <b>แก้ไขโอนจริง (ABS0000)</b><div class="s" style="font-size:10.5px">2026-09-01 · โรงงาน E → โรงงาน F · ปีก</div>
+          <div class="grid2" style="margin-top:6px"><div><div class="s" style="font-size:10.5px">ค่าเดิม</div><div class="sel">850</div></div><div><div class="s" style="font-size:10.5px">ค่าใหม่ (kg)</div><div class="sel">900</div></div></div>
+          <div class="s" style="font-size:10.5px;margin-top:6px">Preview หลังแก้ไข (ก่อน · หลัง) — Diff, %, กำไรที่ได้, สูญเสียกำไร</div>
+          <div class="s" style="font-size:10.5px;margin-top:6px">เหตุผลในการปรับ <span style="color:#dc2626">*</span></div><div class="sel" style="color:#9ca3af">เช่น น้ำหนักจริงหลังชั่งไม่ตรงกับ ABS0000</div>
+          <div style="margin-top:6px;font-size:10.5px;color:#2563eb">ดูประวัติการปรับทั้งหมด (1)</div>
+          <div class="row" style="justify-content:flex-end;margin-top:6px"><span class="btn">ยกเลิก</span><span class="btn pri">ยืนยันการแก้ไข</span></div>
+        </div>
+      </div></div></div>
+    </figure>
+    <ul class="legend">
+      <li><span class="n">1</span><div><strong>ⓘ วิธีคำนวณ %</strong> — วางเมาส์เพื่ออ่านสรุปสูตร (เพดานแผน, ปัด 10%, Daily นับหลังครบ Weekly, แบ่งตามราคา)</div></li>
+      <li><span class="n">2</span><div><strong>โอนจริงทั้งหมด</strong> — ค่าที่ใช้คำนวณ ป้าย “ปรับแล้ว” = เคยแก้ไข · ถ้าเส้นทางมีหลายราคาจะแสดง “ส่วนของแถวนี้ / ทั้งเส้นทาง” · ลิงก์ <strong>แก้ไข</strong> เปิดหน้าต่างปรับค่า</div></li>
+      <li><span class="n">3</span><div><strong>หน้าต่างแก้ไขโอนจริง</strong> — กรอกค่าใหม่ (ห้ามติดลบ) และเหตุผล (บังคับ) ดู Preview ก่อน·หลัง แล้วกด <strong>ยืนยันการแก้ไข</strong> · การแก้มีผลกับ <strong>ทั้งเส้นทาง</strong> (ทุกแถวราคาของเส้นทางเดียวกัน) และค่าที่แก้ยังอยู่แม้มีการอัปโหลด ABS0000 ใหม่</div></li>
+    </ul>
+    <div class="readme"><span class="ttl">อ่านหน้านี้อย่างไร</span><div class="cols">
+      <div><b>สิ่งที่ต้องดู</b>แผนโอน → โอนจริงทั้งหมด → Diff แผนโอน → % → สถานะ</div>
+      <div><b>ถ้าเจอปัญหา</b>กรองต้นทาง → กลุ่มสินค้า → ดูราคา/หมายเหตุ → ข้อมูลดิบ</div>
+      <div><b>ถ้าต้องการ Export</b>ไฟล์จะออกตามช่องทางของหน้าและ Filter ที่ตั้ง</div>
+    </div></div>
+  </div>
+
+  <!-- 13.6 Raw data -->
+  <div class="page-card">
+    <h3>13.6 หน้า ข้อมูลดิบ <span class="path">/raw-data · /pork/raw-data</span></h3>
+    <dl class="qa">
+      <dt>หน้านี้ใช้ทำอะไร?</dt><dd>ดูข้อมูลต้นทางที่ระบบรับเข้าแล้ว (หลังตรวจ/ข้ามแถว) เพื่อตรวจสอบย้อนกลับเมื่อตัวเลขผิดปกติ</dd>
+      <dt>เข้าเมื่อไหร่?</dt><dd>เมื่อสงสัยว่าไฟล์ต้นทางไม่ครบ ผิดวัน ผิดกลุ่มสินค้า หรือผิดโรงงาน</dd>
+      <dt>มีข้อมูลอะไร?</dt><dd>แท็บ: <strong>โอนจริง (ABS0000)</strong> (มีคอลัมน์ ภาคต้นทาง/ภาคปลายทาง/สถานะ Zone: ใน Zone / นอก Zone / ไม่สามารถตรวจสอบได้), <strong>แผนโอน Weekly-Daily</strong> (หมู: แผนโอน Daily — ประเภท, Suggest, แผนสุดท้าย, ราคา), <strong>กรอก Supply Daily (BSD010)</strong>, <strong>ราคารายวัน</strong>, <strong>รายการ Bidding (TC05)</strong> · ชื่อแท็บแสดงจำนวนแถว</dd>
+    </dl>
+    <ol class="steps"><li><b>เลือก Week</b></li><li><b>เลือกแท็บของไฟล์ที่ต้องการตรวจ</b></li><li><b>ค้นหา / กรองจากหัวคอลัมน์</b>เช่น กรองวันที่และต้นทางให้ตรงกับแถวที่ผิดปกติบน Dashboard แล้วรวมน้ำหนักเทียบ</li></ol>
+  </div>
+
+  <!-- 13.7 Supply daily -->
+  <div class="page-card">
+    <h3>13.7 หน้า ติดตามการกรอก Supply Daily <span class="path">/supply-daily · /pork/supply-daily</span></h3>
+    <dl class="qa">
+      <dt>หน้านี้ใช้ทำอะไร?</dt><dd>ตรวจว่าโรงงานกรอก Supply Daily (BSD010) หรือไม่ และการโอนออกจริงเกินกว่า Supply ที่เหลือ (โอนนอกแผน) หรือไม่ รวมถึงความสัมพันธ์กับ Bidding และการลงราคา</dd>
+      <dt>เข้าเมื่อไหร่?</dt><dd>หลังอัปโหลดไฟล์ในกล่อง “Upload — ติดตามการกรอก Supply Daily” (BSD010, ราคารายวัน, TC05) — ระบบคำนวณพร้อมกับการประมวลผลแผนโอน</dd>
+      <dt>มีข้อมูลอะไร?</dt><dd>ดูภาพด้านล่าง · 1 แถว = วันที่ + โรงงาน + กลุ่มสินค้า (ไม่มีมิติปลายทาง)</dd>
+    </dl>
+    <figure class="shot" style="margin-left:0;margin-right:0">
+      <div class="shot-cap"><span>ภาพจำลองหน้า ติดตามการกรอก Supply Daily</span><span>ตัวเลขเป็นตัวอย่าง</span></div>
+      <div class="shot-scroll"><div class="ui"><div class="pad">
+        <div class="h">ติดตามการกรอก Supply Daily</div>
+        <div class="kpis small mk" data-n="1" style="margin-top:8px">
+          <div class="kpi"><div class="l">จำนวนโรงงานทั้งหมด</div><div class="v">42</div></div>
+          <div class="kpi"><div class="l">โรงงานที่กรอก SUPPLY</div><div class="v">38</div><div class="sb" style="color:#9ca3af">90.48%</div></div>
+          <div class="kpi"><div class="l">% BIDDING เข้าระบบโอน</div><div class="v amb">85.71%</div></div>
+          <div class="kpi"><div class="l">โอนนอกแผน</div><div class="v red">12</div><div class="sb" style="color:#9ca3af">1.06%</div></div>
+          <div class="kpi"><div class="l">โอนนอกแผนนอกโซน</div><div class="v red">5</div></div>
+        </div>
+        <div class="card mk" data-n="2"><b style="font-size:11.5px">ภาพรวมกระบวนการ</b><div class="stage" style="margin-top:6px"><div>Supply Daily<b>1,020</b></div>▶<div>Bidding<b>14</b></div>▶<div>ลงราคา<b>9</b></div>▶<div>แผนโอน<b>610</b></div>▶<div>โอนจริง<b>655</b></div><span class="s" style="font-size:10.5px">% เข้าระบบโอน (Bidding → แผนโอน): 85.71%</span></div></div>
+        <div class="card mk" data-n="3"><b style="font-size:11.5px">Exception / รายการที่ต้องติดตาม</b><div class="exc" style="margin-top:6px"><div><b>12</b><span style="font-size:10.5px">🔴 โอนนอกแผน</span></div><div><b>3</b><span style="font-size:10.5px">🟠 Bidding / ลงราคา แต่ไม่เข้าระบบโอน</span></div><div><b>418</b><span style="font-size:10.5px">🟡 มี Supply แต่ไม่มีแผนโอน</span></div><div><b>6</b><span style="font-size:10.5px">🟣 ข้อมูลไม่สมบูรณ์ / Match ไม่ได้</span></div></div></div>
+        <div class="card mk" data-n="4"><div class="row"><span class="sel" style="width:110px;color:#9ca3af">ค้นหา...</span><span class="s">1,128 รายการ</span><span style="margin-left:auto" class="row"><span class="btn">คอลัม ▾</span><span class="btn ghost">Clear Filter</span></span></div>
+          <table style="width:100%;margin-top:6px"><tr><th>วันที่</th><th>รหัสโรงงาน</th><th>โรงงาน</th><th>กลุ่มสินค้า</th><th>กรอก Supply</th><th style="text-align:right">ปริมาณของเหลือ</th><th style="text-align:right">แผนโอนออก</th><th style="text-align:right">โอนออกจริง</th><th>สถานะ Bidding</th><th>สถานะโอน</th></tr>
+          <tr><td>2026-09-01</td><td>F010</td><td>โรงงาน E</td><td>ปีก</td><td>✓ กรอกแล้ว</td><td style="text-align:right">500</td><td style="text-align:right">300</td><td style="text-align:right">700</td><td>-</td><td style="color:#b91c1c">โอนนอกแผน</td></tr></table></div>
+      </div></div></div>
+    </figure>
+    <ul class="legend">
+      <li><span class="n">1</span><div><strong>KPI</strong> — คำนวณจากแถวที่ผ่านช่องค้นหา/Filter หัวคอลัมน์ (ไม่รวมการคลิกการ์ด Exception)</div></li>
+      <li><span class="n">2</span><div><strong>ภาพรวมกระบวนการ</strong> — จำนวนรายการในแต่ละขั้น: กรอก Supply → มี Bidding → ลงราคา → มีแผนโอน → มีโอนจริง</div></li>
+      <li><span class="n">3</span><div><strong>การ์ด Exception</strong> — คลิกเพื่อกรองตารางเฉพาะกลุ่มนั้น คลิกซ้ำเพื่อยกเลิก · 🟡 รวม 3 กรณี: มี Supply แต่ไม่มีแผน, มีแผนแต่ไม่มีโอนจริง, มีโอนจริงแต่ไม่มีแผน</div></li>
+      <li><span class="n">4</span><div><strong>ตาราง</strong> — คลิกแถวเพื่อเปิดหน้าต่างรายละเอียด (สถานะ, Bidding/ลงราคา, แผนโอน/โอนจริง, เหลือหลังหักแผน) กด <strong>✕</strong> หรือ <strong>ปิด</strong> เพื่อปิด</div></li>
+    </ul>
+    <div class="callout note"><span class="ttl">ข้อสังเกต</span><p>หน้านี้ไม่มีปุ่ม Export · “แผนโอนออก” ใช้เฉพาะแผน Daily (BDR130) ตามที่ Workbook ต้นฉบับใช้ · สถานะ “ไม่สามารถ Match ได้” หมายถึงโรงงานไม่มีใน Master Zone หรือ Vendor Group จึงตรวจไม่ได้ครบ ไม่ใช่ “ปกติ”</p></div>
+  </div>
+
+  <!-- 13.8 Settings -->
+  <div class="page-card">
+    <h3>13.8 หน้า Settings (admin) <span class="path">/settings</span></h3>
+    <dl class="qa">
+      <dt>หน้านี้ใช้ทำอะไร?</dt><dd>ตั้งค่าระบบ เข้าได้เฉพาะ admin (หรือทุกคนเมื่อปิดบังคับ Login)</dd>
+      <dt>มีข้อมูลอะไร?</dt><dd>
+        • <strong>บังคับ Login ก่อนใช้งาน</strong> — เปิด/ปิด<br>
+        • <strong>ลงทะเบียนผู้ใช้งาน</strong> — <strong>+ เพิ่มผู้ใช้งาน</strong> (Username, Password ≥ 8 ตัว, ยืนยัน Password), <strong>แก้ไข</strong>, <strong>ลบ</strong><br>
+        • <strong>เกณฑ์สถานะ (Status Badge)</strong> — % ของ “ตามแผน” และ “ต่ำกว่าแผน” และสีของแต่ละโซน (เขียว, เหลือง/ส้ม, แดง, กรมท่า, ฟ้า, เทา) แล้วกด <strong>บันทึกเกณฑ์</strong> — เปลี่ยนเฉพาะการแสดงสี ไม่กระทบตัวเลข · เกณฑ์ “ตามแผน” ต้องมากกว่า “ต่ำกว่าแผน”<br>
+        • <strong>Master Data — ติดตามการกรอก Supply Daily</strong> — โรงงาน → ภาค, โรงงาน / กลุ่มราคา, คู่โรงงานฝากตัดแต่ง, SKU พิเศษ, SKU ตัวแทน (ราคารายวัน), สินค้า (Mas P19 Cus) · แต่ละตาราง <strong>+ เพิ่มรายการ</strong>, <strong>แก้ไข</strong>, <strong>ลบ</strong>, ค้นหา, คลิกหัวข้อ ▸/▾ เพื่อขยาย</dd>
+    </dl>
+    <div class="callout warn"><span class="ttl">ผลของการแก้ Master Data</span><p>Master Data มีผลกับหน้า Supply Daily เท่านั้น และจะเห็นผลหลังการประมวลผลครั้งถัดไปของ Week นั้น (เช่น กด ประมวลผล ที่หน้า Upload Data)</p></div>
+  </div>
+</section>
+
+<!-- ===================== 14 FILTER ===================== -->
+<section class="sec" id="filter">
+  <div class="sec-head"><span class="sec-no">14</span><h2>วิธีใช้ Filter</h2></div>
+  <div class="callout note"><span class="ttl">ระบบนี้ไม่มีปุ่ม Search / Apply</span><p>ทุก Filter มีผลทันทีที่พิมพ์หรือเลือก และไม่มี Filter แยกช่วงวันที่ — ใช้ Filter คอลัมน์ “วันที่” แทน</p></div>
+  <div class="tbl"><table>
+    <tr><th>Filter</th><th>อยู่ที่ไหน</th><th>ทำงานอย่างไร</th></tr>
+    <tr><td>เลือก Week</td><td>มุมขวาบน (Dashboard) / ซ้ายบน (หน้าอื่น)</td><td>Filter หลัก · เปลี่ยน Week แล้ว Filter อื่นในตารางถูกล้างให้อัตโนมัติ</td></tr>
+    <tr><td>ค้นหา...</td><td>เหนือตาราง</td><td>ค้นหาข้อความบางส่วน (ไม่สนตัวพิมพ์เล็ก/ใหญ่) ใน รหัส/ชื่อต้นทาง, รหัส/ชื่อปลายทาง, กลุ่มสินค้า, หมายเหตุ และหมายเหตุระบบ</td></tr>
+    <tr><td>▾ บนหัวคอลัมน์</td><td>ทุกหัวคอลัมน์</td><td>เลือกค่าเดียวที่ตรงทั้งหมด (เหมือน Filter ของ Excel) · “ทั้งหมด” = ไม่กรอง · คอลัมน์สถานะกรองด้วยชื่อสถานะ · ใช้หลายคอลัมน์พร้อมกันได้ (เงื่อนไข “และ”)</td></tr>
+    <tr><td>การ์ด Exception</td><td>หน้า Supply Daily</td><td>คลิกเพื่อกรองเฉพาะกลุ่มปัญหา</td></tr>
+    <tr><td>Clear Filter</td><td>เหนือตาราง ด้านขวา</td><td>ล้างค้นหาและ Filter คอลัมน์ทั้งหมด (และการ์ด Exception) · ปุ่มเป็นสีเทากดไม่ได้เมื่อไม่มี Filter</td></tr>
+  </table></div>
+  <h3>Filter มีผลกับอะไรบ้าง</h3>
+  <ul>
+    <li><strong>Dashboard</strong>: KPI ทุกการ์ด, ยอดรวมหัวตาราง และ Export คำนวณตามแถวที่ผ่าน Filter — <strong>ยกเว้น</strong> “โอนไม่ตรงแผนเลย” (ยอดทั้ง Week) · มีแถบสีฟ้า “KPI และ Export คำนวณตาม Filter ในตาราง: x จาก y แถว” เตือน</li>
+    <li><strong>ติดตามโอน</strong>: ยอดรวมหัวตารางและ Export ตาม Filter</li>
+    <li>เมื่อ Filter เลือกเฉพาะบางแถวราคาของเส้นทาง ระบบนับโอนจริงตามสัดส่วนของแถวที่เหลือเท่านั้น (ไม่นับทั้งเส้นทาง)</li>
+  </ul>
+  <h3>ตัวอย่าง: ดูเฉพาะโรงงานต้นทาง A กลุ่มสินค้าอกไก่</h3>
+  <ol class="steps"><li><b>คลิก ▾ ที่หัวคอลัมน์ “ต้นทาง”</b>เลือก โรงงาน A</li><li><b>คลิก ▾ ที่ “กลุ่มสินค้า”</b>เลือก อกไก่</li><li><b>อ่าน KPI ด้านบน</b>คือผลของโรงงาน A กลุ่มอกไก่เท่านั้น</li><li><b>กด Clear Filter</b>เมื่อต้องการกลับไปดูทั้ง Week</li></ol>
+</section>
+
+<!-- ===================== 15 READ ===================== -->
+<section class="sec" id="read">
+  <div class="sec-head"><span class="sec-no">15</span><h2>วิธีอ่าน Dashboard และ Drill Down</h2></div>
+  <ol class="steps">
+    <li><b>เริ่มจาก KPI Summary</b>ปริมาณแผนโอน กับ ปริมาณโอนจริง บอกขนาดของงานในสัปดาห์ — ถ้าตัวเลขน้อยผิดปกติ ให้ตรวจ “x/y ประเภทไฟล์” ก่อน</li>
+    <li><b>ดู Achievement %</b>คือ %โอนเทียบแผนรวม สีบอกสถานะ · ถ้า “โอนจริง ÷ แผน (ไม่ปรับ)” สูงกว่า Achievement % มาก แปลว่ามีเส้นทางที่โอนเกินแผนขณะที่เส้นทางอื่นขาด</li>
+    <li><b>ดู GAP</b>แผน − ปริมาณโอนจริงตามแผน = ปริมาณที่ขาด (หลังปัด 10%) · มูลค่าสูญเสียบอกผลกระทบเป็นเงิน · ไก่: เทียบ % Weekly กับ % Daily เพื่อรู้ว่าขาดที่แผนไหน</li>
+    <li><b>ดู Breakdown</b>ใช้ Filter คอลัมน์ ต้นทาง / ปลายทาง / กลุ่มสินค้า / วันที่ หรือ เรียงคอลัมน์ สูญเสีย จากน้อยไปมาก (ติดลบมากสุดขึ้นก่อน)</li>
+    <li><b>Drill Down</b>คลิกแถวเพื่อดู SKU ที่โอนจริง (รหัสสินค้า, ชื่อสินค้า, น้ำหนัก) — ถ้าขึ้น “ไม่มีการโอนจริงในกลุ่มนี้” แปลว่าไม่มีรายการ ABS0000 ที่ตรงกับวันที่+เส้นทาง+กลุ่มนี้</li>
+    <li><b>ตรวจสอบ Source</b>ถ้าตัวเลขผิดปกติ ไปที่ ข้อมูลดิบ → แท็บโอนจริง/แผน กรองวันที่และโรงงานเดียวกันเพื่อดูข้อมูลต้นทาง · ดูหมายเหตุระบบ (±1 วัน) และป้าย “ปรับแล้ว”</li>
+  </ol>
+  <div class="callout note"><span class="ttl">ทำไมต้องอ่านตามลำดับนี้</span><p>เริ่มจากขนาดงานเพื่อให้แน่ใจว่าข้อมูลครบ จากนั้นดูผลรวมก่อนรายละเอียด แล้วค่อยหาว่าปัญหาอยู่ที่ช่องทาง/โรงงาน/สินค้าใด การเจาะลงไปถึง SKU และข้อมูลดิบทำเป็นขั้นสุดท้าย เพราะใช้เวลามากที่สุดและควรทำเฉพาะเส้นทางที่มีผลกระทบสูง</p></div>
+</section>
+
+<!-- ===================== 16 EXPORT ===================== -->
+<section class="sec" id="export">
+  <div class="sec-head"><span class="sec-no">16</span><h2>วิธี Export</h2></div>
+  <ol class="steps"><li><b>เลือก Week และตั้ง Filter</b>ที่หน้า Dashboard หรือ ติดตามโอน Weekly/Daily/รวม</li><li><b>กด Export Excel</b>ปุ่มเปลี่ยนเป็น “กำลังสร้างไฟล์...” จนดาวน์โหลดเสร็จ</li><li><b>เปิดไฟล์</b>ชื่อไฟล์ <code>Tracking_WK36.xlsx</code> หรือ <code>Tracking_WK36_filtered.xlsx</code> ถ้ามี Filter</li></ol>
+  <div class="tbl"><table>
+    <tr><th>Sheet</th><th>เนื้อหา</th><th>ตาม Filter?</th></tr>
+    <tr><td>Summary</td><td>ขอบเขตข้อมูล, % Weekly/Daily/Total, ปริมาณแผน, โอนจริง, โอนจริงตามแผน, Reject, % Reject, มูลค่าสูญเสีย</td><td>ใช่</td></tr>
+    <tr><td>Daily Trend</td><td>% Weekly / Daily / Total, แผนรวม, จริงรวม รายวัน</td><td>ใช่</td></tr>
+    <tr><td>Tracking Detail</td><td>ทุกแถว Tracking (แผน Weekly/Daily/รวม, โอนจริงส่วนของแถว และทั้งเส้นทาง, % 3 ช่องทาง, โอนเกินแผน, กำไร, สูญเสีย, Suggest, Reject, หมายเหตุ, หมายเหตุระบบ)</td><td>ใช่</td></tr>
+    <tr><td>Loss Analysis</td><td>เฉพาะแถวที่สูญเสียกำไร &lt; 0 เรียงจากสูญเสียมากสุด</td><td>ใช่</td></tr>
+    <tr><td>Weekly Plan / Daily Plan</td><td>แผนดิบที่อัปโหลด</td><td>ไม่ — ทั้ง Week เสมอ</td></tr>
+    <tr><td>Actual Transfer</td><td>โอนจริงดิบ</td><td>ไม่ — ทั้ง Week เสมอ</td></tr>
+    <tr><td>Adjustment Log</td><td>ประวัติการแก้โอนจริง: ค่าเดิม, ค่าใหม่, ส่วนต่าง, ผู้แก้ไข, วันเวลา, เหตุผล</td><td>ไม่ — ทั้ง Week เสมอ</td></tr>
+  </table></div>
+  <div class="callout warn"><span class="ttl">ก่อนส่งไฟล์ให้ผู้อื่น</span><p>ตรวจแถว “ขอบเขตข้อมูล” ใน Sheet Summary ว่าเป็น “ทั้ง Week” หรือ “ตาม Filter บนหน้าจอ” เพื่อไม่ให้ผู้รับเข้าใจว่าเป็นตัวเลขทั้งสัปดาห์ · หน้า ข้อมูลดิบ และ Supply Daily ไม่มีปุ่ม Export</p></div>
+</section>
+
+<!-- ===================== 17 BUTTONS ===================== -->
+<section class="sec" id="buttons">
+  <div class="sec-head"><span class="sec-no">17</span><h2>อธิบายทุกปุ่ม</h2></div>
+  <div class="tbl"><table>
+    <tr><th>ปุ่ม / Function</th><th>หน้า</th><th>ทำอะไร</th><th>ใช้เมื่อไหร่</th><th>ผลลัพธ์</th></tr>
+    <tr><td>Login</td><td>Login</td><td>เข้าสู่ระบบ</td><td>เปิดเว็บครั้งแรก</td><td>ไปหน้าเลือกสินค้า</td></tr>
+    <tr><td>ลงทะเบียนผู้ดูแลระบบคนแรก</td><td>Login</td><td>สร้าง admin คนแรก</td><td>ระบบยังไม่มี admin</td><td>หน้าต่างลงทะเบียน</td></tr>
+    <tr><td>ออกจากระบบ</td><td>ทุกหน้า</td><td>Logout</td><td>เลิกใช้งาน / เปลี่ยนผู้ใช้</td><td>กลับหน้า Login</td></tr>
+    <tr><td>ติดตามโอนเทียบแผน (โลโก้)</td><td>ทุกหน้า</td><td>กลับหน้าเลือกสินค้า</td><td>สลับไก่/หมู</td><td>หน้าเลือกสินค้า</td></tr>
+    <tr><td>🐔 / 🐷 / 📦</td><td>เลือกสินค้า</td><td>เลือกชุดข้อมูล</td><td>หลัง Login</td><td>Dashboard ของสินค้านั้น</td></tr>
+    <tr><td>เพิ่มเติม ▾</td><td>แถบเมนู</td><td>เปิดเมนูรอง</td><td>ไปหน้าข้อมูลดิบ / ติดตามโอน / Supply Daily / Settings</td><td>รายการเมนู</td></tr>
+    <tr><td>เลือก Week ▾</td><td>ทุกหน้าข้อมูล</td><td>เลือกสัปดาห์</td><td>ดู/อัปโหลดสัปดาห์อื่น</td><td>ข้อมูลของ Week นั้น</td></tr>
+    <tr><td>+ สร้าง Week ใหม่ / สร้าง / ยกเลิก</td><td>Upload Data</td><td>สร้าง Week</td><td>เริ่มสัปดาห์ใหม่</td><td>Week ใหม่ถูกเลือก</td></tr>
+    <tr><td>เลือกไฟล์ / เลือกไฟล์ (เลือกได้หลายไฟล์) / อัพโหลดไฟล์ใหม่</td><td>Upload Data</td><td>เลือกไฟล์จากเครื่อง (หรือลากไฟล์มาวาง)</td><td>มีไฟล์ Export ใหม่</td><td>ตรวจและบันทึกไฟล์</td></tr>
+    <tr><td>เพิ่มเป็นเวอร์ชันใหม่</td><td>Upload Data (BSR030)</td><td>ยืนยันอัปโหลดไฟล์ชื่อเดิม</td><td>ระบบพบไฟล์ชื่อเดียวกัน</td><td>แทนที่ไฟล์เดิม</td></tr>
+    <tr><td>ดาวน์โหลด Error</td><td>Upload Data</td><td>ดาวน์โหลด CSV รายการแถวที่ผิด</td><td>ไฟล์ “พบข้อผิดพลาด”</td><td>ไฟล์ errors_….csv</td></tr>
+    <tr><td>⬇ (ดาวน์โหลดไฟล์ต้นฉบับ)</td><td>Upload Data</td><td>ดาวน์โหลดไฟล์ที่เคยอัปโหลด</td><td>ตรวจสอบย้อนหลัง</td><td>ไฟล์ต้นฉบับ</td></tr>
+    <tr><td>🗑 (ลบไฟล์นี้) → ยืนยันการลบ</td><td>Upload Data</td><td>ลบไฟล์และข้อมูลจากไฟล์นั้น</td><td>อัปผิดไฟล์ / ต้องการอัปฉบับใหม่</td><td>คำนวณใหม่ทันที</td></tr>
+    <tr><td>ประมวลผล</td><td>Upload Data</td><td>คำนวณผลลัพธ์ทั้ง Week</td><td>หลังอัปโหลดไฟล์ครบ (บังคับหลังอัป BSR030)</td><td>“ประมวลผลสำเร็จ: x แถว”</td></tr>
+    <tr><td>ไปที่ Dashboard</td><td>Upload Data</td><td>ไปหน้า Dashboard</td><td>หลังประมวลผลสำเร็จ</td><td>Dashboard</td></tr>
+    <tr><td>Export Excel</td><td>Dashboard, ติดตามโอน</td><td>สร้างไฟล์ Excel</td><td>ต้องการนำข้อมูลไปวิเคราะห์ / ประชุม</td><td>ไฟล์ Tracking_WKxx.xlsx</td></tr>
+    <tr><td>▴ / ▾ (การ์ดมูลค่าสูญเสีย)</td><td>Dashboard</td><td>ซ่อน / แสดงแถว KPI รอง</td><td>ต้องการพื้นที่ตารางมากขึ้น</td><td>จำค่าไว้ในเบราว์เซอร์</td></tr>
+    <tr><td>ⓘ</td><td>Dashboard, ติดตามโอน</td><td>แสดงคำอธิบายสูตร (วางเมาส์)</td><td>ไม่แน่ใจว่าตัวเลขคำนวณอย่างไร</td><td>Tooltip</td></tr>
+    <tr><td>ยืนยัน / ไม่นับ</td><td>Dashboard (กล่อง ±1 วัน)</td><td>ตัดสินรายการโอนต่างวัน</td><td>ตรวจแล้วว่าใช่/ไม่ใช่การโอนของแผนวันนั้น</td><td>บันทึกผู้ตัดสิน + คำนวณใหม่</td></tr>
+    <tr><td>ยืนยันทั้งหมด (n)</td><td>Dashboard</td><td>ยืนยันทุกรายการที่รอ (มีหน้าต่างยืนยัน)</td><td>ตรวจครบทุกรายการแล้ว</td><td>นับรวมทั้งหมด</td></tr>
+    <tr><td>ตัดสินแล้ว x รายการ ▾ / ยกเลิกการตัดสิน</td><td>Dashboard</td><td>ดูและถอนการตัดสินเดิม</td><td>ตัดสินผิด</td><td>ลบการตัดสินแล้วประมวลผลใหม่ รายการกลับมาให้ตัดสินอีกครั้ง</td></tr>
+    <tr><td>ค้นหา...</td><td>ทุกตาราง</td><td>ค้นหาข้อความ</td><td>หาโรงงาน/สินค้า</td><td>กรองแถวทันที</td></tr>
+    <tr><td>▾ หัวคอลัมน์</td><td>ทุกตาราง</td><td>กรองค่าในคอลัมน์</td><td>ดูเฉพาะบางค่า</td><td>กรองแถวทันที</td></tr>
+    <tr><td>คลิกชื่อคอลัมน์ (↕ ▲ ▼)</td><td>ทุกตาราง</td><td>เรียงลำดับ (คลิกซ้ำสลับ น้อย→มาก / มาก→น้อย)</td><td>หาค่าสูง/ต่ำสุด</td><td>ตารางเรียงใหม่</td></tr>
+    <tr><td>ลากขอบหัวคอลัมน์</td><td>ทุกตาราง</td><td>ปรับความกว้างคอลัมน์</td><td>ข้อความถูกตัด</td><td>จำค่าไว้ในเบราว์เซอร์</td></tr>
+    <tr><td>คอลัม ▾</td><td>ทุกตาราง</td><td>ซ่อน/แสดงคอลัมน์</td><td>ต้องการดูเฉพาะบางคอลัมน์</td><td>จำค่าไว้ในเบราว์เซอร์</td></tr>
+    <tr><td>Clear Filter</td><td>ทุกตาราง</td><td>ล้าง Filter ทั้งหมด</td><td>ต้องการเริ่มใหม่</td><td>แสดงทุกแถว</td></tr>
+    <tr><td>คลิกแถว (Expand / Collapse)</td><td>Dashboard</td><td>เปิด/ปิดรายละเอียด SKU</td><td>ตรวจว่าโอนสินค้าอะไร</td><td>ตาราง SKU ใต้แถว</td></tr>
+    <tr><td>คลิกแถว</td><td>Supply Daily</td><td>เปิดหน้าต่างรายละเอียด (ปิดด้วย ✕ / ปิด)</td><td>ดูที่มาของสถานะ</td><td>หน้าต่างรายละเอียด</td></tr>
+    <tr><td>การ์ด Exception</td><td>Supply Daily</td><td>กรองเฉพาะกลุ่มปัญหา</td><td>ไล่ตรวจทีละประเภท</td><td>ตารางกรองแล้ว</td></tr>
+    <tr><td>ช่องหมายเหตุ</td><td>Dashboard, ติดตามโอน</td><td>พิมพ์สาเหตุ (บันทึกเมื่อคลิกออก)</td><td>อธิบายแถวที่ไม่ตามแผน</td><td>หมายเหตุถูกเก็บแม้ประมวลผลใหม่</td></tr>
+    <tr><td>แก้ไข → ยืนยันการแก้ไข / ยกเลิก</td><td>ติดตามโอน</td><td>แก้โอนจริงของเส้นทาง</td><td>ABS0000 ผิด</td><td>ป้าย “ปรับแล้ว” + Log</td></tr>
+    <tr><td>ดูประวัติการปรับทั้งหมด / ซ่อนประวัติการปรับ</td><td>ติดตามโอน (หน้าต่างแก้ไข)</td><td>แสดงประวัติการแก้</td><td>ตรวจสอบย้อนหลัง</td><td>รายการ วันเวลา ค่าเดิม→ใหม่ ผู้แก้ เหตุผล</td></tr>
+    <tr><td>แท็บ (โอนจริง / แผน / BSD010 / ราคา / Bidding)</td><td>ข้อมูลดิบ</td><td>สลับชุดข้อมูล</td><td>ตรวจไฟล์ต้นทาง</td><td>ตารางของไฟล์นั้น</td></tr>
+    <tr><td>บันทึกเกณฑ์</td><td>Settings</td><td>บันทึกเกณฑ์/สีสถานะ</td><td>เปลี่ยนเกณฑ์สี</td><td>“บันทึกแล้ว”</td></tr>
+    <tr><td>+ เพิ่มผู้ใช้งาน / ลงทะเบียน / แก้ไข / ลบ</td><td>Settings</td><td>จัดการผู้ใช้</td><td>มีผู้ใช้ใหม่ / ลาออก</td><td>รายชื่อผู้ใช้อัปเดต</td></tr>
+    <tr><td>+ เพิ่มรายการ / แก้ไข / ลบ (Master Data)</td><td>Settings</td><td>แก้ข้อมูลอ้างอิง</td><td>โรงงาน/SKU เปลี่ยน</td><td>มีผลหลังประมวลผลครั้งถัดไป</td></tr>
+  </table></div>
+  <p class="muted">ปุ่มที่ไม่มีในระบบ: Search, Apply, Reset, Refresh, Next / Previous (ตารางใช้การเลื่อนแทนการแบ่งหน้า), Back (ใช้ปุ่มย้อนกลับของเบราว์เซอร์หรือเมนู)</p>
+</section>
+
+<!-- ===================== 18 SCENARIOS ===================== -->
+<section class="sec" id="scenarios">
+  <div class="sec-head"><span class="sec-no">18</span><h2>ตัวอย่างการใช้งานจริง</h2></div>
+
+  <h3>Scenario 1 — ต้องการดูภาพรวมการโอนของสัปดาห์</h3>
+  <ol class="steps">
+    <li><b>เปิด Dashboard แล้วเลือก Week</b>ตรวจ “3/3 ประเภทไฟล์” (ไก่) — ถ้าไม่ครบ ตัวเลขยังไม่ใช่ผลสุดท้าย</li>
+    <li><b>ไม่ต้องกด Apply</b>ตัวเลขแสดงทันที</li>
+    <li><b>ดู ปริมาณแผนโอน (Plan)</b>ขนาดงานที่ต้องทำ</li>
+    <li><b>ดู ปริมาณโอนจริง (Actual)</b>ขนาดงานที่เกิดขึ้น</li>
+    <li><b>ดู Achievement %</b>ผลงานตามแผน และสีสถานะ</li>
+    <li><b>ดู GAP</b>แผน − ปริมาณโอนจริงตามแผน และ มูลค่าสูญเสีย</li>
+    <li><b>ตรวจรายการที่ต่ำกว่าแผน</b>กรองคอลัมน์ สถานะ = “ต่ำกว่าแผนมาก” หรือ “ไม่โอนตามแผน” แล้วเรียงคอลัมน์ สูญเสีย</li>
+  </ol>
+  <p><strong>ทำไมต้องดูตามลำดับนี้</strong>: ต้องรู้ขนาดของแผนและโอนจริงก่อนจึงจะตีความ % ได้ถูก (95% ของ 100 kg ต่างจาก 95% ของ 100,000 kg) และต้องดูเป็นเงินเพื่อเลือกแก้ปัญหาที่กระทบมากที่สุดก่อน</p>
+
+  <h3>Scenario 2 — พบ %โอนต่ำกว่าปกติ</h3>
+  <div class="pipe">
+    <div class="p hl"><b>Dashboard</b><small>Achievement % ต่ำ เทียบ % Weekly กับ % Daily ว่าขาดที่ใด</small></div>
+    <div class="p"><b>เลือก Factory</b><small>▾ ต้นทาง หรือ ปลายทาง ทีละโรงงาน ดู KPI เปลี่ยน</small></div>
+    <div class="p"><b>ดู Product Group</b><small>▾ กลุ่มสินค้า</small></div>
+    <div class="p"><b>ดูรายการ GAP สูง</b><small>เรียง สูญเสีย / % เทียบแผน</small></div>
+    <div class="p"><b>Drill Down</b><small>คลิกแถวดู SKU</small></div>
+    <div class="p gr"><b>ตรวจสอบสาเหตุ</b><small>ข้อมูลดิบ · หมายเหตุระบบ ±1 วัน · บันทึกหมายเหตุ</small></div>
+  </div>
+  <p><strong>สาเหตุที่ควรตรวจก่อนสรุปว่าโรงงานโอนไม่ครบ</strong>: ไฟล์ ABS0000 ไม่ครบ (มีคำเตือน 5,000 แถว?), มีรายการ “รอยืนยัน ±1 วัน” ที่ยังไม่กด, โอนจริงอยู่ในกลุ่มสินค้า (P19) ต่างจากแผน, หรือโอนไปโรงงานปลายทางอื่น (ดูการ์ด “โอนไม่ตรงแผนเลย”)</p>
+
+  <h3>Scenario 3 — ตรวจสอบโรงงานที่โอนไม่ครบแผน</h3>
+  <ol class="steps">
+    <li><b>Dashboard → ▾ สถานะ</b>เลือก “ต่ำกว่าแผนมาก” — ตารางเหลือเฉพาะแถวที่ต่ำกว่า 90%</li>
+    <li><b>คลิกหัวคอลัมน์ ต้นทาง</b>เรียงตามโรงงานเพื่อดูว่าโรงงานใดมีหลายแถว</li>
+    <li><b>▾ ต้นทาง = โรงงานที่สงสัย</b>ตอนนี้ KPI ด้านบนคือผลของโรงงานนั้นในกลุ่มแถวที่ต่ำกว่าแผนมาก</li>
+    <li><b>ล้าง Filter สถานะ</b>เปลี่ยน ▾ สถานะ กลับเป็น “ทั้งหมด” (คง Filter ต้นทางไว้) เพื่อดู Achievement % จริงของทั้งโรงงาน</li>
+    <li><b>ดูรายวัน</b>เรียงคอลัมน์ วันที่ เพื่อดูว่าขาดทุกวันหรือบางวัน</li>
+    <li><b>Export Excel</b>ส่ง Sheet Tracking Detail / Loss Analysis ให้โรงงาน — ไฟล์จะชื่อ …_filtered.xlsx</li>
+  </ol>
+  <div class="callout warn"><span class="ttl">ระวังการอ่าน KPI ขณะกรองสถานะ</span><p>เมื่อกรองสถานะ “ต่ำกว่าแผนมาก” KPI จะคำนวณเฉพาะแถวที่แย่ จึงต่ำกว่าผลจริงของโรงงานเสมอ ใช้ตัวเลขที่ได้จากขั้นที่ 4 เมื่อรายงานผลของโรงงาน</p></div>
+
+  <h3>Scenario 4 — ไฟล์โอนจริงผิด ต้องแก้ตัวเลข</h3>
+  <ol class="steps">
+    <li><b>ถ้าทั้งไฟล์ผิด</b>Upload Data → 🗑 ลบไฟล์ → อัปโหลดไฟล์ที่ถูก</li>
+    <li><b>ถ้าผิดเฉพาะบางเส้นทาง</b>เพิ่มเติม → ติดตามโอน (Weekly/Daily/รวม) → หาแถว → กด <strong>แก้ไข</strong> ที่ช่องโอนจริง</li>
+    <li><b>กรอกค่าใหม่และเหตุผล</b>ดู Preview แล้วกด ยืนยันการแก้ไข — ค่านี้จะใช้แทนยอดจาก ABS0000 ต่อไป แม้อัปโหลดใหม่</li>
+  </ol>
+</section>
+
+<!-- ===================== 19 E2E ===================== -->
+<section class="sec" id="e2e">
+  <div class="sec-head"><span class="sec-no">19</span><h2>ตัวอย่างการคำนวณแบบ End-to-End</h2></div>
+
+  <h3>19.1 ทำไมห้ามเฉลี่ย %</h3>
+  <div class="tbl"><table>
+    <tr><th>Factory</th><th>Product</th><th class="num">Plan</th><th class="num">Actual</th><th class="num">Diff</th><th class="num">%</th></tr>
+    <tr><td>A</td><td>Product 1</td><td class="num">1,000</td><td class="num">800</td><td class="num">−200</td><td class="num">80.00%</td></tr>
+    <tr><td>B</td><td>Product 1</td><td class="num">500</td><td class="num">500</td><td class="num">0</td><td class="num">100.00%</td></tr>
+    <tr class="total"><td colspan="2">Total</td><td class="num">1,500</td><td class="num">1,300</td><td class="num">−200</td><td class="num">86.67%</td></tr>
+  </table></div>
+  <div class="formula"><div class="f-head">%รวม</div><div class="f-body">1,300 ÷ 1,500 × 100 = 86.67%  ✓ ระบบใช้วิธีนี้
+(80% + 100%) ÷ 2  = 90.00%  ✗ ห้ามใช้</div><div class="f-foot">การเฉลี่ย % ให้น้ำหนักทุกเส้นทางเท่ากัน ทั้งที่เส้นทาง A มีแผนมากกว่า B สองเท่า ผลรวมจึงต้องคิดจากปริมาณ (kg) รวม ซึ่งตรงกับ Grand Total ของ Excel เดิม</div></div>
+
+  <h3>19.2 ตัวอย่างครบทุกกฎ (ตรงกับภาพจำลอง Dashboard)</h3>
+  <p>Week ตัวอย่าง มี 3 เส้นทาง ราคาเป็นบาท/kg</p>
+  <div class="tbl"><table>
+    <tr><th>เส้นทาง</th><th class="num">แผน</th><th class="num">โอนจริง</th><th class="num">ราคาต้น→ปลาย</th><th class="num">นับตามแผน</th><th class="num">%</th><th class="num">โอนเกิน</th><th class="num">กำไรที่ได้</th><th class="num">สูญเสีย</th><th>สถานะ</th></tr>
+    <tr><td>A→B อกไก่</td><td class="num">1,000</td><td class="num">800</td><td class="num">60→65 (+5)</td><td class="num">800</td><td class="num">80.00%</td><td class="num">0</td><td class="num">4,000</td><td class="num">−1,000</td><td><span class="dot d-red"></span>ต่ำกว่าแผนมาก</td></tr>
+    <tr><td>A→C น่อง</td><td class="num">500</td><td class="num">470</td><td class="num">60→64 (+4)</td><td class="num">500</td><td class="num">100.00%</td><td class="num">0</td><td class="num">1,880</td><td class="num">−120</td><td><span class="dot d-green"></span>ตามแผน</td></tr>
+    <tr><td>A→D สะโพก</td><td class="num">400</td><td class="num">600</td><td class="num">60→63 (+3)</td><td class="num">400</td><td class="num">100.00%</td><td class="num">200</td><td class="num">1,800</td><td class="num">0</td><td><span class="dot d-green"></span>ตามแผน</td></tr>
+    <tr class="total"><td>รวม</td><td class="num">1,900</td><td class="num">1,870</td><td></td><td class="num">1,700</td><td class="num">89.47%</td><td class="num">200</td><td class="num">7,680</td><td class="num">−1,120</td><td><span class="dot d-red"></span>ต่ำกว่าแผนมาก</td></tr>
+  </table></div>
+  <ol>
+    <li><strong>A→B</strong>: ขาด 200 ≥ 10% ของ 1,000 → นับ 800 → 80% · สูญเสีย = −(1,000 − 800) × 5 = −1,000 บาท</li>
+    <li><strong>A→C</strong>: ขาด 30 &lt; 50 → ปัดเป็น 500 → 100% · แต่สูญเสีย = −(500 − 470) × 4 = −120 บาท (ไม่ปัด)</li>
+    <li><strong>A→D</strong>: MIN(600, 400) = 400 → 100% · โอนเกิน 200 kg ไม่ชดเชย A→B · กำไรที่ได้ = 3 × 600 = 1,800 บาท</li>
+    <li><strong>Achievement %</strong> = 1,700 ÷ 1,900 = <strong>89.47%</strong> → ต่ำกว่า 90% = สีแดง</li>
+    <li><strong>โอนจริง ÷ แผน (ไม่ปรับ)</strong> = 1,870 ÷ 1,900 = 98.42% — สูงกว่ามากเพราะรวมส่วนที่โอนเกินของ A→D</li>
+    <li>ถ้าเฉลี่ย % ทั้งสามแถว จะได้ 93.33% ซึ่งผิด</li>
+  </ol>
+  <div class="callout note"><span class="ttl">ค่าในภาพจำลองที่ไม่ได้มาจากตารางนี้</span><p>% Weekly, % Daily, Reject และโอนไม่ตรงแผนเลย ในภาพจำลอง Dashboard เป็นตัวเลขประกอบภาพเท่านั้น ตัวอย่างการคำนวณ Weekly/Daily อยู่ใน Section 7.1 และ Reject ใน 7.6</p></div>
+
+  <h3>19.3 ตัวอย่าง ±1 วัน</h3>
+  <p>แผน 02/09 เส้นทาง A→D สะโพก 400 kg, โอนจริงวันที่ 02/09 = 0 kg, โอนจริงวันที่ 03/09 = 380 kg และวันที่ 03/09 ไม่มีแผนของเส้นทางนี้</p>
+  <ul>
+    <li>ก่อนยืนยัน: แถว 02/09 = 0% (ไม่โอนตามแผน) · หมายเหตุระบบ “พบโอนจริงวันที่ 03/09 (โอนช้า 1 วัน) 380 kg — รอยืนยัน” · 380 kg อยู่ใน “โอนไม่ตรงแผนเลย”</li>
+    <li>หลังกด ยืนยัน: แถว 02/09 นับโอนจริง 380 kg → ขาด 20 &lt; 40 → 100% · หมายเหตุเปลี่ยนเป็น “รวมโอนจริงวันที่ 03/09 (โอนช้า 1 วัน) 380 kg — ยืนยันโดย [ชื่อผู้ใช้]” · 380 kg ออกจาก “โอนไม่ตรงแผนเลย”</li>
+  </ul>
+
+  <h3>19.4 ตัวอย่าง Supply Daily — โอนนอกแผน</h3>
+  <p>โรงงาน E กลุ่มปีก วันที่ 01/09: ปริมาณของเหลือ 500, แผนโอนออก 300, โอนออกจริง 700</p>
+  <div class="formula"><div class="f-head">ตรวจโอนนอกแผน</div><div class="f-body">เหลือหลังหักแผน = 500 − 300 = 200
+โอนจริง − แผน  = 700 − 300 = 400
+400 &gt; 200 + 100 = 300  → โอนนอกแผน ✓</div></div>
+</section>
+
+<!-- ===================== 20 TROUBLE ===================== -->
+<section class="sec" id="trouble">
+  <div class="sec-head"><span class="sec-no">20</span><h2>Error Handling / Troubleshooting</h2></div>
+  <div class="tbl"><table>
+    <tr><th>ปัญหา / ข้อความ</th><th>สาเหตุที่เป็นไปได้</th><th>วิธีตรวจสอบ</th><th>วิธีแก้</th></tr>
+    <tr><td>“ยังไม่มีข้อมูล Week ในระบบ”</td><td>ยังไม่เคยสร้าง Week ของสินค้านี้</td><td>หน้า Upload Data ช่องเลือก Week</td><td>สร้าง Week และอัปโหลดไฟล์</td></tr>
+    <tr><td>“Week นี้ยังไม่มีผลการประมวลผล”</td><td>อัปโหลดแล้วแต่ยังไม่ประมวลผล หรือไฟล์ไม่ผ่าน</td><td>หน้า Upload Data: สถานะไฟล์</td><td>แก้ไฟล์ที่ไม่ผ่าน แล้วกด ประมวลผล</td></tr>
+    <tr><td>ตารางว่าง / “0 รายการ”</td><td>Filter หรือคำค้นหาไม่ตรงข้อมูล</td><td>ปุ่ม Clear Filter เป็นสีเข้ม = มี Filter อยู่</td><td>กด Clear Filter</td></tr>
+    <tr><td>ปุ่ม ประมวลผล กดไม่ได้</td><td>ไฟล์บังคับยังไม่ “✓ สำเร็จ” ครบ</td><td>ข้อความ “อัพโหลดและตรวจสอบให้ผ่านครบทั้ง x ไฟล์ก่อน”</td><td>อัปโหลดไฟล์ที่ขาด</td></tr>
+    <tr><td>“ไฟล์ขาดคอลัมน์ที่จำเป็น: …”</td><td>Export ผิดรายงาน หรือหัวคอลัมน์เปลี่ยนชื่อ</td><td>เทียบกับตาราง Section 5.2</td><td>Export ใหม่จากรายงานที่ถูกต้อง</td></tr>
+    <tr><td>“ไฟล์นี้มีวันที่ … ซึ่งอยู่นอก WKxx”</td><td>เลือก Week ผิด หรือไฟล์ผิดสัปดาห์</td><td>วันที่ในไฟล์ vs ช่วง Week ที่แสดงในข้อความ</td><td>เลือก Week ที่ถูก หรือ Export ช่วงวันที่ใหม่</td></tr>
+    <tr><td>“ข้อมูลในไฟล์นี้ซ้ำกับไฟล์ … x%”</td><td>อัปโหลด ABS0000 ไฟล์เดิมซ้ำ (เช่น ไฟล์ “(1)”)</td><td>เทียบรายชื่อไฟล์ที่อัปแล้ว</td><td>ไม่ต้องอัปซ้ำ · ถ้าต้องการแทนที่ ลบไฟล์เดิมก่อน</td></tr>
+    <tr><td>“แผน Daily ของวันเดียวกันมีอยู่แล้วในไฟล์ …”</td><td>อัปแผน Daily ฉบับใหม่ของวันเดิม</td><td>วันที่ที่แสดงในข้อความ</td><td>ลบไฟล์เดิมแล้วอัปไฟล์ใหม่</td></tr>
+    <tr><td>⚠ ไฟล์นี้มี 5,000 แถวพอดี</td><td>Smart Sales ตัดไฟล์ที่ 5,000 แถว</td><td>เทียบช่วงวันที่ในไฟล์</td><td>Export แบ่งช่วงวันที่ แล้วอัปโหลดไฟล์ที่เหลือเพิ่ม</td></tr>
+    <tr><td>“ข้าม x แถวที่ไม่เกี่ยวข้อง”</td><td>แถว ABS0000 ไม่มีโรงงานปลายทาง (ขายตรง) หรือวันที่นอก Week ±1 วัน · ราคา/Bidding: SKU ไม่มีใน Master</td><td>ข้อมูลดิบ / ไฟล์ต้นฉบับ</td><td>ปกติไม่ต้องแก้</td></tr>
+    <tr><td>“รองรับเฉพาะไฟล์ .xls หรือ .xlsx เท่านั้น”</td><td>ไฟล์ CSV / PDF / อื่น ๆ</td><td>นามสกุลไฟล์</td><td>บันทึกเป็น .xlsx</td></tr>
+    <tr><td>“อ่านวันที่จากชื่อไฟล์ไม่ได้”</td><td>ไฟล์ราคารายวันชื่อไม่มี DD.MM.YYYY</td><td>ชื่อไฟล์</td><td>เปลี่ยนชื่อ เช่น ChickenW2_26.08.2026.xlsx</td></tr>
+    <tr><td>% แสดง “-”</td><td>แผนของช่องทางนั้น = 0</td><td>คอลัมน์แผน</td><td>ไม่ใช่ Error · เป็นไปตาม Business Rule</td></tr>
+    <tr><td>% = 100% แต่โอนจริงน้อยกว่าแผน</td><td>ขาดไม่ถึง 10% (ปัดหน่วยหยิบ)</td><td>เทียบคอลัมน์แผนกับจริง</td><td>ไม่ใช่ Error · ดูสูญเสียกำไรสำหรับส่วนที่ขาดจริง</td></tr>
+    <tr><td>Achievement % ไม่เท่ากับ โอนจริง ÷ แผน</td><td>ตัดเพดานต่อเส้นทาง + ปัด 10%</td><td>ค่า “โอนจริง ÷ แผน (ไม่ปรับ)” ใต้ตัวเลข</td><td>ไม่ใช่ Error · ดู Section 7.2</td></tr>
+    <tr><td>ตัวเลขไม่ตรงกับ Excel เดิม</td><td>Excel เดิมมีบั๊กสูตรลากไม่ครบ, การแบ่ง Weekly/Daily และการแบ่งหลายราคาแบบใหม่</td><td>README · Section 10</td><td>ใช้ตัวเลขจากระบบ · ถ้าต่างมากให้แจ้งผู้ดูแล</td></tr>
+    <tr><td>ตัวเลขไม่เปลี่ยนหลังอัปโหลด BSR030</td><td>ยังไม่ได้กด ประมวลผล</td><td>เวลา “อัปเดตล่าสุด”</td><td>กด ประมวลผล</td></tr>
+    <tr><td>ตัวเลขไม่ Update</td><td>เบราว์เซอร์ยังแสดงข้อมูลเก่า</td><td>เวลา “อัปเดตล่าสุด”</td><td>สลับหน้าต่างไปมา หรือกด F5</td></tr>
+    <tr><td>โอนจริงต่ำผิดปกติในบางเส้นทาง</td><td>รายการ ±1 วันยังไม่ยืนยัน / กลุ่มสินค้าไม่ตรง / ไฟล์ ABS0000 ไม่ครบ</td><td>กล่อง ±1 วัน · การ์ดโอนไม่ตรงแผนเลย · ข้อมูลดิบ</td><td>ยืนยันรายการ / อัปไฟล์ที่ขาด / แก้ไขโอนจริงพร้อมเหตุผล</td></tr>
+    <tr><td>Export ไม่ครบทุกแถว</td><td>มี Filter อยู่</td><td>ชื่อไฟล์ลงท้าย _filtered · Sheet Summary “ขอบเขตข้อมูล”</td><td>Clear Filter แล้ว Export ใหม่</td></tr>
+    <tr><td>Export ติดอยู่ที่ “กำลังสร้างไฟล์...”</td><td>ข้อมูลจำนวนมาก</td><td>รอสักครู่</td><td><span class="verify">ถ้าไม่เสร็จ — ต้องตรวจสอบกับ System Owner</span></td></tr>
+    <tr><td>“ประมวลผลไม่สำเร็จ: …”</td><td>เชื่อมต่อไม่ได้ / ไม่มีสิทธิ์ (“ต้องเข้าสู่ระบบก่อน”, “บัญชีนี้ไม่มีสิทธิ์ใช้งาน”)</td><td>ข้อความ Error</td><td>Login ใหม่ · ถ้ายังไม่ได้ติดต่อผู้ดูแล</td></tr>
+    <tr><td>“บันทึกไม่สำเร็จ: …” (กล่อง ±1 วัน / แก้ไขโอนจริง)</td><td>เชื่อมต่อไม่ได้ หรือมีผู้อื่นแก้พร้อมกัน</td><td>ข้อความ Error</td><td>ลองอีกครั้ง</td></tr>
+    <tr><td>Supply Daily “ไม่สามารถ Match ได้”</td><td>โรงงานไม่มีใน Master Zone / Vendor Group</td><td>Settings → Master Data</td><td>admin เพิ่มข้อมูลแล้วประมวลผลใหม่</td></tr>
+    <tr><td>มองไม่เห็นเมนู Settings</td><td>ไม่ใช่ admin</td><td>—</td><td>ติดต่อ admin</td></tr>
+  </table></div>
+</section>
+
+<!-- ===================== 21 FAQ ===================== -->
+<section class="sec faq" id="faq">
+  <div class="sec-head"><span class="sec-no">21</span><h2>FAQ</h2></div>
+  <details open><summary>%โอนเทียบแผนคืออะไร?</summary><div>สัดส่วนของแผนการโอนที่ทำได้ตามแผน คำนวณจากปริมาณที่ “นับตามแผน” (โอนจริงไม่เกินแผน และปัดเป็นครบแผนถ้าขาดไม่ถึง 10%) หารด้วยแผน ดู Section 3</div></details>
+  <details><summary>ทำไม % ถึงเกิน 100%?</summary><div>%โอนเทียบแผนในระบบนี้ <strong>ไม่เกิน 100%</strong> เพราะตัดเพดานที่แผน ถ้าเห็นค่ามากกว่าแผน ให้ดูคอลัมน์ “โอนเกินแผน” หรือค่า “โอนจริง ÷ แผน (ไม่ปรับ)” ซึ่งเป็นตัวเลขคนละตัว</div></details>
+  <details><summary>ทำไมบางรายการไม่มี %?</summary><div>แผนของช่องทางนั้นเป็น 0 ระบบแสดง “-” และสถานะ “ไม่มีแผน” เช่น แผนที่ถูกปรับเป็น 0 แต่ยังมีค่า Suggest หรือในไฟล์ Export คอลัมน์ % เทียบแผน Weekly ของแถวที่มีเฉพาะแผน Daily · หน้า ติดตามโอน Weekly / Daily ไม่แสดงแถวที่แผนของช่องทางนั้นเป็น 0 ตั้งแต่ต้น</div></details>
+  <details><summary>ทำไมโอนจริงน้อยกว่าแผนแต่ได้ 100%?</summary><div>กฎ “ปัดหน่วยหยิบ”: ขาดน้อยกว่า 10% ของแผนถือว่าครบแผน แต่ “สูญเสียกำไร” ยังคิดจากส่วนที่ขาดจริง</div></details>
+  <details><summary>ทำไมตัวเลข Dashboard กับ Detail ไม่เท่ากัน?</summary><div>สาเหตุที่พบบ่อย: (1) มี Filter อยู่ — KPI คำนวณตาม Filter แต่ “โอนไม่ตรงแผนเลย” เป็นยอดทั้ง Week · (2) หน้า ติดตามโอน Weekly/Daily แสดงเฉพาะแถวที่มีแผนช่องทางนั้น · (3) เส้นทางหลายราคา แต่ละแถวแสดงเฉพาะส่วนของราคานั้น · (4) Achievement % ไม่ใช่ผลรวมโอนจริง ÷ ผลรวมแผน · (5) ข้อมูลดิบ ABS0000 รวมทุกรายการ แต่ Dashboard นับเฉพาะรายการที่ตรงกับแผน</div></details>
+  <details><summary>ทำไม % Weekly สูงแต่ % Daily ต่ำ?</summary><div>ระบบนำโอนจริงไปเติมแผน Weekly ให้เต็มก่อน ส่วนที่เหลือจึงนับให้ Daily ถ้าโอนจริงไม่พอ ส่วนที่ขาดจึงไปแสดงที่ Daily</div></details>
+  <details><summary>ข้อมูล Update เมื่อไหร่?</summary><div>เมื่อมีผู้อัปโหลด/ลบไฟล์ หรือยืนยันรายการ ±1 วัน หรือแก้ไขโอนจริง ไม่มีการดึงข้อมูลอัตโนมัติ ดูเวลาได้ที่ “อัปเดตล่าสุด” · รอบการอัปโหลดมาตรฐาน <span class="verify">ต้องตรวจสอบกับ System Owner</span></div></details>
+  <details><summary>ถ้าพบข้อมูลผิดต้องทำอย่างไร?</summary><div>ไฟล์ผิดทั้งไฟล์ → ลบแล้วอัปใหม่ · ผิดบางเส้นทาง → แก้ไขโอนจริงที่หน้า ติดตามโอน พร้อมเหตุผล · ต้องการอธิบาย → พิมพ์หมายเหตุ · ผิดที่ระบบต้นทาง → แจ้งเจ้าของข้อมูล Smart Sales</div></details>
+  <details><summary>รายการ “รอยืนยัน ±1 วัน” ถ้าไม่กดจะเป็นอย่างไร?</summary><div>ไม่ถูกนับในแผน และยังอยู่ในยอด “โอนไม่ตรงแผนเลย” จนกว่าจะมีคนกดยืนยัน</div></details>
+  <details><summary>แก้หมายเหตุแล้ว ประมวลผลใหม่จะหายไหม?</summary><div>ไม่หาย ระบบเก็บหมายเหตุของผู้ใช้ไว้ทุกครั้งที่ประมวลผลใหม่</div></details>
+  <details><summary>ไก่กับหมูรวมกันได้ไหม?</summary><div>ไม่ได้ ข้อมูลแยกกันคนละ Week หน้า “ทั้งหมด” แสดง Dashboard ของทั้งสองสินค้าซ้อนกัน</div></details>
+</section>
+
+<!-- ===================== 22 GLOSSARY ===================== -->
+<section class="sec" id="glossary">
+  <div class="sec-head"><span class="sec-no">22</span><h2>Glossary</h2></div>
+  <div class="tbl"><table>
+    <tr><th>Term</th><th>Definition</th></tr>
+    <tr><td>Plan / แผน</td><td>ปริมาณที่ตั้งใจจะโอน (kg) ใช้ค่าแผนสุดท้าย <code>supplyAfter</code></td></tr>
+    <tr><td>Suggest</td><td>ปริมาณที่ระบบต้นทางแนะนำ ก่อนผู้วางแผนปรับ</td></tr>
+    <tr><td>Reject</td><td>ส่วนที่แนะนำแต่ถูกตัดออกจากแผน = Suggest − แผนสุดท้าย</td></tr>
+    <tr><td>Actual / โอนจริง</td><td>ปริมาณที่โอนจริงตามไฟล์ ABS0000 (หรือค่าที่ผู้ใช้ปรับ)</td></tr>
+    <tr><td>Transfer / การโอน</td><td>การย้ายสินค้าจากโรงงานต้นทางไปโรงงานปลายทาง (ไม่รวมการขายตรงลูกค้า)</td></tr>
+    <tr><td>เส้นทาง (Route)</td><td>วันที่ + โรงงานต้นทาง + โรงงานปลายทาง + กลุ่มสินค้า</td></tr>
+    <tr><td>Weekly / Daily</td><td>แผนรายสัปดาห์ (BSR030, เฉพาะไก่) และแผนรายวัน (BDR130) ที่เติมเพิ่มจากแผนรายสัปดาห์</td></tr>
+    <tr><td>นับตามแผน / ปริมาณโอนจริงตามแผน</td><td>โอนจริงที่นับเป็นผลงาน: ไม่เกินแผน และปัดเป็นครบแผนถ้าขาดไม่ถึง 10%</td></tr>
+    <tr><td>ปัดหน่วยหยิบ</td><td>กฎที่ถือว่าโอนครบแผนเมื่อขาดน้อยกว่า 10% ของแผน</td></tr>
+    <tr><td>% Transfer / %โอนเทียบแผน</td><td>นับตามแผน ÷ แผน × 100 (สูงสุด 100%)</td></tr>
+    <tr><td>Achievement %</td><td>%โอนเทียบแผนรวม (Total) ของแถวที่แสดงอยู่</td></tr>
+    <tr><td>GAP / Diff แผนโอน</td><td>นับตามแผน − แผน (ติดลบ = ขาด)</td></tr>
+    <tr><td>โอนเกินแผน (Overage)</td><td>ส่วนที่โอนจริงเกินแผนรวม</td></tr>
+    <tr><td>กำไรที่ได้</td><td>(ราคาปลายทาง − ราคาต้นทาง) × โอนจริง</td></tr>
+    <tr><td>สูญเสียกำไร / มูลค่าสูญเสีย</td><td>กำไรที่ควรได้แต่ไม่ได้ เพราะโอนไม่ครบแผน (ไม่ปัด 10%)</td></tr>
+    <tr><td>โอนไม่ตรงแผนเลย</td><td>โอนจริงของเส้นทาง/วัน/กลุ่มสินค้าที่ไม่มีแผนในสัปดาห์เลย</td></tr>
+    <tr><td>±1 วัน (Date shift)</td><td>โอนจริงที่วันที่ต่างจากแผน 1 วัน ซึ่งระบบแนะนำให้นับรวมเมื่อผู้ใช้ยืนยัน</td></tr>
+    <tr><td>Factory / โรงงาน</td><td>โรงงานต้นทางหรือปลายทาง ระบุด้วยรหัสโรงงาน</td></tr>
+    <tr><td>Product Group / กลุ่มสินค้า / P19</td><td>กลุ่มชิ้นส่วนที่ระบบต้นทางกำหนด (productForPlan19 / P19) ใช้จับคู่แผนกับโอนจริง</td></tr>
+    <tr><td>SKU</td><td>รหัสสินค้าย่อยใน ABS0000 ใช้ดูรายละเอียดตอน Drill Down เท่านั้น</td></tr>
+    <tr><td>Week</td><td>ISO Week (จันทร์–อาทิตย์) เช่น WK36</td></tr>
+    <tr><td>ABS0000 / BSR030 / BDR130</td><td>ชื่อรายงานจาก Smart Sales: โอนจริง / แผน Weekly / แผน Daily</td></tr>
+    <tr><td>BSD010 / TC05</td><td>รายงาน Actual Balance Supply Daily / Actual allocation (Bidding) จาก Supply Planning</td></tr>
+    <tr><td>Supply Daily / ปริมาณของเหลือ</td><td>Supply คงเหลือรายวันของโรงงานต่อกลุ่มสินค้า</td></tr>
+    <tr><td>โอนนอกแผน</td><td>โอนออกจริงเกินกว่า Supply ที่เหลือ + 100 kg</td></tr>
+    <tr><td>นอกโซน</td><td>โรงงานต้นทางและปลายทางอยู่คนละภาค</td></tr>
+    <tr><td>ลงราคา</td><td>ราคา Net เฉลี่ยวันพรุ่งนี้ต่ำกว่าวันนี้ ≥ 1 บาท</td></tr>
+    <tr><td>Bidding (PICKUP_LOW_BIDDING)</td><td>รายการจัดสรรแบบ Bid ต่ำในไฟล์ TC05</td></tr>
+    <tr><td>ฝากตัดแต่ง</td><td>คู่โรงงานที่ไม่ถือเป็นการโอนปกติ ไม่นับในโอนออกจริงของ Supply Daily</td></tr>
+    <tr><td>Master Data</td><td>ข้อมูลอ้างอิงนิ่ง (โรงงาน-ภาค, Vendor Group, SKU พิเศษ ฯลฯ) แก้ได้ที่ Settings</td></tr>
+  </table></div>
+</section>
+
+<!-- ===================== 23 CONTACT ===================== -->
+<section class="sec" id="contact">
+  <div class="sec-head"><span class="sec-no">23</span><h2>Contact / System Owner</h2></div>
+  <div class="tbl"><table>
+    <tr><th>บทบาท</th><th>ชื่อ / ช่องทางติดต่อ</th><th>ติดต่อเรื่อง</th></tr>
+    <tr><td>System Owner</td><td><span class="verify">ต้องระบุ</span></td><td>Business Rule, เกณฑ์ KPI, นโยบายแผนฉบับทางการ, Cut-off Time</td></tr>
+    <tr><td>ผู้ดูแลระบบ (admin)</td><td><span class="verify">ต้องระบุ</span></td><td>สร้าง/ระงับบัญชี, เกณฑ์สีสถานะ, Master Data</td></tr>
+    <tr><td>ผู้รับผิดชอบอัปโหลดข้อมูล</td><td><span class="verify">ต้องระบุ</span></td><td>ข้อมูลไม่ Update, ไฟล์ขาด</td></tr>
+    <tr><td>เจ้าของข้อมูลต้นทาง (Smart Sales / Supply Planning)</td><td><span class="verify">ต้องระบุ</span></td><td>ข้อมูลในไฟล์ Export ผิด</td></tr>
+    <tr><td>ผู้พัฒนาระบบ</td><td><span class="verify">ต้องระบุ</span></td><td>Error ของระบบ, Export ไม่ทำงาน</td></tr>
+  </table></div>
+</section>
+
+<!-- ===================== 24 QC ===================== -->
+<section class="sec" id="qc">
+  <div class="sec-head"><span class="sec-no">24</span><h2>Final Quality Check</h2></div>
+  <ul class="check">
+    <li>อธิบายว่าระบบสร้างขึ้นเพื่ออะไร (Section 1)</li>
+    <li>อธิบายว่าตัวเลขมาจากไหน (Section 4–5)</li>
+    <li>อธิบาย Formula ครบทุก KPI (Section 3, 7, 8)</li>
+    <li>อธิบาย Logic ครบตั้งแต่ Upload ถึง Dashboard (Section 6, 12)</li>
+    <li>อธิบาย Filter ครบ (Section 14)</li>
+    <li>อธิบายทุกปุ่ม รวมถึงปุ่มที่ไม่มีในระบบ (Section 17)</li>
+    <li>อธิบายความหมายของ KPI และสถานะ (Section 3, 9)</li>
+    <li>มีตัวอย่างการใช้งานจริง 4 Scenario (Section 18)</li>
+    <li>มีตัวอย่าง Calculation แบบ End-to-End (Section 19)</li>
+    <li>มี Flowchart และ Data Flow (Section 4, 12)</li>
+    <li>มี Business Rules และ Data Refresh (Section 10, 11)</li>
+    <li>มี Troubleshooting, FAQ, Glossary (Section 20–22)</li>
+    <li>มีภาพหน้าจอพร้อมหมายเลขและคำอธิบาย (Section 13) — เป็นภาพจำลอง ควรแทนด้วย Screenshot จริงก่อนเผยแพร่</li>
+    <li>แยก Business Logic / Program Logic / User Action / Output (Section 6)</li>
+    <li>จุดที่ไม่มีหลักฐานในระบบ ระบุว่า “ต้องตรวจสอบกับ System Owner” แทนการเดา</li>
+  </ul>
+  <div class="callout owner"><span class="ttl">รายการที่ต้องเติมก่อนเผยแพร่</span>
+  <ul><li>URL ของเว็บไซต์ ผู้จัดทำ ผู้อนุมัติ (Document Control)</li><li>รายชื่อผู้ติดต่อ (Section 23)</li><li>Cut-off Time และรอบการอัปโหลดมาตรฐาน (Section 10–11)</li><li>นโยบายแผนฉบับทางการ และเหตุผลของเกณฑ์ 10% / 100 kg / 1 บาท</li><li>Screenshot จริงแทนภาพจำลอง</li></ul></div>
+  <p class="foot">จัดทำจาก Source code ของระบบ ณ commit 2601b3f (5 ต.ค. 2026) · หากระบบมีการเปลี่ยนสูตรหรือหน้าจอ กรุณาปรับปรุงเอกสารนี้ตาม · <a href="#top">กลับด้านบน</a></p>
+</section>
+
+</main>
+</div>
+</body>
+</html>

@@ -7,6 +7,8 @@ const PRODUCTS = [
 
 const ALL_PRODUCT = { key: 'all', icon: '📦', label: 'ทั้งหมด', path: '/all/dashboard' } as const;
 
+const MANUAL = { key: 'manual', icon: '📖', label: 'คู่มือการใช้งาน', path: '/manual' } as const;
+
 const cardClass =
   'flex w-full flex-col items-center gap-3 rounded-lg border border-gray-200 bg-white p-8 shadow-sm transition hover:-translate-y-0.5 hover:border-navy-300 hover:shadow-md';
 
@@ -28,15 +30,13 @@ export default function ProductSelect() {
           </button>
         ))}
       </div>
-      <div className="mt-4 flex justify-center">
-        <button
-          type="button"
-          onClick={() => navigate(ALL_PRODUCT.path)}
-          className={`${cardClass} max-w-[calc(50%-0.5rem)]`}
-        >
-          <span className="text-4xl">{ALL_PRODUCT.icon}</span>
-          <span className="text-base font-semibold text-gray-900">{ALL_PRODUCT.label}</span>
-        </button>
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        {[ALL_PRODUCT, MANUAL].map((p) => (
+          <button key={p.key} type="button" onClick={() => navigate(p.path)} className={cardClass}>
+            <span className="text-4xl">{p.icon}</span>
+            <span className="text-base font-semibold text-gray-900">{p.label}</span>
+          </button>
+        ))}
       </div>
     </div>
   );
