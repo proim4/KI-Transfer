@@ -41,7 +41,10 @@ function trackingSheetRow(r: TrackingResultRow) {
     'แผน Weekly (kg)': r.plan_weekly,
     'แผน Daily (kg)': r.plan_daily,
     'แผนรวม (kg)': r.plan_total,
-    'โอนจริง (kg)': r.actual_total,
+    // A route's actual is shared by its price-variant rows: the share column
+    // is what sums correctly in Excel, the route column is for reference.
+    'โอนจริง ส่วนของแถวนี้ (kg)': r.actual_alloc,
+    'โอนจริงทั้งเส้นทาง (kg)': r.actual_total,
     '% เทียบแผน Weekly': r.weekly_pct,
     '% เทียบแผน Daily': r.daily_pct,
     '% เทียบแผน Total': r.total_pct,
@@ -108,7 +111,25 @@ function actualSheetRow(r: ActualRowDb) {
   };
 }
 
-export async function exportWeekToExcel(weekId: string, weekLabel: string, trackingResults: TrackingResultRow[]) {
+export interface ExportScope {
+  /** True when `trackingResults` is a filtered subset of the week (the on-screen filter). */
+  filtered: boolean;
+  /** Row count of the whole week, for the Summary's scope note. */
+  totalRowCount: number;
+}
+
+/**
+ * `trackingResults` is exactly what the user sees (already filtered), so the
+ * Summary/Daily Trend/Tracking Detail/Loss sheets match the screen; the raw
+ * Weekly/Daily Plan, Actual Transfer and Adjustment Log sheets are always
+ * the whole week's source data, and the Summary says so.
+ */
+export async function exportWeekToExcel(
+  weekId: string,
+  weekLabel: string,
+  trackingResults: TrackingResultRow[],
+  scope: ExportScope = { filtered: false, totalRowCount: trackingResults.length },
+) {
   const [planRows, actualRows, adjustmentLog] = await Promise.all([
     fetchAllRows<PlanRowDb>((from, to) => supabase.from('plan_rows').select('*').eq('week_id', weekId).range(from, to)),
     fetchAllRows<ActualRowDb>((from, to) => supabase.from('actual_rows').select('*').eq('week_id', weekId).range(from, to)),
@@ -123,7 +144,13 @@ export async function exportWeekToExcel(weekId: string, weekLabel: string, track
   const reject = aggregateReject(trackingResults, 'total');
   const dailyTrend = buildDailyTrend(trackingResults);
 
-  const summaryRows = [
+  const summaryRows: { KPI: string; 'ค่า': string | number | null }[] = [
+    {
+      KPI: 'ขอบเขตข้อมูล',
+      'ค่า': scope.filtered
+        ? `ตาม Filter บนหน้าจอ: ${trackingResults.length} จาก ${scope.totalRowCount} แถว (Sheet แผน/โอนจริงดิบ/Adjustment Log เป็นข้อมูลทั้ง Week)`
+        : `ทั้ง Week: ${trackingResults.length} แถว`,
+    },
     { KPI: '% โอนเทียบแผน Weekly', 'ค่า': weekly.pct },
     { KPI: '% โอนเทียบแผน Daily', 'ค่า': daily.pct },
     { KPI: '% โอนเทียบแผน Total', 'ค่า': total.pct },
@@ -178,5 +205,5 @@ export async function exportWeekToExcel(weekId: string, weekLabel: string, track
     'Adjustment Log',
   );
 
-  XLSX.writeFile(workbook, `Tracking_${weekLabel}.xlsx`);
+  XLSX.writeFile(workbook, `Tracking_${weekLabel}${scope.filtered ? '_filtered' : ''}.xlsx`);
 }

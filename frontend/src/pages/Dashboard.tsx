@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import DateShiftReviewPanel from '../components/DateShiftReviewPanel';
 import DrilldownTable from '../components/DrilldownTable';
 import KpiCard, { formatBaht, formatKg, formatPct } from '../components/KpiCard';
@@ -14,7 +14,7 @@ import { exportWeekToExcel } from '../lib/exportExcel';
 import { formatDateTime } from '../lib/formatDateTime';
 import { lastUpdatedAt } from '../lib/lastUpdated';
 import { computeStatus } from '../lib/statusBadge';
-import type { ProductLine, UploadFileType } from '../types/db';
+import type { ProductLine, TrackingResultRow, UploadFileType } from '../types/db';
 
 const REQUIRED_FILE_TYPES: Record<ProductLine, UploadFileType[]> = {
   chicken: ['actual_abs0000', 'plan_weekly_bsr030', 'plan_daily_bdr130'],
@@ -37,23 +37,33 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
 
   const week = weeks?.find((w) => w.id === weekId);
 
+  const rows = useMemo(() => results ?? [], [results]);
+
+  // The table's own search/filters drive the KPIs and Export too. Remembered
+  // together with the row set it was computed from, so a stale filter result
+  // from a previous Week (or before a refetch) is never shown.
+  const [tableFilter, setTableFilter] = useState<{ source: TrackingResultRow[]; filtered: TrackingResultRow[] } | null>(null);
+  const handleFilteredChange = useCallback((filtered: TrackingResultRow[]) => setTableFilter({ source: rows, filtered }), [rows]);
+  const kpiRows = tableFilter && tableFilter.source === rows ? tableFilter.filtered : rows;
+  const isFiltered = kpiRows.length !== rows.length;
+
   async function handleExport() {
     if (!weekId || !week || !results) return;
     setExporting(true);
     try {
-      await exportWeekToExcel(weekId, week.label, results);
+      await exportWeekToExcel(weekId, week.label, kpiRows, { filtered: isFiltered, totalRowCount: rows.length });
     } finally {
       setExporting(false);
     }
   }
 
-  const rows = results ?? [];
-  const weekly = aggregateChannel(rows, 'weekly');
-  const daily = aggregateChannel(rows, 'daily');
-  const total = aggregateChannel(rows, 'total');
-  const reject = aggregateReject(rows, 'total');
-  const actualTotal = dedupedActualTotal(rows);
-  const lossTotal = sum(rows.map((r) => Number(r.profit_lost)));
+  const weekly = aggregateChannel(kpiRows, 'weekly');
+  const daily = aggregateChannel(kpiRows, 'daily');
+  const total = aggregateChannel(kpiRows, 'total');
+  const reject = aggregateReject(kpiRows, 'total');
+  const actualTotal = dedupedActualTotal(kpiRows);
+  const rawActualPct = total.planSum > 0 ? actualTotal / total.planSum : null;
+  const lossTotal = sum(kpiRows.map((r) => Number(r.profit_lost)));
   const unmatchedTotal = sum((unmatched ?? []).map((u) => Number(u.total_weight_kg)));
   const pendingShiftCount = (unmatched ?? []).filter((u) => u.shift_status === 'pending').length;
 
@@ -67,7 +77,7 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
   const achievementStatus = thresholds && computeStatus(total.pct, thresholds);
   const achievementTone =
     achievementStatus?.color === 'green' ? 'good' : achievementStatus?.color === 'red' ? 'bad' : achievementStatus?.color === 'amber' ? 'warn' : 'default';
-  const anyOverage = rows.some((r) => Number(r.overage) > 0);
+  const anyOverage = kpiRows.some((r) => Number(r.overage) > 0);
 
   const kpiRowStorageKey = `dashboard-kpi-row-collapsed:${productLine}`;
   const [kpiRowCollapsed, setKpiRowCollapsed] = useState(() => {
@@ -132,6 +142,12 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
 
         {weekId && rows.length > 0 && (
           <div className="space-y-3">
+            {isFiltered && (
+              <p className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                KPI และ Export คำนวณตาม Filter ในตาราง: {kpiRows.length.toLocaleString('en-US')} จาก{' '}
+                {rows.length.toLocaleString('en-US')} แถว (ยกเว้น "โอนไม่ตรงแผนเลย" ซึ่งเป็นยอดทั้ง Week)
+              </p>
+            )}
             <div className="grid grid-cols-2 items-stretch gap-4 md:grid-cols-4">
               <KpiCard size="hero" label="ปริมาณแผนโอน (Plan)" value={formatKg(total.planSum)} />
               <KpiCard size="hero" label="ปริมาณโอนจริง (Actual)" value={formatKg(actualTotal)} />
@@ -140,7 +156,8 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
                 label="Achievement %"
                 value={formatPct(total.pct)}
                 tone={achievementTone}
-                sub={anyOverage ? 'มีการโอนเกินแผนบางเส้นทาง' : undefined}
+                hint="สูตร: แต่ละเส้นทางนับโอนจริงไม่เกินแผน (ส่วนที่เกินไม่ชดเชยเส้นทางอื่น) และถ้าขาดไม่ถึง 10% ของแผนถือว่าครบแผน (ปัดหน่วยหยิบ) แล้วรวมทุกเส้นทาง ÷ แผนรวม — จึงไม่เท่ากับ โอนจริง ÷ แผน"
+                sub={`โอนจริง ÷ แผน (ไม่ปรับ) ${formatPct(rawActualPct)}${anyOverage ? ' · มีการโอนเกินแผนบางเส้นทาง' : ''}`}
               />
               <div className="relative h-full">
                 <button
@@ -165,12 +182,20 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
               <div
                 className={`grid grid-cols-2 gap-3 md:grid-cols-3 ${productLine === 'chicken' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
               >
-                {productLine === 'chicken' && <KpiCard label="% โอนเทียบแผน Weekly" value={formatPct(weekly.pct)} />}
-                <KpiCard label="% โอนเทียบแผน Daily" value={formatPct(daily.pct)} />
-                <KpiCard label="ปริมาณโอนจริงตามแผน" value={formatKg(total.toleranceAdjSum)} />
+                {productLine === 'chicken' && <KpiCard label="% โอนเทียบแผน Weekly" value={formatPct(weekly.pct)} hint="สูตร: แต่ละเส้นทางนับโอนจริงไม่เกินแผน (ส่วนที่เกินไม่ชดเชยเส้นทางอื่น) และถ้าขาดไม่ถึง 10% ของแผนถือว่าครบแผน (ปัดหน่วยหยิบ) แล้วรวมทุกเส้นทาง ÷ แผนรวม — จึงไม่เท่ากับ โอนจริง ÷ แผน" />}
+                <KpiCard
+                  label="% โอนเทียบแผน Daily"
+                  value={formatPct(daily.pct)}
+                  hint="สูตร: แต่ละเส้นทางนับโอนจริงไม่เกินแผน (ส่วนที่เกินไม่ชดเชยเส้นทางอื่น) และถ้าขาดไม่ถึง 10% ของแผนถือว่าครบแผน (ปัดหน่วยหยิบ) แล้วรวมทุกเส้นทาง ÷ แผนรวม — จึงไม่เท่ากับ โอนจริง ÷ แผน · โอนจริงถูกนับให้แผน Weekly ก่อน ส่วนที่เหลือจึงนับให้ Daily"
+                />
+                <KpiCard
+                  label="ปริมาณโอนจริงตามแผน"
+                  value={formatKg(total.toleranceAdjSum)}
+                  hint="โอนจริงที่นับเข้าแผนแล้ว (ไม่เกินแผนของแต่ละเส้นทาง + ปัด 10%) — ตัวตั้งของ Achievement %"
+                />
                 <KpiCard label="ปริมาณ Reject" value={formatKg(reject.rejectSum)} sub={`% Reject: ${formatPct(reject.pct)}`} />
                 <KpiCard
-                  label="โอนไม่ตรงแผนเลย"
+                  label={isFiltered ? 'โอนไม่ตรงแผนเลย (ทั้ง Week)' : 'โอนไม่ตรงแผนเลย'}
                   value={formatKg(unmatchedTotal)}
                   sub={
                     pendingShiftCount > 0
@@ -184,7 +209,7 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
             <DateShiftReviewPanel weekId={weekId} unmatched={unmatched ?? []} />
 
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <DrilldownTable weekId={weekId} rows={rows} title="Tracking Data" />
+              <DrilldownTable weekId={weekId} rows={rows} title="Tracking Data" onFilteredChange={handleFilteredChange} />
             </div>
           </div>
         )}

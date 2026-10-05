@@ -1,4 +1,4 @@
-import { channelActual, computeChannel } from '../../../supabase/functions/_shared/calcEngine.ts';
+import { allocatedChannelActual, computeChannel } from '../../../supabase/functions/_shared/calcEngine.ts';
 import { routeKeyOf } from './rowCalc';
 import type { TrackingResultRow } from '../types/db';
 
@@ -46,10 +46,9 @@ function groupByRoute(rows: TrackingResultRow[]): Map<string, TrackingResultRow[
  * and the Summary sheet's pivot calculated field. Never average the per-row
  * `pct` values: that weights every route equally regardless of volume.
  *
- * Recomputes capped/toleranceAdj per physical route (summing plan across its
- * price variants, but taking actual once) rather than summing the stored
- * per-row values — otherwise a route with N price points would have its
- * actual credited N times, inflating the aggregate %.
+ * Recomputes capped/toleranceAdj per physical route from the passed-in rows'
+ * plan and their proportional share of the route's actual — never the full
+ * shared actual for a partial set of variants, and never once per variant.
  */
 export function aggregateChannel(rows: TrackingResultRow[], channel: Channel): ChannelAggregate {
   const planField = PLAN_FIELD[channel];
@@ -58,9 +57,16 @@ export function aggregateChannel(rows: TrackingResultRow[], channel: Channel): C
   let toleranceAdjSum = 0;
   for (const routeRows of groupByRoute(rows).values()) {
     const plan = sum(routeRows.map((r) => Number(r[planField])));
-    const routePlanWeekly = sum(routeRows.map((r) => Number(r.plan_weekly)));
-    // actual_total is identical across every price variant of this route; Daily only sees what's left after Weekly
-    const actual = channelActual(Number(routeRows[0].actual_total), routePlanWeekly, channel);
+    // actual_total / route_plan_* are identical across every price variant of this route; only the
+    // passed-in rows' share of it counts (a filter may have kept just some of the variants)
+    const [first] = routeRows;
+    const actual = allocatedChannelActual(
+      Number(first.actual_total),
+      Number(first.route_plan_weekly),
+      Number(first.route_plan_daily),
+      channel,
+      plan,
+    );
     const { capped, toleranceAdj } = computeChannel(actual, plan);
     planSum += plan;
     cappedSum += capped;
@@ -76,18 +82,13 @@ export function aggregateChannel(rows: TrackingResultRow[], channel: Channel): C
 }
 
 /**
- * Total actual-transfer weight across the given rows, counted once per
- * physical route (date/origin/dest/product group) — never once per
- * price-variant row, since those rows deliberately share the same actual
- * pool.
+ * Total actual-transfer weight across the given rows — the sum of each row's
+ * own share of its route's actual (actual_alloc), so a route counts exactly
+ * once when all its price variants are present and only proportionally when
+ * a filter left some out.
  */
 export function dedupedActualTotal(rows: TrackingResultRow[]): number {
-  const seen = new Map<string, number>();
-  for (const r of rows) {
-    const key = routeKeyOf(r);
-    if (!seen.has(key)) seen.set(key, Number(r.actual_total));
-  }
-  return sum(Array.from(seen.values()));
+  return sum(rows.map((r) => Number(r.actual_alloc)));
 }
 
 const SUGGEST_FIELD: Record<Channel, keyof TrackingResultRow> = {

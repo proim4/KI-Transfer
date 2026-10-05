@@ -68,6 +68,11 @@ Deno.serve(async (req: Request) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+  // This function runs with the service-role key, so it must check the
+  // caller itself: the platform's own JWT check accepts the public anon key.
+  const accessError = await requireDataAccess(supabase, req);
+  if (accessError) return accessError;
+
   let planRowsRaw: Record<string, unknown>[];
   let actualRowsRaw: Record<string, unknown>[];
   let adjustmentRowsRaw: Record<string, unknown>[];
@@ -186,6 +191,9 @@ Deno.serve(async (req: Request) => {
     reject_daily: r.rejectDaily,
     reject_total: r.rejectTotal,
     reject_pct: r.rejectPct,
+    actual_alloc: r.actualAlloc,
+    route_plan_weekly: r.routePlanWeekly,
+    route_plan_daily: r.routePlanDaily,
     system_note: r.systemNote,
   }));
 
@@ -203,19 +211,14 @@ Deno.serve(async (req: Request) => {
     shift_status: u.shiftStatus,
   }));
 
-  // Recompute is idempotent: wipe this week's prior results, then insert fresh.
-  const { error: deleteTrackingError } = await supabase.from('tracking_results').delete().eq('week_id', weekId);
-  if (deleteTrackingError) return jsonError(deleteTrackingError.message);
-
-  const { error: deleteUnmatchedError } = await supabase.from('unmatched_actual').delete().eq('week_id', weekId);
-  if (deleteUnmatchedError) return jsonError(deleteUnmatchedError.message);
-
-  try {
-    await insertInBatches(supabase, 'tracking_results', trackingRows);
-    await insertInBatches(supabase, 'unmatched_actual', unmatchedRows);
-  } catch (err) {
-    return jsonError(err instanceof Error ? err.message : String(err));
-  }
+  // Recompute is idempotent: one transaction replaces this week's results
+  // (and carries users' remarks over to the fresh rows) — see migration 0019.
+  const { error: replaceError } = await supabase.rpc('replace_week_results', {
+    p_week_id: weekId,
+    p_tracking: trackingRows,
+    p_unmatched: unmatchedRows,
+  });
+  if (replaceError) return jsonError(replaceError.message);
 
   // Supply Daily filing tracker: recomputed here too (not a separate button)
   // since its own numbers depend on the exact same plan_rows/actual_rows that
@@ -330,29 +333,31 @@ async function recomputeSupplyDaily(
     vendor_group_unresolved: r.vendorGroupUnresolved,
   }));
 
-  const { error: deleteError } = await supabase.from('supply_daily_results').delete().eq('week_id', weekId);
-  if (deleteError) throw new Error(deleteError.message);
-
-  await insertInBatches(supabase, 'supply_daily_results', resultRows);
+  const { error: replaceError } = await supabase.rpc('replace_supply_daily_results', { p_week_id: weekId, p_rows: resultRows });
+  if (replaceError) throw new Error(replaceError.message);
   return resultRows.length;
 }
 
-async function insertInBatches(
-  supabase: ReturnType<typeof createClient>,
-  table: string,
-  rows: Record<string, unknown>[],
-  batchSize = 500,
-): Promise<void> {
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    const { error } = await supabase.from(table).insert(batch);
-    if (error) throw new Error(error.message);
-  }
+/**
+ * Mirrors the database's can_access_data() (migration 0019): while
+ * require_login is on, only an active signed-in user may trigger a recompute.
+ */
+async function requireDataAccess(supabase: ReturnType<typeof createClient>, req: Request): Promise<Response | null> {
+  const { data: settings } = await supabase.from('app_settings').select('require_login').limit(1).maybeSingle();
+  if (settings && settings.require_login === false) return null;
+
+  const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  const { data: userData } = jwt ? await supabase.auth.getUser(jwt) : { data: { user: null } };
+  if (!userData.user) return jsonError('ต้องเข้าสู่ระบบก่อน', 401);
+
+  const { data: profile } = await supabase.from('profiles').select('status').eq('id', userData.user.id).maybeSingle();
+  if (!profile || profile.status !== 'active') return jsonError('บัญชีนี้ไม่มีสิทธิ์ใช้งาน', 403);
+  return null;
 }
 
-function jsonError(message: string): Response {
+function jsonError(message: string, status = 500): Response {
   return new Response(JSON.stringify({ error: message }), {
-    status: 500,
+    status,
     headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
   });
 }

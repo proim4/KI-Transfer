@@ -23,7 +23,15 @@ export default function ActualAdjustCell({ row, allRows, weekId }: ActualAdjustC
           ปรับแล้ว
         </span>
       )}
-      <span>{formatKg(row.actual_total)}</span>
+      {Math.abs(Number(row.actual_alloc) - Number(row.actual_total)) < 0.005 ? (
+        <span>{formatKg(row.actual_total)}</span>
+      ) : (
+        // A price-variant row: show its own share; editing still adjusts the route's whole actual.
+        <span title={`ส่วนของราคานี้ (ตามสัดส่วนแผน) จากโอนจริงทั้งเส้นทาง ${formatKg(Number(row.actual_total))}`}>
+          {formatKg(Number(row.actual_alloc))}
+          <span className="ml-1 text-[10px] text-gray-400">/ {formatKg(Number(row.actual_total))}</span>
+        </span>
+      )}
       <button
         type="button"
         onClick={() => setEditing(true)}

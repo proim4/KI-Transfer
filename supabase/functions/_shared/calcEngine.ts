@@ -78,6 +78,29 @@ export function channelActual(actualTotal: number, routePlanWeekly: number, chan
   return Math.max(actualTotal - Math.max(routePlanWeekly, 0), 0);
 }
 
+/**
+ * The share of a route's channel actual that belongs to `plan` — one price
+ * variant's plan, or the plan of whichever subset of the route's rows is
+ * being aggregated (e.g. after a filter). A route's actual is ONE shared
+ * figure across its price variants (SUMIFS never references price), so each
+ * variant is credited actual in proportion to its share of the route's plan
+ * for that channel. Summing every variant's share gives back exactly the
+ * route's actual — never N times it — and a filtered subset of variants gets
+ * only its own proportion instead of the whole route's actual.
+ */
+export function allocatedChannelActual(
+  actualTotal: number,
+  routePlanWeekly: number,
+  routePlanDaily: number,
+  channel: Channel,
+  plan: number,
+): number {
+  const routePlan =
+    channel === 'weekly' ? routePlanWeekly : channel === 'daily' ? routePlanDaily : routePlanWeekly + routePlanDaily;
+  if (routePlan <= 0) return 0;
+  return (channelActual(actualTotal, routePlanWeekly, channel) * plan) / routePlan;
+}
+
 /** How far a ±1-day matched transfer is from its plan date: +1 = transferred the day after the plan date, -1 = the day before. */
 export type DayOffset = 1 | -1;
 
@@ -208,11 +231,13 @@ export function computeTracking(
   // Plan per physical route (summed across price variants) — the Weekly
   // total drives the Weekly-first split, the overall total decides whether a
   // ±1-day match target is planned at all.
-  const routePlan = new Map<string, { weekly: number; total: number }>();
+  const routePlan = new Map<string, { weekly: number; daily: number; total: number; variants: number }>();
   for (const group of planGroups.values()) {
-    const p = routePlan.get(group.matchKey) ?? { weekly: 0, total: 0 };
+    const p = routePlan.get(group.matchKey) ?? { weekly: 0, daily: 0, total: 0, variants: 0 };
     p.weekly += group.planWeekly;
+    p.daily += group.planDaily;
     p.total += group.planWeekly + group.planDaily;
+    p.variants += 1;
     routePlan.set(group.matchKey, p);
   }
 
@@ -271,12 +296,17 @@ export function computeTracking(
     const actualRaw = (actualByKey.get(group.matchKey) ?? 0) + (shiftedIn.get(group.matchKey) ?? 0);
     const adjustment = adjustments.get(group.matchKey);
     const actualTotal = adjustment ? adjustment.newActual : actualRaw;
-    const routePlanWeekly = routePlan.get(group.matchKey)!.weekly;
+    const route = routePlan.get(group.matchKey)!;
     const planTotal = group.planWeekly + group.planDaily;
     const suggestTotal = group.suggestWeekly + group.suggestDaily;
     const rejectWeekly = Math.max(group.suggestWeekly - group.planWeekly, 0);
     const rejectDaily = Math.max(group.suggestDaily - group.planDaily, 0);
     const rejectTotal = Math.max(suggestTotal - planTotal, 0);
+    // This price variant's own share of the route's actual (see
+    // allocatedChannelActual). A route with no plan at all splits evenly so
+    // its actual still sums back to the route total.
+    const actualAlloc =
+      route.total > 0 ? allocatedChannelActual(actualTotal, route.weekly, route.daily, 'total', planTotal) : actualTotal / route.variants;
 
     results.push({
       productionDate: group.productionDate,
@@ -297,16 +327,19 @@ export function computeTracking(
       adjustedByName: adjustment?.adjustedByName ?? null,
       adjustedAt: adjustment?.adjustedAt ?? null,
       adjustmentReason: adjustment?.reason ?? null,
-      weekly: computeChannel(channelActual(actualTotal, routePlanWeekly, 'weekly'), group.planWeekly),
-      daily: computeChannel(channelActual(actualTotal, routePlanWeekly, 'daily'), group.planDaily),
-      total: computeChannel(actualTotal, planTotal),
-      overage: Math.max(actualTotal - planTotal, 0),
+      actualAlloc,
+      routePlanWeekly: route.weekly,
+      routePlanDaily: route.daily,
+      weekly: computeChannel(allocatedChannelActual(actualTotal, route.weekly, route.daily, 'weekly', group.planWeekly), group.planWeekly),
+      daily: computeChannel(allocatedChannelActual(actualTotal, route.weekly, route.daily, 'daily', group.planDaily), group.planDaily),
+      total: computeChannel(actualAlloc, planTotal),
+      overage: Math.max(actualAlloc - planTotal, 0),
       // `=== 0 ? 0 : x` normalizes -0 (e.g. -1 * 0) to plain 0 — cosmetic in
       // Postgres (numeric has no signed zero) but matters for the frontend's
       // own mirror of this formula (rowCalc.ts), which renders a live
       // preview straight from JS without a DB round-trip to normalize it.
-      profitRealized: normalizeZero((group.destPrice - group.originPrice) * actualTotal),
-      profitLost: normalizeZero(-Math.max(0, planTotal - actualTotal) * Math.max(0, group.destPrice - group.originPrice)),
+      profitRealized: normalizeZero((group.destPrice - group.originPrice) * actualAlloc),
+      profitLost: normalizeZero(-Math.max(0, planTotal - actualAlloc) * Math.max(0, group.destPrice - group.originPrice)),
       suggestWeekly: group.suggestWeekly,
       suggestDaily: group.suggestDaily,
       suggestTotal,
@@ -379,13 +412,12 @@ function groupByRoute(results: TrackingResult[]): Map<string, TrackingResult[]> 
  * Never average the per-row `pct` values directly — that would weight every
  * route equally regardless of volume, which is not what the workbook does.
  *
- * Recomputes capped/toleranceAdj per physical route (summing plan across its
- * price variants, but taking actual once) rather than summing the stored
- * per-row values — otherwise a route with N price points would have its
- * actual credited N times, inflating the aggregate % (Excel has this same
- * defect at the grand-total level; this engine deliberately does not
- * reproduce it there, even though each row's own stored figures still do,
- * since they're independently meaningful per price segment).
+ * Recomputes capped/toleranceAdj per physical route from the plan of the
+ * rows actually passed in and their proportional share of the route's actual
+ * (allocatedChannelActual) — the whole route when every variant is present,
+ * or just the passed-in variants' share when a filter split the route.
+ * Crediting the full shared actual to a partial set of variants would read
+ * e.g. a 75% route as 100% for each of its price points.
  */
 export function aggregateChannel(results: TrackingResult[], channel: Channel): ChannelAggregate {
   const planKey = channel === 'weekly' ? 'planWeekly' : channel === 'daily' ? 'planDaily' : 'planTotal';
@@ -394,9 +426,9 @@ export function aggregateChannel(results: TrackingResult[], channel: Channel): C
   let toleranceAdjSum = 0;
   for (const routeRows of groupByRoute(results).values()) {
     const plan = sum(routeRows.map((r) => r[planKey]));
-    const routePlanWeekly = sum(routeRows.map((r) => r.planWeekly));
-    // actualTotal is identical across every price variant of this route
-    const actual = channelActual(routeRows[0].actualTotal, routePlanWeekly, channel);
+    // actualTotal and the route plan totals are identical across every price variant of this route
+    const { actualTotal, routePlanWeekly, routePlanDaily } = routeRows[0];
+    const actual = allocatedChannelActual(actualTotal, routePlanWeekly, routePlanDaily, channel, plan);
     const { capped, toleranceAdj } = computeChannel(actual, plan);
     planSum += plan;
     cappedSum += capped;
@@ -412,18 +444,13 @@ export function aggregateChannel(results: TrackingResult[], channel: Channel): C
 }
 
 /**
- * Total actual-transfer weight across the given rows, counted once per
- * physical route (date/origin/dest/productGroup) — never once per
- * price-variant row, since those rows deliberately share the same actual
- * pool (see computeTracking's matchKey).
+ * Total actual-transfer weight across the given rows — the sum of each row's
+ * own share of its route's actual (actualAlloc), so a route is counted
+ * exactly once when all its price variants are present and only
+ * proportionally when a filter left some out.
  */
 export function dedupedActualTotal(results: TrackingResult[]): number {
-  const seen = new Map<string, number>();
-  for (const r of results) {
-    const key = routeKeyOf(r);
-    if (!seen.has(key)) seen.set(key, r.actualTotal);
-  }
-  return sum(Array.from(seen.values()));
+  return sum(results.map((r) => r.actualAlloc));
 }
 
 export interface RejectAggregate {

@@ -72,15 +72,21 @@ export interface TrackingResult {
   adjustedAt: string | null;
   adjustmentReason: string | null;
 
+  /** This price variant's proportional share of the route's actualTotal (by its share of the route's total plan; even split when the route has no plan). Shares of every variant sum back to actualTotal. Overage/profit/total % use this, never the full shared actualTotal. */
+  actualAlloc: number;
+  /** Weekly / Daily plan summed across every price variant of the route — needed to re-split actual for any subset of rows. */
+  routePlanWeekly: number;
+  routePlanDaily: number;
+
   weekly: ChannelResult;
   daily: ChannelResult;
   total: ChannelResult;
 
   /** Actual beyond the total plan (not credited as "on-plan"). */
   overage: number;
-  /** (destPrice - originPrice) * actualTotal — raw, uncapped. */
+  /** (destPrice - originPrice) * actualAlloc — raw, uncapped. */
   profitRealized: number;
-  /** -MAX(0, planTotal - actualTotal) * MAX(0, destPrice - originPrice) — raw, no 10% tolerance grace. */
+  /** -MAX(0, planTotal - actualAlloc) * MAX(0, destPrice - originPrice) — raw, no 10% tolerance grace. */
   profitLost: number;
 
   suggestWeekly: number;

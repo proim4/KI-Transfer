@@ -15,6 +15,8 @@ import {
   validateSupplyDailyRows,
 } from '../lib/excelParser';
 import { actualRowFingerprint, findDuplicateFile } from '../lib/duplicateUpload';
+import { checkDatesInWeek, describeWeekMismatch, findOverlappingDates, formatDayMonth } from '../lib/uploadChecks';
+import { fetchWeekRange } from '../lib/weekRangeOf';
 import { fetchAllRows } from '../lib/fetchAllRows';
 import { insertInBatches } from '../lib/insertInBatches';
 import { supabase } from '../lib/supabase';
@@ -174,6 +176,36 @@ async function findDuplicateActualFile(
   return { filename: data?.original_filename ?? 'ไฟล์เดิม', ratio: duplicate.ratio };
 }
 
+/**
+ * BDR130 files already in this Week that cover any of the new file's plan
+ * dates, as "filename (dates)" — each date's daily plan must come from
+ * exactly one file, or it's counted twice.
+ */
+async function describeOverlappingPlanFiles(weekId: string, dates: string[]): Promise<string[]> {
+  const existing = await fetchAllRows<{ upload_file_id: string | null; production_date: string }>((from, to) =>
+    supabase
+      .from('plan_rows')
+      .select('upload_file_id,production_date')
+      .eq('week_id', weekId)
+      .eq('source_file', 'daily')
+      .range(from, to),
+  );
+  const byFile = new Map<string, Set<string>>();
+  for (const r of existing) {
+    const key = r.upload_file_id ?? '';
+    const set = byFile.get(key) ?? new Set<string>();
+    set.add(r.production_date);
+    byFile.set(key, set);
+  }
+  const overlaps = findOverlappingDates(dates, byFile);
+  if (overlaps.size === 0) return [];
+  const { data: files } = await supabase.from('upload_files').select('id, original_filename').in('id', Array.from(overlaps.keys()));
+  const nameById = new Map((files ?? []).map((f) => [f.id, f.original_filename]));
+  return Array.from(overlaps.entries()).map(
+    ([id, shared]) => `"${nameById.get(id) ?? 'ไฟล์เดิม'}" (วันที่ ${shared.map(formatDayMonth).join(', ')})`,
+  );
+}
+
 /** mas_sku_representative.product_code -> plan19, paginated (thousands of rows real-world). Rows with no plan19 can't resolve a product group, so they're left out rather than mapped to null. */
 async function fetchSkuRepresentativeMap(): Promise<Map<string, string>> {
   const rows = await fetchAllRows<{ product_code: string; plan19: string | null }>((from, to) =>
@@ -281,8 +313,18 @@ export function useMultiFileUpload() {
         rowCount = rows.length;
         skippedCount = skipped;
       } else if (fileType === 'actual_abs0000') {
-        const { rows, errors, skippedCount: skipped } = validateActualRows(rawRows);
+        const { rows: parsedRows, errors, skippedCount: parsedSkipped } = validateActualRows(rawRows);
         if (errors.length > 0) return recordError(errors);
+        // A transfer outside the selected Week (± 1 day) can never match its
+        // plan; a file that's mostly outside it is the wrong Week entirely.
+        const week = await fetchWeekRange(weekId);
+        const dateCheck = checkDatesInWeek(parsedRows.map((r) => r.transferDate), week.range);
+        if (dateCheck.looksLikeOtherWeek) {
+          return recordError([{ rowNumber: 1, reason: describeWeekMismatch(dateCheck, week.label, week.range) }]);
+        }
+        const outside = new Set(dateCheck.outsideDates);
+        const rows = parsedRows.filter((r) => !outside.has(r.transferDate));
+        const skipped = parsedSkipped + (parsedRows.length - rows.length);
         const duplicate = await findDuplicateActualFile(weekId, rows);
         if (duplicate) {
           return recordError([
@@ -298,6 +340,20 @@ export function useMultiFileUpload() {
       } else {
         const { rows, errors, skippedCount: skipped } = validatePlanRows(rawRows, 'daily');
         if (errors.length > 0) return recordError(errors);
+        const week = await fetchWeekRange(weekId);
+        const dateCheck = checkDatesInWeek(rows.map((r) => r.productionDate), week.range);
+        if (dateCheck.outsideRowCount > 0) {
+          return recordError([{ rowNumber: 1, reason: describeWeekMismatch(dateCheck, week.label, week.range) }]);
+        }
+        const overlapping = await describeOverlappingPlanFiles(weekId, rows.map((r) => r.productionDate));
+        if (overlapping.length > 0) {
+          return recordError([
+            {
+              rowNumber: 1,
+              reason: `แผน Daily ของวันเดียวกันมีอยู่แล้วในไฟล์ ${overlapping.join(', ')} — ถ้าไฟล์นี้เป็นแผนฉบับใหม่ ให้ลบไฟล์เดิมก่อนแล้วอัปโหลดใหม่ (ป้องกันแผนถูกนับซ้ำ)`,
+            },
+          ]);
+        }
         dbRowsWithoutFileId = rows.map((r) => ({ toDb: (id: string) => planDailyRowToDb(weekId, id, r) }));
         rowCount = rows.length;
         skippedCount = skipped;
@@ -327,7 +383,16 @@ export function useMultiFileUpload() {
       if (insertUploadFileError) throw insertUploadFileError;
 
       const dbRows = dbRowsWithoutFileId.map((r) => r.toDb(inserted.id));
-      await insertInBatches(table, dbRows);
+      try {
+        await insertInBatches(table, dbRows);
+      } catch (err) {
+        // Don't leave a half-inserted file behind (it would be counted as if
+        // complete): removing its upload_files row cascades to the rows that
+        // did make it in.
+        await supabase.from('upload_files').delete().eq('id', inserted.id);
+        await supabase.storage.from('transfer-uploads').remove([storagePath]);
+        throw err;
+      }
 
       return { status: 'validated', rowCount, skippedCount, errors: [] };
     },

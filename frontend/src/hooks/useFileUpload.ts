@@ -8,6 +8,8 @@ import {
   validatePlanRows,
 } from '../lib/excelParser';
 import { insertInBatches } from '../lib/insertInBatches';
+import { checkDatesInWeek, describeWeekMismatch } from '../lib/uploadChecks';
+import { fetchWeekRange } from '../lib/weekRangeOf';
 import { nextVersion } from '../lib/uploadHistory';
 import { supabase } from '../lib/supabase';
 import type { UploadErrorEntry, UploadFileType, UploadStatus } from '../types/db';
@@ -169,7 +171,14 @@ export function useFileUpload() {
         rowCount = rows.length;
         skippedCount = skipped;
       } else {
-        const { rows, errors, skippedCount: skipped } = validatePlanRows(rawRows, sourceFile);
+        const { rows, errors: validationErrors, skippedCount: skipped } = validatePlanRows(rawRows, sourceFile);
+        let errors = validationErrors;
+        if (errors.length === 0) {
+          // A plan row outside the selected Week would be scored in the wrong Week.
+          const week = await fetchWeekRange(weekId);
+          const dateCheck = checkDatesInWeek(rows.map((r) => r.productionDate), week.range);
+          if (dateCheck.outsideRowCount > 0) errors = [{ rowNumber: 1, reason: describeWeekMismatch(dateCheck, week.label, week.range) }];
+        }
         if (errors.length > 0) {
           await saveOutcome(weekId, fileType, file.name, 'error', 0, skipped, errors);
           await logHistory(weekId, fileType, file.name, file.size, 'error', 0, skipped, errors);
@@ -187,10 +196,36 @@ export function useFileUpload() {
       if (storageError) throw storageError;
 
       // Replace, never append — this is what prevents the double-counting
-      // risk the original workbook had via Power Query's folder union.
-      await supabase.from(table).delete().eq('week_id', weekId).match(isActual ? {} : { source_file: sourceFile });
+      // risk the original workbook had via Power Query's folder union. The
+      // new rows go in first and the old ones are removed only once that
+      // fully succeeded (by id: everything at or below the pre-upload max),
+      // so a failure midway leaves the previous file's data intact instead
+      // of an empty or half-filled slot.
+      const slotFilter = isActual ? {} : { source_file: sourceFile };
+      const { data: newest, error: maxIdError } = await supabase
+        .from(table)
+        .select('id')
+        .eq('week_id', weekId)
+        .match(slotFilter)
+        .order('id', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (maxIdError) throw maxIdError;
+      const previousMaxId: number = newest?.id ?? 0;
 
-      await insertInBatches(table, dbRows);
+      try {
+        await insertInBatches(table, dbRows);
+      } catch (err) {
+        await supabase.from(table).delete().eq('week_id', weekId).match(slotFilter).gt('id', previousMaxId);
+        throw err;
+      }
+      const { error: deleteOldError } = await supabase
+        .from(table)
+        .delete()
+        .eq('week_id', weekId)
+        .match(slotFilter)
+        .lte('id', previousMaxId);
+      if (deleteOldError) throw deleteOldError;
 
       await saveOutcome(weekId, fileType, file.name, 'validated', rowCount, skippedCount, null, storagePath);
       await logHistory(weekId, fileType, file.name, file.size, 'validated', rowCount, skippedCount, null, storagePath);

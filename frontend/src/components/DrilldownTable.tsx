@@ -22,6 +22,8 @@ interface DrilldownTableProps {
   rows: TrackingResultRow[];
   /** Heading shown on the same row as the search box / Clear Filter / คอลัม, instead of the caller stacking it above separately. */
   title?: string;
+  /** Called with the rows left after the table's own search/filters, so the page's KPIs (and Export) can follow the same filter. */
+  onFilteredChange?: (rows: TrackingResultRow[]) => void;
 }
 
 type SortKey =
@@ -95,7 +97,13 @@ function filterValue(row: TrackingResultRow, key: SortKey, thresholds: StatusThr
   return sortValue(row, key);
 }
 
-export default function DrilldownTable({ weekId, rows, title }: DrilldownTableProps) {
+/** Tooltip for a price-variant row's actual: it shows only this price's share of the route's one shared actual. */
+function actualTitle(r: TrackingResultRow): string | undefined {
+  if (Math.abs(Number(r.actual_alloc) - Number(r.actual_total)) < 0.005) return undefined;
+  return `ส่วนของราคานี้ (ตามสัดส่วนแผน) จากโอนจริงทั้งเส้นทาง ${formatKg(Number(r.actual_total))}`;
+}
+
+export default function DrilldownTable({ weekId, rows, title, onFilteredChange }: DrilldownTableProps) {
   const thresholds = useStatusThresholds();
   const [search, setSearch] = useState('');
   const [columnFilters, setColumnFilters] = useState<Partial<Record<SortKey, string>>>({});
@@ -160,6 +168,10 @@ export default function DrilldownTable({ weekId, rows, title }: DrilldownTablePr
       }),
     [rows, search, columnFilters, thresholds],
   );
+
+  useEffect(() => {
+    onFilteredChange?.(filtered);
+  }, [filtered, onFilteredChange]);
 
   // Every column's header cell gets its own filter dropdown alongside the
   // existing click-to-sort label/arrow.
@@ -410,7 +422,7 @@ export default function DrilldownTable({ weekId, rows, title }: DrilldownTablePr
                   )}
                   {isVisible('actual_total') && (
                     <td className={`overflow-hidden text-ellipsis whitespace-nowrap px-3 py-0.5 text-right group-hover:bg-blue-50 ${rowBg('actual_total', isTintRow)}`}>
-                      {formatKg(r.actual_total)}
+                      <span title={actualTitle(r)}>{formatKg(Number(r.actual_alloc))}</span>
                     </td>
                   )}
                   {isVisible('overage') && (

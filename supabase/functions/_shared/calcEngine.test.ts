@@ -182,9 +182,8 @@ describe('computeTracking', () => {
 
   it('does not credit the same actual pool once per price-variant row when aggregating (real WK36 pattern: ~46 routes carry 2+ prices)', () => {
     // Same route/date/group, two price points (e.g. a mid-week price change)
-    // -> two separate tracking rows, each independently capped against the
-    // SAME undivided actual pool (this matches Excel's own SUMIFS, which
-    // never references price). Only 300kg of the combined 500kg plan (300+200)
+    // -> two separate tracking rows sharing ONE actual pool (SUMIFS never
+    // references price). Only 300kg of the combined 500kg plan (300+200)
     // actually moved.
     const plans = [
       planRow({ productGroup: 'ตับไก่', originPrice: 90, destPrice: 88, supplyAfter: 300 }),
@@ -195,12 +194,21 @@ describe('computeTracking', () => {
 
     expect(results).toHaveLength(2); // two distinct price-variant rows
     expect(results[0].actualTotal).toBe(300);
-    expect(results[1].actualTotal).toBe(300); // same shared pool, not split
+    expect(results[1].actualTotal).toBe(300); // the route's shared pool
 
-    // Naively summing each row's own stored capped/toleranceAdj would give
-    // 100% (300/300 + 200/200 both read as fully achieved) — this is the bug.
-    const naiveInflatedPct = (results[0].total.toleranceAdj + results[1].total.toleranceAdj) / (300 + 200);
-    expect(naiveInflatedPct).toBe(1);
+    // Each price variant is credited its proportional share of the one
+    // 300kg (by its share of the 500kg route plan), so per-row figures are
+    // already consistent with the route: 180/300 and 120/200, both 60%.
+    expect(results[0].actualAlloc).toBeCloseTo(180, 10);
+    expect(results[1].actualAlloc).toBeCloseTo(120, 10);
+    expect(results[0].total.pct).toBeCloseTo(0.6, 10);
+    expect(results[1].total.pct).toBeCloseTo(0.6, 10);
+    expect(results[0].overage + results[1].overage).toBe(0); // route is short, not over
+
+    // A filter that keeps only one price variant must not credit it the
+    // whole route's 300kg (that read 100% before).
+    expect(aggregateChannel([results[0]], 'total').pct).toBeCloseTo(0.6, 10);
+    expect(dedupedActualTotal([results[0]])).toBeCloseTo(180, 10);
 
     // The de-duplicated aggregate must instead cap the ONE real 300kg
     // against the combined 500kg plan: 60%, not 100%.
@@ -293,5 +301,27 @@ describe('computeTracking ±1-day matching (requires confirmation)', () => {
     expect(results.find((r) => r.productionDate === '2026-09-01')!.actualTotal).toBe(80);
     expect(results.find((r) => r.productionDate === '2026-08-31')!.systemNote).toBeNull();
     expect(unmatchedActual).toHaveLength(0);
+  });
+});
+
+describe('price-variant allocation of profit / overage', () => {
+  it('splits profit and loss by plan share instead of crediting the full actual to every variant', () => {
+    const plans = [
+      planRow({ supplyAfter: 100, originPrice: 10, destPrice: 20 }),
+      planRow({ supplyAfter: 100, originPrice: 10, destPrice: 25 }),
+    ];
+    const { results } = computeTracking(plans, [actualRow({ weightKg: 150 })]);
+    // 75kg each: realized 75*10 + 75*15, lost 25*10 + 25*15 — previously
+    // 150*10 + 150*15 realized and 0 lost.
+    expect(results.reduce((a, r) => a + r.profitRealized, 0)).toBeCloseTo(75 * 10 + 75 * 15, 10);
+    expect(results.reduce((a, r) => a + r.profitLost, 0)).toBeCloseTo(-(25 * 10 + 25 * 15), 10);
+    expect(results.reduce((a, r) => a + r.overage, 0)).toBe(0);
+  });
+
+  it('splits an unplanned route evenly so its actual still sums back once', () => {
+    const plans = [planRow({ supplyAfter: 0, destPrice: 20 }), planRow({ supplyAfter: 0, destPrice: 25 })];
+    const { results } = computeTracking(plans, [actualRow({ weightKg: 90 })]);
+    expect(dedupedActualTotal(results)).toBe(90);
+    expect(results.reduce((a, r) => a + r.overage, 0)).toBe(90);
   });
 });

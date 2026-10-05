@@ -97,7 +97,13 @@ export interface TrackingResultRow {
   plan_weekly: number;
   plan_daily: number;
   plan_total: number;
+  /** The route's whole actual — one figure shared by every price-variant row of the route. */
   actual_total: number;
+  /** This row's proportional share of actual_total (by its share of the route's plan) — sum this, never actual_total, across rows. */
+  actual_alloc: number;
+  /** Weekly / Daily plan summed across every price variant of the route (needed to re-split actual for any subset of rows). */
+  route_plan_weekly: number;
+  route_plan_daily: number;
 
   weekly_capped: number;
   weekly_tolerance_adj: number;

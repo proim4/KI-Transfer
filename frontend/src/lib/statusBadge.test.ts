@@ -41,4 +41,9 @@ describe('computeStatus', () => {
     expect(computeStatus(0.5, custom).color).toBe('gray');
     expect(computeStatus(0, custom).color).toBe('red');
   });
+
+  it('keeps 0% as "zero" even when the low threshold is configured as 0%', () => {
+    expect(computeStatus(0, { ...thresholds, lowPct: 0 }).zone).toBe('zero');
+    expect(computeStatus(0.01, { ...thresholds, lowPct: 0 }).zone).toBe('mid');
+  });
 });

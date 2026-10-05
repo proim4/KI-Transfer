@@ -100,16 +100,6 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
 
   const week = weeks?.find((w) => w.id === weekId);
 
-  async function handleExport() {
-    if (!weekId || !week) return;
-    setExporting(true);
-    try {
-      await exportWeekToExcel(weekId, week.label, rows);
-    } finally {
-      setExporting(false);
-    }
-  }
-
   const planField = PLAN_FIELD[channel];
   const diffField = DIFF_FIELD[channel];
   const pctField = PCT_FIELD[channel];
@@ -175,6 +165,17 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
       }),
     [channelRows, search, columnFilters, filterAccessors],
   );
+
+  async function handleExport() {
+    if (!weekId || !week) return;
+    setExporting(true);
+    try {
+      // What's on screen — this tab's channel scope plus its search/filters.
+      await exportWeekToExcel(weekId, week.label, filtered, { filtered: filtered.length !== rows.length, totalRowCount: rows.length });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   function headerFilterFor(key: string, placeholder: string): HeaderFilterConfig {
     return {
@@ -416,6 +417,12 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
                 className="w-40 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
               />
               <span className="text-xs text-gray-400">{filtered.length} รายการ</span>
+              <span
+                className="cursor-help text-xs text-gray-400"
+                title="% โอนเทียบแผน: แต่ละเส้นทางนับโอนจริงไม่เกินแผน และถ้าขาดไม่ถึง 10% ถือว่าครบแผน (ปัดหน่วยหยิบ) — จึงไม่เท่ากับ โอนจริง ÷ แผน · Daily นับเฉพาะโอนจริงที่เหลือหลังครบแผน Weekly · เส้นทางที่มีหลายราคา แบ่งโอนจริงตามสัดส่วนแผนของแต่ละราคา"
+              >
+                ⓘ วิธีคำนวณ %
+              </span>
             </div>
           }
           headerExtra={

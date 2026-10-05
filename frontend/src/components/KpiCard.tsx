@@ -4,6 +4,8 @@ interface KpiCardProps {
   sub?: string;
   tone?: 'default' | 'good' | 'bad' | 'warn';
   size?: 'default' | 'hero';
+  /** Explanation shown as a tooltip on an ⓘ next to the label (e.g. how a % is calculated). */
+  hint?: string;
 }
 
 const toneClass: Record<NonNullable<KpiCardProps['tone']>, string> = {
@@ -20,7 +22,7 @@ const heroToneClass: Record<NonNullable<KpiCardProps['tone']>, string> = {
   warn: 'text-amber-700',
 };
 
-export default function KpiCard({ label, value, sub, tone = 'default', size = 'default' }: KpiCardProps) {
+export default function KpiCard({ label, value, sub, tone = 'default', size = 'default', hint }: KpiCardProps) {
   const isHero = size === 'hero';
   return (
     <div
@@ -38,6 +40,11 @@ export default function KpiCard({ label, value, sub, tone = 'default', size = 'd
         }
       >
         {label}
+        {hint && (
+          <span title={hint} aria-label={hint} className="ml-1 cursor-help normal-case">
+            ⓘ
+          </span>
+        )}
       </p>
       <p
         className={`mt-1 font-semibold tabular-nums ${isHero ? `text-3xl ${heroToneClass[tone]}` : `text-2xl ${toneClass[tone]}`}`}

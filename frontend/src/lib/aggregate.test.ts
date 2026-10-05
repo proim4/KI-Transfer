@@ -18,6 +18,9 @@ function row(overrides: Partial<TrackingResultRow>): TrackingResultRow {
     plan_daily: 0,
     plan_total: 0,
     actual_total: 0,
+    actual_alloc: 0,
+    route_plan_weekly: 0,
+    route_plan_daily: 0,
     weekly_capped: 0,
     weekly_tolerance_adj: 0,
     weekly_diff: 0,
@@ -40,6 +43,14 @@ function row(overrides: Partial<TrackingResultRow>): TrackingResultRow {
     reject_daily: 0,
     reject_total: 0,
     reject_pct: null,
+    remark: null,
+    system_note: null,
+    actual_original: null,
+    is_adjusted: false,
+    adjusted_by: null,
+    adjusted_by_name: null,
+    adjusted_at: null,
+    adjustment_reason: null,
     created_at: '2026-08-31T00:00:00Z',
     ...overrides,
   };
@@ -51,8 +62,8 @@ describe('aggregateChannel / dedupedActualTotal (price-variant routes)', () => {
     // case: same route/date/group at two prices, one shared 300kg actual
     // pool against a combined 500kg plan (300+200) — only 60% really moved.
     const rows = [
-      row({ id: 1, origin_price: 90, dest_price: 88, plan_total: 300, actual_total: 300 }),
-      row({ id: 2, origin_price: 94, dest_price: 85, plan_total: 200, actual_total: 300 }),
+      row({ id: 1, origin_price: 90, dest_price: 88, plan_weekly: 300, plan_total: 300, actual_total: 300, actual_alloc: 180, route_plan_weekly: 500 }),
+      row({ id: 2, origin_price: 94, dest_price: 85, plan_weekly: 200, plan_total: 200, actual_total: 300, actual_alloc: 120, route_plan_weekly: 500 }),
     ];
 
     const agg = aggregateChannel(rows, 'total');
@@ -63,10 +74,20 @@ describe('aggregateChannel / dedupedActualTotal (price-variant routes)', () => {
     expect(dedupedActualTotal(rows)).toBe(300);
   });
 
+  it('credits a filtered subset of price variants only its own share of the route actual', () => {
+    const rows = [
+      row({ id: 1, dest_price: 88, plan_weekly: 300, plan_total: 300, actual_total: 300, actual_alloc: 180, route_plan_weekly: 500 }),
+      row({ id: 2, dest_price: 85, plan_weekly: 200, plan_total: 200, actual_total: 300, actual_alloc: 120, route_plan_weekly: 500 }),
+    ];
+    // Previously filtering to one price credited it the whole 300kg -> 100%.
+    expect(aggregateChannel([rows[1]], 'total').pct).toBeCloseTo(0.6, 10);
+    expect(dedupedActualTotal([rows[1]])).toBe(120);
+  });
+
   it('sums plan and actual normally across genuinely distinct routes', () => {
     const rows = [
-      row({ id: 1, product_group: 'ขาไก่', plan_total: 100, actual_total: 100 }),
-      row({ id: 2, product_group: 'ขาไก่#2', plan_total: 50, actual_total: 50 }),
+      row({ id: 1, product_group: 'ขาไก่', plan_weekly: 100, plan_total: 100, actual_total: 100, actual_alloc: 100, route_plan_weekly: 100 }),
+      row({ id: 2, product_group: 'ขาไก่#2', plan_weekly: 50, plan_total: 50, actual_total: 50, actual_alloc: 50, route_plan_weekly: 50 }),
     ];
     const agg = aggregateChannel(rows, 'total');
     expect(agg.planSum).toBe(150);
