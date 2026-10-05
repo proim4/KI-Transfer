@@ -1,24 +1,11 @@
+import { computeChannel } from '../../../supabase/functions/_shared/calcEngine.ts';
+import { routeKeyOf } from './rowCalc';
 import type { TrackingResultRow } from '../types/db';
 
 export type Channel = 'weekly' | 'daily' | 'total';
 
 export function sum(values: number[]): number {
   return values.reduce((a, b) => a + b, 0);
-}
-
-const TOLERANCE = 0.1;
-
-/**
- * Mirrors supabase/functions/_shared/calcEngine.ts's computeChannel exactly
- * (duplicated, not imported, since the frontend can't cross the Edge
- * Function's own TS project boundary — see types/tracking.ts for the same
- * rationale). Any change here must be mirrored there too.
- */
-function computeChannel(actualTotal: number, plan: number): { capped: number; toleranceAdj: number } {
-  if (plan <= 0) return { capped: 0, toleranceAdj: 0 };
-  const capped = Math.min(actualTotal, plan);
-  const toleranceAdj = capped === 0 ? 0 : plan - capped < TOLERANCE * plan ? plan : capped;
-  return { capped, toleranceAdj };
 }
 
 export interface ChannelAggregate {
@@ -34,10 +21,6 @@ const PLAN_FIELD: Record<Channel, keyof TrackingResultRow> = {
   daily: 'plan_daily',
   total: 'plan_total',
 };
-
-function routeKeyOf(r: TrackingResultRow): string {
-  return `${r.production_date}|${r.origin_code}|${r.dest_code}|${r.product_group}`;
-}
 
 /**
  * Groups rows by (production_date, origin_code, dest_code, product_group) —

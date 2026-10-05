@@ -48,45 +48,54 @@ interface AdjustActualInput {
  * entry, then patches the cache in place (same pattern as useUpdateRemark)
  * so Summary and every open Tracking tab reflect it immediately without a
  * refetch.
+ *
+ * Persisted via the apply_actual_adjustment Postgres function (see migration
+ * 0017) so every sibling UPDATE plus the audit-log INSERT commit as one
+ * transaction — a partial failure can no longer leave sibling rows
+ * disagreeing on actual_total — and so a stale `row.actual_total` (someone
+ * else adjusted this route after it was loaded here) is rejected instead of
+ * silently overwritten.
  */
 export function useAdjustActual() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ row, siblings, newActual, reason, userId, userName }: AdjustActualInput) => {
       const now = new Date().toISOString();
-      const updateResults = await Promise.all(
-        siblings.map((s) =>
-          supabase
-            .from('tracking_results')
-            .update({
-              ...recomputeTrackingRow(s, newActual),
-              actual_original: s.actual_original ?? s.actual_total,
-              is_adjusted: true,
-              adjusted_by: userId,
-              adjusted_by_name: userName,
-              adjusted_at: now,
-              adjustment_reason: reason,
-            })
-            .eq('id', s.id),
-        ),
-      );
-      for (const { error } of updateResults) if (error) throw error;
-
-      const { error: logError } = await supabase.from('tracking_actual_adjustments').insert({
-        week_id: row.week_id,
-        production_date: row.production_date,
-        origin_code: row.origin_code,
-        origin_name: row.origin_name,
-        dest_code: row.dest_code,
-        dest_name: row.dest_name,
-        product_group: row.product_group,
-        previous_actual: row.actual_total,
-        new_actual: newActual,
-        reason,
+      const updates = siblings.map((s) => ({
+        id: s.id,
+        ...recomputeTrackingRow(s, newActual),
+        actual_original: s.actual_original ?? s.actual_total,
         adjusted_by: userId,
         adjusted_by_name: userName,
+        adjusted_at: now,
+        adjustment_reason: reason,
+      }));
+
+      const { error } = await supabase.rpc('apply_actual_adjustment', {
+        p_ids: siblings.map((s) => s.id),
+        p_expected_actual: row.actual_total,
+        p_updates: updates,
+        p_log: {
+          week_id: row.week_id,
+          production_date: row.production_date,
+          origin_code: row.origin_code,
+          origin_name: row.origin_name,
+          dest_code: row.dest_code,
+          dest_name: row.dest_name,
+          product_group: row.product_group,
+          previous_actual: row.actual_total,
+          new_actual: newActual,
+          reason,
+          adjusted_by: userId,
+          adjusted_by_name: userName,
+        },
       });
-      if (logError) throw logError;
+      if (error) {
+        if (error.code === 'P0001') {
+          throw new Error('ค่านี้เพิ่งถูกแก้ไขโดยผู้อื่น กรุณาปิดหน้าต่างนี้แล้วเปิดใหม่เพื่อดูค่าล่าสุดก่อนแก้ไขอีกครั้ง');
+        }
+        throw error;
+      }
 
       return { siblingIds: new Set(siblings.map((s) => s.id)), newActual, reason, userId, userName, now };
     },
@@ -108,6 +117,12 @@ export function useAdjustActual() {
         ),
       );
       queryClient.invalidateQueries({ queryKey: ['tracking-actual-adjustments'] });
+    },
+    onError: () => {
+      // The cached row(s) may be stale (this is exactly how a conflict is
+      // detected) — refetch so the still-open modal shows the real current
+      // value instead of the one that was just rejected.
+      queryClient.invalidateQueries({ queryKey: ['tracking-results'] });
     },
   });
 }
