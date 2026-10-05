@@ -8,7 +8,7 @@
 // Invoke:  supabase.functions.invoke('process-week', { body: { weekId } })
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { computeTracking, matchKey } from '../_shared/calcEngine.ts';
+import { computeTracking, matchKey, type DateShiftDecision } from '../_shared/calcEngine.ts';
 import { computeSupplyDailyResults } from '../_shared/supplyDailyCalcEngine.ts';
 import { fetchAllRows } from '../_shared/fetchAllRows.ts';
 import type {
@@ -71,8 +71,9 @@ Deno.serve(async (req: Request) => {
   let planRowsRaw: Record<string, unknown>[];
   let actualRowsRaw: Record<string, unknown>[];
   let adjustmentRowsRaw: Record<string, unknown>[];
+  let dateShiftRowsRaw: Record<string, unknown>[];
   try {
-    [planRowsRaw, actualRowsRaw, adjustmentRowsRaw] = await Promise.all([
+    [planRowsRaw, actualRowsRaw, adjustmentRowsRaw, dateShiftRowsRaw] = await Promise.all([
       fetchAllRows((from, to) => supabase.from('plan_rows').select('*').eq('week_id', weekId).range(from, to)),
       fetchAllRows((from, to) => supabase.from('actual_rows').select('*').eq('week_id', weekId).range(from, to)),
       fetchAllRows((from, to) =>
@@ -83,6 +84,7 @@ Deno.serve(async (req: Request) => {
           .order('created_at', { ascending: true })
           .range(from, to),
       ),
+      fetchAllRows((from, to) => supabase.from('tracking_date_shift_decisions').select('*').eq('week_id', weekId).range(from, to)),
     ]);
   } catch (err) {
     return jsonError(err instanceof Error ? err.message : String(err));
@@ -130,7 +132,17 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  const { results, unmatchedActual } = computeTracking(planRows, actualRows, adjustments);
+  // ±1-day match decisions, keyed by the actual group's own transfer date.
+  const dateShiftDecisions = new Map<string, DateShiftDecision>();
+  for (const r of dateShiftRowsRaw as any[]) {
+    dateShiftDecisions.set(matchKey(toIsoDate(r.transfer_date), r.origin_code, r.dest_code, r.product_group), {
+      decision: r.decision,
+      targetPlanDate: toIsoDate(r.target_plan_date),
+      decidedByName: r.decided_by_name,
+    });
+  }
+
+  const { results, unmatchedActual } = computeTracking(planRows, actualRows, adjustments, dateShiftDecisions);
 
   const trackingRows = results.map((r) => ({
     week_id: weekId,
@@ -174,6 +186,7 @@ Deno.serve(async (req: Request) => {
     reject_daily: r.rejectDaily,
     reject_total: r.rejectTotal,
     reject_pct: r.rejectPct,
+    system_note: r.systemNote,
   }));
 
   const unmatchedRows = unmatchedActual.map((u) => ({
@@ -185,6 +198,9 @@ Deno.serve(async (req: Request) => {
     dest_name: u.destName,
     product_group: u.productGroup,
     total_weight_kg: u.totalWeightKg,
+    suggested_plan_date: u.suggestedPlanDate,
+    day_offset: u.dayOffset,
+    shift_status: u.shiftStatus,
   }));
 
   // Recompute is idempotent: wipe this week's prior results, then insert fresh.

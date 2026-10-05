@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+  ACTUAL_REQUIRED_COLUMNS,
   BIDDING_REQUIRED_COLUMNS,
   PLAN_REQUIRED_COLUMNS,
   PRICING_REQUIRED_COLUMNS,
@@ -7,16 +8,19 @@ import {
   missingColumns,
   parsePricingFilenameDate,
   readWorkbookFirstSheet,
+  validateActualRows,
   validateBiddingRows,
   validatePlanRows,
   validatePricingRows,
   validateSupplyDailyRows,
 } from '../lib/excelParser';
+import { actualRowFingerprint, findDuplicateFile } from '../lib/duplicateUpload';
 import { fetchAllRows } from '../lib/fetchAllRows';
 import { insertInBatches } from '../lib/insertInBatches';
 import { supabase } from '../lib/supabase';
 import type { MultiFileUploadType, UploadErrorEntry } from '../types/db';
-import { uploadFilesQueryKey } from './useUploadFiles';
+import { LATEST_UPLOAD_STAMPS_QUERY_KEY } from './useLatestWeekId';
+import { weekUploadFilesQueryKey } from './useUploadFiles';
 
 export interface UploadMultiFileArgs {
   weekId: string;
@@ -36,6 +40,7 @@ const REQUIRED_COLUMNS: Record<MultiFileUploadType, readonly string[]> = {
   pricing_daily: PRICING_REQUIRED_COLUMNS,
   bidding_tc05: BIDDING_REQUIRED_COLUMNS,
   plan_daily_bdr130: PLAN_REQUIRED_COLUMNS,
+  actual_abs0000: ACTUAL_REQUIRED_COLUMNS,
 };
 
 const TABLE: Record<MultiFileUploadType, string> = {
@@ -43,6 +48,7 @@ const TABLE: Record<MultiFileUploadType, string> = {
   pricing_daily: 'pricing_rows',
   bidding_tc05: 'bidding_rows',
   plan_daily_bdr130: 'plan_rows',
+  actual_abs0000: 'actual_rows',
 };
 
 function supplyDailyRowToDb(weekId: string, uploadFileId: string, row: ReturnType<typeof validateSupplyDailyRows>['rows'][number]) {
@@ -105,6 +111,69 @@ function planDailyRowToDb(weekId: string, uploadFileId: string, row: ReturnType<
   };
 }
 
+function actualRowToDb(weekId: string, uploadFileId: string, row: ReturnType<typeof validateActualRows>['rows'][number]) {
+  return {
+    week_id: weekId,
+    upload_file_id: uploadFileId,
+    origin_code: row.originCode,
+    origin_name: row.originName,
+    dest_code: row.destCode,
+    dest_name: row.destName,
+    transfer_date: row.transferDate,
+    sku_code: row.skuCode,
+    sku_name: row.skuName,
+    weight_kg: row.weightKg,
+    product_group: row.productGroup,
+    raw: row.raw,
+  };
+}
+
+/**
+ * The ABS0000 file already in this week whose rows the new file almost
+ * entirely repeats (see lib/duplicateUpload.ts), with its filename — or null.
+ * Runs after a same-named file has already been removed, so a deliberate
+ * same-name replace never trips it.
+ */
+async function findDuplicateActualFile(
+  weekId: string,
+  rows: ReturnType<typeof validateActualRows>['rows'],
+): Promise<{ filename: string; ratio: number } | null> {
+  const existing = await fetchAllRows<{
+    upload_file_id: string | null;
+    transfer_date: string;
+    origin_code: string;
+    dest_code: string;
+    sku_code: string;
+    weight_kg: number;
+  }>((from, to) =>
+    supabase
+      .from('actual_rows')
+      .select('upload_file_id,transfer_date,origin_code,dest_code,sku_code,weight_kg')
+      .eq('week_id', weekId)
+      .range(from, to),
+  );
+  const byFile = new Map<string, string[]>();
+  for (const r of existing) {
+    const fileId = r.upload_file_id ?? '';
+    const list = byFile.get(fileId);
+    if (list) list.push(actualRowFingerprint(r));
+    else byFile.set(fileId, [actualRowFingerprint(r)]);
+  }
+  const incoming = rows.map((r) =>
+    actualRowFingerprint({
+      transfer_date: r.transferDate,
+      origin_code: r.originCode,
+      dest_code: r.destCode,
+      sku_code: r.skuCode,
+      weight_kg: r.weightKg,
+    }),
+  );
+  const duplicate = findDuplicateFile(incoming, byFile);
+  if (!duplicate) return null;
+  const { data } = await supabase.from('upload_files').select('original_filename').eq('id', duplicate.fileId).maybeSingle();
+  return { filename: data?.original_filename ?? 'ไฟล์เดิม', ratio: duplicate.ratio };
+}
+
 /** mas_sku_representative.product_code -> plan19, paginated (thousands of rows real-world). Rows with no plan19 can't resolve a product group, so they're left out rather than mapped to null. */
 async function fetchSkuRepresentativeMap(): Promise<Map<string, string>> {
   const rows = await fetchAllRows<{ product_code: string; plan19: string | null }>((from, to) =>
@@ -123,12 +192,12 @@ async function fetchProductMap(): Promise<Map<string, string>> {
 
 /**
  * Uploads one file into a category that allows several files per week
- * (Supply Daily / ราคารายวัน / Bidding / BDR130 Daily plan — see migrations
- * 0012/0013). Re-uploading a file with the same name replaces just that
+ * (Supply Daily / ราคารายวัน / Bidding / BDR130 Daily plan / ABS0000 โอนจริง —
+ * see migrations 0012/0013/0018). Re-uploading a file with the same name replaces just that
  * file: its previous upload_files row (and, via FK cascade, every row it
  * contributed) is deleted first, then a fresh row + fresh data rows are
  * inserted — other files already in the same category are untouched,
- * unlike the single-file categories (ABS0000/BSR030 Weekly) which replace
+ * unlike the single-file category (BSR030 Weekly) which replaces
  * the whole slot on every upload.
  */
 /**
@@ -211,6 +280,21 @@ export function useMultiFileUpload() {
         dbRowsWithoutFileId = rows.map((r) => ({ toDb: (id: string) => biddingRowToDb(weekId, id, r) }));
         rowCount = rows.length;
         skippedCount = skipped;
+      } else if (fileType === 'actual_abs0000') {
+        const { rows, errors, skippedCount: skipped } = validateActualRows(rawRows);
+        if (errors.length > 0) return recordError(errors);
+        const duplicate = await findDuplicateActualFile(weekId, rows);
+        if (duplicate) {
+          return recordError([
+            {
+              rowNumber: 1,
+              reason: `ข้อมูลในไฟล์นี้ซ้ำกับไฟล์ "${duplicate.filename}" ที่อัปโหลดไว้แล้ว ${(duplicate.ratio * 100).toFixed(0)}% — ถ้าต้องการแทนที่ไฟล์เดิม ให้ลบไฟล์เดิมก่อนแล้วอัปโหลดใหม่ (ป้องกันโอนจริงถูกนับซ้ำ)`,
+            },
+          ]);
+        }
+        dbRowsWithoutFileId = rows.map((r) => ({ toDb: (id: string) => actualRowToDb(weekId, id, r) }));
+        rowCount = rows.length;
+        skippedCount = skipped;
       } else {
         const { rows, errors, skippedCount: skipped } = validatePlanRows(rawRows, 'daily');
         if (errors.length > 0) return recordError(errors);
@@ -248,7 +332,8 @@ export function useMultiFileUpload() {
       return { status: 'validated', rowCount, skippedCount, errors: [] };
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: uploadFilesQueryKey(variables.weekId, variables.fileType) });
+      queryClient.invalidateQueries({ queryKey: weekUploadFilesQueryKey(variables.weekId) });
+      queryClient.invalidateQueries({ queryKey: LATEST_UPLOAD_STAMPS_QUERY_KEY });
     },
   });
 }

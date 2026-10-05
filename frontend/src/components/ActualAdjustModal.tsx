@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { siblingsOfRoute, useActualAdjustmentHistory, useAdjustActual } from '../hooks/useTrackingResults';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { recomputeTrackingRow } from '../lib/rowCalc';
+import { recomputeTrackingRow, routePlanWeeklyOf } from '../lib/rowCalc';
 import type { TrackingResultRow } from '../types/db';
 import { formatBaht, formatKg, formatPct } from './KpiCard';
 
@@ -60,7 +60,7 @@ export default function ActualAdjustModal({ row, allRows, weekId, onClose }: Act
   const hasReason = reason.trim() !== '';
   const canSave = isNonNegative && hasReason && !adjustActual.isPending;
 
-  const preview = isNonNegative ? recomputeTrackingRow(row, parsed) : null;
+  const preview = isNonNegative ? recomputeTrackingRow(row, parsed, routePlanWeeklyOf(siblings)) : null;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

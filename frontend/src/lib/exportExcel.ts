@@ -52,6 +52,7 @@ function trackingSheetRow(r: TrackingResultRow) {
     'Reject รวม (kg)': r.reject_total,
     '% Reject': r.reject_pct,
     'หมายเหตุ': r.remark ?? '',
+    'หมายเหตุระบบ (โอนต่างวัน ±1)': r.system_note ?? '',
     'Original Actual (kg)': r.actual_original ?? r.actual_total,
     'Adjusted Actual (kg)': r.is_adjusted ? r.actual_total : '',
     'Adjustment Difference (kg)': r.is_adjusted && r.actual_original != null ? r.actual_total - r.actual_original : '',

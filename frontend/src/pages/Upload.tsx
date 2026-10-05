@@ -7,17 +7,17 @@ import WeekSelector from '../components/WeekSelector';
 import { useProcessWeek } from '../hooks/useProcessWeek';
 import { useUploadFiles } from '../hooks/useUploadFiles';
 import { useUploads } from '../hooks/useUploads';
-import { lastUpdatedAt } from '../lib/lastUpdated';
+import { useWeekLastUpdated } from '../hooks/useWeekLastUpdated';
 import type { ProductLine, UploadFileType } from '../types/db';
 
-// actual_abs0000/plan_weekly_bsr030 stay single-file (checked via `uploads`);
-// plan_daily_bdr130 moved to the multi-file model (checked via `upload_files`
-// — see REQUIRED_MULTI_FILE_TYPE below), so it's not in this list.
+// plan_weekly_bsr030 stays single-file (checked via `uploads`);
+// plan_daily_bdr130 and actual_abs0000 moved to the multi-file model (checked
+// via `upload_files`, migrations 0013/0018), so they're not in this list.
 const REQUIRED_SINGLE_FILE_TYPES: Record<ProductLine, UploadFileType[]> = {
-  chicken: ['actual_abs0000', 'plan_weekly_bsr030'],
-  pork: ['actual_abs0000'],
+  chicken: ['plan_weekly_bsr030'],
+  pork: [],
 };
-const REQUIRED_MULTI_FILE_COUNT = 1; // both product lines require plan_daily_bdr130
+const REQUIRED_MULTI_FILE_COUNT = 2; // both product lines require plan_daily_bdr130 + actual_abs0000
 
 interface UploadProps {
   productLine?: ProductLine;
@@ -26,7 +26,9 @@ interface UploadProps {
 export default function Upload({ productLine = 'chicken' }: UploadProps) {
   const [weekId, setWeekId] = useState<string | null>(null);
   const { data: uploads } = useUploads(weekId);
+  const updatedAt = useWeekLastUpdated(weekId);
   const { data: planDailyFiles } = useUploadFiles(weekId, 'plan_daily_bdr130');
+  const { data: actualFiles } = useUploadFiles(weekId, 'actual_abs0000');
   const navigate = useNavigate();
 
   const requiredSingleFileTypes = REQUIRED_SINGLE_FILE_TYPES[productLine];
@@ -34,8 +36,9 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
     (t) => uploads?.find((u) => u.file_type === t)?.status === 'validated',
   );
   const planDailyValidated = (planDailyFiles ?? []).some((f) => f.status === 'validated');
+  const actualValidated = (actualFiles ?? []).some((f) => f.status === 'validated');
   const requiredFileCount = requiredSingleFileTypes.length + REQUIRED_MULTI_FILE_COUNT;
-  const allValidated = !!weekId && singleFilesValidated && planDailyValidated;
+  const allValidated = !!weekId && singleFilesValidated && planDailyValidated && actualValidated;
 
   const processMutation = useProcessWeek();
 
@@ -45,7 +48,7 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
         <h1 className="mb-2 text-xl font-semibold text-gray-900">Upload Data</h1>
         <div className="flex flex-wrap items-center gap-3">
           <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} allowCreate />
-          <LastUpdatedLabel at={lastUpdatedAt(uploads)} />
+          <LastUpdatedLabel at={updatedAt} />
           {weekId && (
             <button
               type="button"
@@ -88,11 +91,11 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
               <h2 className="text-base font-semibold text-gray-900">Upload Excel Files</h2>
               <p className="mb-3 text-sm text-gray-500">รองรับการอัปโหลดหลายไฟล์ — ลากไฟล์มาวางหรือกดเลือกไฟล์ทีละรายการ</p>
               <div className="divide-y divide-gray-100">
-                <UploadDropzone
+                <MultiFileUploadZone
                   weekId={weekId}
                   fileType="actual_abs0000"
                   label="โอนจริง (ABS0000)"
-                  hint="ไฟล์ Export จาก Smart Sales: ABS0000_StockTransfers"
+                  hint="ไฟล์ Export จาก Smart Sales: ABS0000_StockTransfers — เลือกได้หลายไฟล์ ทุกไฟล์รวมกัน (Export ได้สูงสุด 5,000 แถว/ไฟล์ ให้แบ่งไฟล์มาให้ครบ; ไฟล์ชื่อซ้ำจะแทนที่ไฟล์เดิม)"
                 />
                 {productLine === 'chicken' && (
                   <UploadDropzone

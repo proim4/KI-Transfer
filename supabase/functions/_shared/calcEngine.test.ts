@@ -122,13 +122,35 @@ describe('computeTracking', () => {
     expect(row.planWeekly).toBe(100);
     expect(row.planDaily).toBe(50);
     expect(row.planTotal).toBe(150);
-    expect(row.weekly.pct).toBe(1); // 120 actual caps the 100 weekly plan at 100%
-    expect(row.daily.pct).toBe(1); // 120 actual also caps the 50 daily plan at 100%
-    // Total: capped=MIN(120,150)=120, shortfall=30 is NOT < 10%*150=15, so no
-    // tolerance round-up -> pct=120/150=0.8. Each channel is capped against the
-    // SAME actualTotal independently, so weekly/daily can both read 100% while
-    // total (a stricter, larger denominator) does not.
+    expect(row.weekly.pct).toBe(1); // 120 actual fills the 100 weekly plan first
+    // Only the 20 left over after Weekly counts toward Daily: 20/50, shortfall
+    // 30 is NOT < 10%*50, so no tolerance round-up.
+    expect(row.daily.pct).toBeCloseTo(0.4, 10);
+    // Total: capped=MIN(120,150)=120, shortfall=30 is NOT < 10%*150=15 -> 0.8.
     expect(row.total.pct).toBeCloseTo(0.8, 10);
+  });
+
+  it('never credits the same actual to both Weekly and Daily (W100 + D100, actual 100)', () => {
+    const plans = [planRow({ sourceFile: 'weekly', supplyAfter: 100 }), planRow({ sourceFile: 'daily', supplyAfter: 100 })];
+    const { results } = computeTracking(plans, [actualRow({ weightKg: 100 })]);
+    expect(results[0].weekly.pct).toBe(1);
+    expect(results[0].daily.pct).toBe(0);
+    expect(results[0].total.pct).toBe(0.5);
+    expect(aggregateChannel(results, 'daily').pct).toBe(0);
+  });
+
+  it('splits Weekly-first against the whole route plan even across price variants', () => {
+    // Weekly plan lives on one price variant, Daily on another — the Daily
+    // row must still see the route's Weekly plan as already consuming actual.
+    const plans = [
+      planRow({ sourceFile: 'weekly', supplyAfter: 100, destPrice: 20 }),
+      planRow({ sourceFile: 'daily', supplyAfter: 100, destPrice: 25 }),
+    ];
+    const { results } = computeTracking(plans, [actualRow({ weightKg: 150 })]);
+    const dailyRow = results.find((r) => r.planDaily > 0)!;
+    expect(dailyRow.daily.pct).toBe(0.5);
+    expect(aggregateChannel(results, 'weekly').pct).toBe(1);
+    expect(aggregateChannel(results, 'daily').pct).toBe(0.5);
   });
 
   it('computes profit realized (uncapped) and profit lost (uncapped, no tolerance grace)', () => {
@@ -218,5 +240,58 @@ describe('reject (suggest vs finalized plan)', () => {
     expect(agg.suggestSum).toBe(300);
     expect(agg.rejectSum).toBe(20);
     expect(agg.pct).toBeCloseTo(20 / 300, 10);
+  });
+});
+
+describe('computeTracking ±1-day matching (requires confirmation)', () => {
+  const plans = [planRow({ productionDate: '2026-08-31', supplyAfter: 100 })];
+  const lateActual = [actualRow({ transferDate: '2026-09-01', weightKg: 80 })];
+  const lateKey = '2026-09-01|OPRCD0011|OPRCDN001|ขาไก่';
+
+  it('only suggests a +1-day transfer until it is confirmed: not credited, stays unmatched, noted as รอยืนยัน', () => {
+    const { results, unmatchedActual } = computeTracking(plans, lateActual);
+    expect(results[0].actualTotal).toBe(0);
+    expect(results[0].total.pct).toBe(0);
+    expect(results[0].systemNote).toContain('รอยืนยัน');
+    expect(results[0].systemNote).toContain('01/09');
+    expect(unmatchedActual).toHaveLength(1);
+    expect(unmatchedActual[0]).toMatchObject({ suggestedPlanDate: '2026-08-31', dayOffset: 1, shiftStatus: 'pending' });
+  });
+
+  it('credits a confirmed +1-day transfer to the plan date and removes it from unmatched', () => {
+    const decisions = new Map([[lateKey, { decision: 'confirmed' as const, targetPlanDate: '2026-08-31', decidedByName: 'somchai' }]]);
+    const { results, unmatchedActual } = computeTracking(plans, lateActual, new Map(), decisions);
+    expect(results[0].actualTotal).toBe(80);
+    expect(results[0].total.pct).toBe(0.8);
+    expect(results[0].systemNote).toBe('รวมโอนจริงวันที่ 01/09 (โอนช้า 1 วัน) 80 kg — ยืนยันโดย somchai');
+    expect(unmatchedActual).toHaveLength(0);
+  });
+
+  it('keeps a rejected suggestion unmatched with no note', () => {
+    const decisions = new Map([[lateKey, { decision: 'rejected' as const, targetPlanDate: '2026-08-31', decidedByName: 'somchai' }]]);
+    const { results, unmatchedActual } = computeTracking(plans, lateActual, new Map(), decisions);
+    expect(results[0].actualTotal).toBe(0);
+    expect(results[0].systemNote).toBeNull();
+    expect(unmatchedActual[0].shiftStatus).toBe('rejected');
+  });
+
+  it('suggests a -1-day (early) transfer when no late match exists', () => {
+    const { unmatchedActual } = computeTracking(plans, [actualRow({ transferDate: '2026-08-30', weightKg: 50 })]);
+    expect(unmatchedActual[0]).toMatchObject({ suggestedPlanDate: '2026-08-31', dayOffset: -1 });
+  });
+
+  it('does not suggest a target whose exact-date actual already covers its plan, nor 2+ days away', () => {
+    const full = computeTracking(plans, [actualRow({ weightKg: 100 }), ...lateActual]);
+    expect(full.unmatchedActual[0].shiftStatus).toBeNull();
+    const far = computeTracking(plans, [actualRow({ transferDate: '2026-09-02', weightKg: 80 })]);
+    expect(far.unmatchedActual[0].shiftStatus).toBeNull();
+  });
+
+  it('never moves an actual group that already matches a plan on its own date', () => {
+    const twoDays = [...plans, planRow({ productionDate: '2026-09-01', supplyAfter: 100 })];
+    const { results, unmatchedActual } = computeTracking(twoDays, lateActual);
+    expect(results.find((r) => r.productionDate === '2026-09-01')!.actualTotal).toBe(80);
+    expect(results.find((r) => r.productionDate === '2026-08-31')!.systemNote).toBeNull();
+    expect(unmatchedActual).toHaveLength(0);
   });
 });

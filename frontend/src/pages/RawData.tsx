@@ -19,7 +19,7 @@ import {
   type RawSupplyDailyRow,
 } from '../hooks/useRawRows';
 import { useMasFactoryZones } from '../hooks/useSupplyDailyResults';
-import { useUploads } from '../hooks/useUploads';
+import { useWeekLastUpdated } from '../hooks/useWeekLastUpdated';
 import { sum } from '../lib/aggregate';
 import {
   ACTUAL_REQUIRED_COLUMNS,
@@ -28,7 +28,6 @@ import {
   PRICING_REQUIRED_COLUMNS,
   SUPPLY_DAILY_REQUIRED_COLUMNS,
 } from '../lib/excelParser';
-import { lastUpdatedAt } from '../lib/lastUpdated';
 import type { ProductLine } from '../types/db';
 
 // Rows uploaded before `raw` captured the full original file still hold the
@@ -168,7 +167,7 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
   const [supplyDailyColumnFilters, setSupplyDailyColumnFilters] = useState<Record<string, string>>({});
   const [pricingColumnFilters, setPricingColumnFilters] = useState<Record<string, string>>({});
   const [biddingColumnFilters, setBiddingColumnFilters] = useState<Record<string, string>>({});
-  const { data: uploads } = useUploads(weekId);
+  const updatedAt = useWeekLastUpdated(weekId);
   const { data: factoryZones } = useMasFactoryZones();
 
   // A filter set on one Week must not silently keep filtering a different
@@ -432,7 +431,7 @@ export default function RawData({ productLine = 'chicken' }: RawDataProps) {
         <h1 className="mb-2 text-xl font-semibold text-gray-900">ข้อมูลดิบ</h1>
         <div className="flex flex-wrap items-center gap-3">
           <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
-          <LastUpdatedLabel at={lastUpdatedAt(uploads)} />
+          <LastUpdatedLabel at={updatedAt} />
         </div>
       </div>
 

@@ -7,6 +7,24 @@ export function uploadFilesQueryKey(weekId: string | null, fileType: MultiFileUp
   return ['upload-files', weekId, fileType];
 }
 
+/** Prefix of every upload-files query for a week (per-type lists and the all-types list) — invalidate this after any change. */
+export function weekUploadFilesQueryKey(weekId: string | null) {
+  return ['upload-files', weekId];
+}
+
+/** Every currently-active multi-file upload for one week, across all file types. */
+export function useAllUploadFiles(weekId: string | null) {
+  return useQuery({
+    queryKey: [...weekUploadFilesQueryKey(weekId), 'all'],
+    enabled: !!weekId,
+    queryFn: async (): Promise<UploadFileRow[]> => {
+      const { data, error } = await supabase.from('upload_files').select('*').eq('week_id', weekId!);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 /** All currently-active files for one (week, file_type) — the 3 Supply Daily sources that support several files per week (see migration 0012). */
 export function useUploadFiles(weekId: string | null, fileType: MultiFileUploadType) {
   return useQuery({
@@ -26,7 +44,7 @@ export function useUploadFiles(weekId: string | null, fileType: MultiFileUploadT
 }
 
 /** Deletes one file and (via FK cascade — see migration 0012) every row it contributed, then re-runs process-week so supply_daily_results reflects the removal. */
-export function useDeleteUploadFile(weekId: string, fileType: MultiFileUploadType) {
+export function useDeleteUploadFile(weekId: string) {
   const queryClient = useQueryClient();
   const processWeek = useProcessWeek();
 
@@ -41,7 +59,7 @@ export function useDeleteUploadFile(weekId: string, fileType: MultiFileUploadTyp
       await processWeek.mutateAsync(weekId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: uploadFilesQueryKey(weekId, fileType) });
+      queryClient.invalidateQueries({ queryKey: weekUploadFilesQueryKey(weekId) });
       queryClient.invalidateQueries({ queryKey: ['supply-daily-results', weekId] });
     },
   });

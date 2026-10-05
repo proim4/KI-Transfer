@@ -11,11 +11,10 @@ import SortableTable, { type Column, type HeaderFilterConfig } from '../componen
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useTrackingResults } from '../hooks/useTrackingResults';
-import { useUploads } from '../hooks/useUploads';
+import { useWeekLastUpdated } from '../hooks/useWeekLastUpdated';
 import { useWeeks } from '../hooks/useWeeks';
 import { aggregateChannel, dedupedActualTotal, sum } from '../lib/aggregate';
 import { exportWeekToExcel } from '../lib/exportExcel';
-import { lastUpdatedAt } from '../lib/lastUpdated';
 import { computeStatus } from '../lib/statusBadge';
 import {
   ACTUAL_GROUP,
@@ -59,7 +58,7 @@ const PLAN_LABEL: Record<Channel, string> = {
 };
 
 function searchText(r: TrackingResultRow): string {
-  return `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.remark ?? ''}`.toLowerCase();
+  return `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.remark ?? ''} ${r.system_note ?? ''}`.toLowerCase();
 }
 
 /** Diff (kg) text tinted red for a shortfall, green for a surplus — matches the profit_lost convention already used elsewhere in this table. */
@@ -91,7 +90,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
     setColumnFilters({});
   }, [weekId]);
 
-  const { data: uploads } = useUploads(weekId);
+  const updatedAt = useWeekLastUpdated(weekId);
 
   const { data, isLoading } = useTrackingResults(weekId);
   const { data: weeks } = useWeeks(productLine);
@@ -362,7 +361,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
         group: REMARK_GROUP,
         headerFilter: headerFilterFor('remark', 'ทั้งหมด'),
         sortValue: (r) => r.remark,
-        render: (r) => <RemarkCell id={r.id} value={r.remark} />,
+        render: (r) => <RemarkCell id={r.id} value={r.remark} systemNote={r.system_note} />,
       },
     ],
     [channel, planField, diffField, pctField, thresholds, totals, columnFilters, columnOptions, rows, weekId],
@@ -371,7 +370,7 @@ export default function TrackingChannel({ channel, title, productLine = 'chicken
   const weekSelector = (
     <div className="flex flex-wrap items-center gap-3">
       <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
-      <LastUpdatedLabel at={lastUpdatedAt(uploads)} />
+      <LastUpdatedLabel at={updatedAt} />
     </div>
   );
 

@@ -64,6 +64,46 @@ export function computeChannel(actualTotal: number, plan: number): ChannelResult
   };
 }
 
+/**
+ * The actual weight a channel is scored against. A route's actual is spent
+ * on its Weekly plan first and only the remainder counts toward Daily (Daily
+ * is the top-up on top of the Weekly plan) — previously both channels were
+ * scored against the full actual, so W100 + D100 with 100 actual read
+ * Weekly 100% AND Daily 100% while Total read 50%. `routePlanWeekly` is the
+ * Weekly plan summed across every price variant of the route, so the split
+ * is identical no matter which variant row is being scored.
+ */
+export function channelActual(actualTotal: number, routePlanWeekly: number, channel: Channel): number {
+  if (channel !== 'daily') return actualTotal;
+  return Math.max(actualTotal - Math.max(routePlanWeekly, 0), 0);
+}
+
+/** How far a ±1-day matched transfer is from its plan date: +1 = transferred the day after the plan date, -1 = the day before. */
+export type DayOffset = 1 | -1;
+
+export const DATE_SHIFT_OFFSETS: readonly DayOffset[] = [1, -1]; // late transfer is checked first
+
+/** A user's decision on one ±1-day match suggestion, keyed by the *actual* group's matchKey (its own transfer date). */
+export interface DateShiftDecision {
+  decision: 'confirmed' | 'rejected';
+  targetPlanDate: string;
+  decidedByName: string | null;
+}
+
+function shiftIsoDate(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDayMonth(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
+function offsetLabel(offset: DayOffset): string {
+  return offset === 1 ? 'โอนช้า 1 วัน' : 'โอนก่อน 1 วัน';
+}
+
 export interface ComputeTrackingResult {
   results: TrackingResult[];
   unmatchedActual: UnmatchedActual[];
@@ -91,11 +131,19 @@ export interface ComputeTrackingResult {
  * being silently wiped by the fresh sum from actualRows. Each route's
  * `actualOriginal` still reflects the current raw ABS0000 sum, so "original
  * vs adjusted" always compares against the latest upload, not a stale one.
+ *
+ * `dateShiftDecisions` (keyed by the actual group's own matchKey) controls
+ * the ±1-day rule: an actual group whose exact date has no plan, but whose
+ * route + product group is planned (and still short) one day earlier or
+ * later, is only *suggested* — it stays in unmatchedActual and adds a
+ * "รอยืนยัน" note to the plan row until a user confirms it. Once confirmed,
+ * its weight is credited to that plan date's route and noted there.
  */
 export function computeTracking(
   planRows: PlanRow[],
   actualRows: ActualRow[],
   adjustments: Map<string, ActualAdjustment> = new Map(),
+  dateShiftDecisions: Map<string, DateShiftDecision> = new Map(),
 ): ComputeTrackingResult {
   interface PlanGroup {
     productionDate: string;
@@ -157,13 +205,73 @@ export function computeTracking(
     else actualRowsByKey.set(key, [row]);
   }
 
+  // Plan per physical route (summed across price variants) — the Weekly
+  // total drives the Weekly-first split, the overall total decides whether a
+  // ±1-day match target is planned at all.
+  const routePlan = new Map<string, { weekly: number; total: number }>();
+  for (const group of planGroups.values()) {
+    const p = routePlan.get(group.matchKey) ?? { weekly: 0, total: 0 };
+    p.weekly += group.planWeekly;
+    p.total += group.planWeekly + group.planDaily;
+    routePlan.set(group.matchKey, p);
+  }
+
+  // ±1-day matching: only actual groups with no plan at all on their own
+  // date are candidates, and only toward a plan date that is still short on
+  // its exact-date actual (crediting a target that is already full adds
+  // nothing but noise). A stored decision's own target wins over a fresh
+  // suggestion, as long as that target is still planned.
+  interface ShiftCandidate {
+    targetKey: string;
+    targetPlanDate: string;
+    offset: DayOffset;
+  }
+  const shiftCandidates = new Map<string, ShiftCandidate>();
+  const shiftedIn = new Map<string, number>();
+  const notesByKey = new Map<string, string[]>();
+  for (const [key, weight] of actualByKey) {
+    if (matchedKeys.has(key)) continue;
+    const first = actualRowsByKey.get(key)![0];
+    const candidateFor = (offset: DayOffset): ShiftCandidate => {
+      const targetPlanDate = shiftIsoDate(first.transferDate, -offset);
+      return { targetKey: matchKey(targetPlanDate, first.originCode, first.destCode, first.productGroup), targetPlanDate, offset };
+    };
+    const decision = dateShiftDecisions.get(key);
+    let candidate: ShiftCandidate | undefined;
+    if (decision) {
+      candidate = DATE_SHIFT_OFFSETS.map(candidateFor).find((c) => c.targetPlanDate === decision.targetPlanDate);
+      if (candidate && (routePlan.get(candidate.targetKey)?.total ?? 0) <= 0) candidate = undefined;
+    }
+    if (!candidate) {
+      candidate = DATE_SHIFT_OFFSETS.map(candidateFor).find((c) => {
+        const plan = routePlan.get(c.targetKey)?.total ?? 0;
+        return plan > 0 && (actualByKey.get(c.targetKey) ?? 0) < plan;
+      });
+    }
+    if (!candidate) continue;
+    shiftCandidates.set(key, candidate);
+
+    const status = decision?.targetPlanDate === candidate.targetPlanDate ? decision.decision : 'pending';
+    if (status === 'rejected') continue;
+    const where = `วันที่ ${formatDayMonth(first.transferDate)} (${offsetLabel(candidate.offset)}) ${weight.toLocaleString('en-US', { maximumFractionDigits: 2 })} kg`;
+    const note =
+      status === 'confirmed'
+        ? `รวมโอนจริง${where} — ยืนยันโดย ${decision!.decidedByName ?? '-'}`
+        : `พบโอนจริง${where} — รอยืนยัน`;
+    if (status === 'confirmed') shiftedIn.set(candidate.targetKey, (shiftedIn.get(candidate.targetKey) ?? 0) + weight);
+    const notes = notesByKey.get(candidate.targetKey);
+    if (notes) notes.push(note);
+    else notesByKey.set(candidate.targetKey, [note]);
+  }
+
   const results: TrackingResult[] = [];
   for (const group of planGroups.values()) {
     // Not deleted after use: two price-variant rows for the same route both
     // look up the same, undepleted actual total (see fullGroupKey above).
-    const actualRaw = actualByKey.get(group.matchKey) ?? 0;
+    const actualRaw = (actualByKey.get(group.matchKey) ?? 0) + (shiftedIn.get(group.matchKey) ?? 0);
     const adjustment = adjustments.get(group.matchKey);
     const actualTotal = adjustment ? adjustment.newActual : actualRaw;
+    const routePlanWeekly = routePlan.get(group.matchKey)!.weekly;
     const planTotal = group.planWeekly + group.planDaily;
     const suggestTotal = group.suggestWeekly + group.suggestDaily;
     const rejectWeekly = Math.max(group.suggestWeekly - group.planWeekly, 0);
@@ -189,8 +297,8 @@ export function computeTracking(
       adjustedByName: adjustment?.adjustedByName ?? null,
       adjustedAt: adjustment?.adjustedAt ?? null,
       adjustmentReason: adjustment?.reason ?? null,
-      weekly: computeChannel(actualTotal, group.planWeekly),
-      daily: computeChannel(actualTotal, group.planDaily),
+      weekly: computeChannel(channelActual(actualTotal, routePlanWeekly, 'weekly'), group.planWeekly),
+      daily: computeChannel(channelActual(actualTotal, routePlanWeekly, 'daily'), group.planDaily),
       total: computeChannel(actualTotal, planTotal),
       overage: Math.max(actualTotal - planTotal, 0),
       // `=== 0 ? 0 : x` normalizes -0 (e.g. -1 * 0) to plain 0 — cosmetic in
@@ -206,12 +314,17 @@ export function computeTracking(
       rejectDaily,
       rejectTotal,
       rejectPct: suggestTotal > 0 ? rejectTotal / suggestTotal : null,
+      systemNote: notesByKey.get(group.matchKey)?.join('\n') ?? null,
     });
   }
 
   const unmatchedActual: UnmatchedActual[] = [];
   for (const [key, totalWeightKg] of actualByKey) {
     if (matchedKeys.has(key)) continue; // at least one plan group (any price variant) covers this route/date/group
+    const candidate = shiftCandidates.get(key);
+    const decision = dateShiftDecisions.get(key);
+    const shiftStatus = !candidate ? null : decision?.targetPlanDate === candidate.targetPlanDate ? decision.decision : 'pending';
+    if (shiftStatus === 'confirmed') continue; // credited to its plan date instead
     const rows = actualRowsByKey.get(key) ?? [];
     const first = rows[0];
     unmatchedActual.push({
@@ -224,6 +337,9 @@ export function computeTracking(
       productGroup: first?.productGroup ?? '',
       totalWeightKg,
       rows,
+      suggestedPlanDate: candidate?.targetPlanDate ?? null,
+      dayOffset: candidate?.offset ?? null,
+      shiftStatus,
     });
   }
 
@@ -278,7 +394,9 @@ export function aggregateChannel(results: TrackingResult[], channel: Channel): C
   let toleranceAdjSum = 0;
   for (const routeRows of groupByRoute(results).values()) {
     const plan = sum(routeRows.map((r) => r[planKey]));
-    const actual = routeRows[0].actualTotal; // identical across every price variant of this route
+    const routePlanWeekly = sum(routeRows.map((r) => r.planWeekly));
+    // actualTotal is identical across every price variant of this route
+    const actual = channelActual(routeRows[0].actualTotal, routePlanWeekly, channel);
     const { capped, toleranceAdj } = computeChannel(actual, plan);
     planSum += plan;
     cappedSum += capped;

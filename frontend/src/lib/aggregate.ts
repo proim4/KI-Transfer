@@ -1,4 +1,4 @@
-import { computeChannel } from '../../../supabase/functions/_shared/calcEngine.ts';
+import { channelActual, computeChannel } from '../../../supabase/functions/_shared/calcEngine.ts';
 import { routeKeyOf } from './rowCalc';
 import type { TrackingResultRow } from '../types/db';
 
@@ -58,7 +58,9 @@ export function aggregateChannel(rows: TrackingResultRow[], channel: Channel): C
   let toleranceAdjSum = 0;
   for (const routeRows of groupByRoute(rows).values()) {
     const plan = sum(routeRows.map((r) => Number(r[planField])));
-    const actual = Number(routeRows[0].actual_total); // identical across every price variant of this route
+    const routePlanWeekly = sum(routeRows.map((r) => Number(r.plan_weekly)));
+    // actual_total is identical across every price variant of this route; Daily only sees what's left after Weekly
+    const actual = channelActual(Number(routeRows[0].actual_total), routePlanWeekly, channel);
     const { capped, toleranceAdj } = computeChannel(actual, plan);
     planSum += plan;
     cappedSum += capped;

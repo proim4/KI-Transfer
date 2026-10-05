@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchAllRows } from '../lib/fetchAllRows';
-import { recomputeTrackingRow, routeKeyOf } from '../lib/rowCalc';
+import { recomputeTrackingRow, routeKeyOf, routePlanWeeklyOf } from '../lib/rowCalc';
 import { supabase } from '../lib/supabase';
 import type { TrackingActualAdjustmentRow, TrackingResultRow, UnmatchedActualRow } from '../types/db';
 
@@ -61,9 +61,10 @@ export function useAdjustActual() {
   return useMutation({
     mutationFn: async ({ row, siblings, newActual, reason, userId, userName }: AdjustActualInput) => {
       const now = new Date().toISOString();
+      const routePlanWeekly = routePlanWeeklyOf(siblings);
       const updates = siblings.map((s) => ({
         id: s.id,
-        ...recomputeTrackingRow(s, newActual),
+        ...recomputeTrackingRow(s, newActual, routePlanWeekly),
         actual_original: s.actual_original ?? s.actual_total,
         adjusted_by: userId,
         adjusted_by_name: userName,
@@ -97,7 +98,7 @@ export function useAdjustActual() {
         throw error;
       }
 
-      return { siblingIds: new Set(siblings.map((s) => s.id)), newActual, reason, userId, userName, now };
+      return { siblingIds: new Set(siblings.map((s) => s.id)), routePlanWeekly, newActual, reason, userId, userName, now };
     },
     onSuccess: (result) => {
       queryClient.setQueriesData<TrackingResultRow[]>({ queryKey: ['tracking-results'] }, (rows) =>
@@ -105,7 +106,7 @@ export function useAdjustActual() {
           result.siblingIds.has(r.id)
             ? {
                 ...r,
-                ...recomputeTrackingRow(r, result.newActual),
+                ...recomputeTrackingRow(r, result.newActual, result.routePlanWeekly),
                 actual_original: r.actual_original ?? r.actual_total,
                 is_adjusted: true,
                 adjusted_by: result.userId,

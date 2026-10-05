@@ -1,4 +1,4 @@
-import { computeChannel, matchKey } from '../../../supabase/functions/_shared/calcEngine.ts';
+import { channelActual, computeChannel, matchKey } from '../../../supabase/functions/_shared/calcEngine.ts';
 import type { TrackingResultRow } from '../types/db';
 
 export interface RecomputedRow {
@@ -27,10 +27,14 @@ export interface RecomputedRow {
  * which need row-owned plan/price rather than a single (actual, plan) pair,
  * are reimplemented here). Used both for the live edit-preview and to build
  * the row patch actually persisted, so the two can never disagree.
+ *
+ * `routePlanWeekly` is the Weekly plan summed across every price-variant
+ * sibling of the route (see routePlanWeeklyOf) — Daily is scored only on the
+ * actual left over after Weekly (calcEngine's channelActual).
  */
-export function recomputeTrackingRow(row: TrackingResultRow, newActualTotal: number): RecomputedRow {
-  const weekly = computeChannel(newActualTotal, Number(row.plan_weekly));
-  const daily = computeChannel(newActualTotal, Number(row.plan_daily));
+export function recomputeTrackingRow(row: TrackingResultRow, newActualTotal: number, routePlanWeekly: number): RecomputedRow {
+  const weekly = computeChannel(channelActual(newActualTotal, routePlanWeekly, 'weekly'), Number(row.plan_weekly));
+  const daily = computeChannel(channelActual(newActualTotal, routePlanWeekly, 'daily'), Number(row.plan_daily));
   const total = computeChannel(newActualTotal, Number(row.plan_total));
   const planTotal = Number(row.plan_total);
   const originPrice = Number(row.origin_price);
@@ -63,4 +67,9 @@ function normalizeZero(value: number): number {
 /** Route key rows share the same actual_total under (production_date, origin_code, dest_code, product_group) — delegates to calcEngine.ts's own matchKey so the two can't drift apart. */
 export function routeKeyOf(r: Pick<TrackingResultRow, 'production_date' | 'origin_code' | 'dest_code' | 'product_group'>): string {
   return matchKey(r.production_date, r.origin_code, r.dest_code, r.product_group);
+}
+
+/** Weekly plan summed across a route's price-variant sibling rows — the amount of actual Weekly consumes before Daily sees any. */
+export function routePlanWeeklyOf(siblings: Pick<TrackingResultRow, 'plan_weekly'>[]): number {
+  return siblings.reduce((a, r) => a + Number(r.plan_weekly), 0);
 }

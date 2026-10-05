@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import DateShiftReviewPanel from '../components/DateShiftReviewPanel';
 import DrilldownTable from '../components/DrilldownTable';
 import KpiCard, { formatBaht, formatKg, formatPct } from '../components/KpiCard';
 import WeekSelector from '../components/WeekSelector';
 import { useStatusThresholds } from '../hooks/useAppSettings';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
+import { useAllUploadFiles } from '../hooks/useUploadFiles';
 import { useUploads } from '../hooks/useUploads';
 import { useWeeks } from '../hooks/useWeeks';
 import { useTrackingResults, useUnmatchedActual } from '../hooks/useTrackingResults';
@@ -12,9 +14,12 @@ import { exportWeekToExcel } from '../lib/exportExcel';
 import { formatDateTime } from '../lib/formatDateTime';
 import { lastUpdatedAt } from '../lib/lastUpdated';
 import { computeStatus } from '../lib/statusBadge';
-import type { ProductLine } from '../types/db';
+import type { ProductLine, UploadFileType } from '../types/db';
 
-const REQUIRED_FILE_COUNT: Record<ProductLine, number> = { chicken: 3, pork: 2 };
+const REQUIRED_FILE_TYPES: Record<ProductLine, UploadFileType[]> = {
+  chicken: ['actual_abs0000', 'plan_weekly_bsr030', 'plan_daily_bdr130'],
+  pork: ['actual_abs0000', 'plan_daily_bdr130'],
+};
 
 interface DashboardProps {
   productLine?: ProductLine;
@@ -26,6 +31,7 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
   const { data: results, isLoading } = useTrackingResults(weekId);
   const { data: unmatched } = useUnmatchedActual(weekId);
   const { data: uploads } = useUploads(weekId);
+  const { data: uploadFiles } = useAllUploadFiles(weekId);
   const thresholds = useStatusThresholds();
   const [exporting, setExporting] = useState(false);
 
@@ -49,8 +55,15 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
   const actualTotal = dedupedActualTotal(rows);
   const lossTotal = sum(rows.map((r) => Number(r.profit_lost)));
   const unmatchedTotal = sum((unmatched ?? []).map((u) => Number(u.total_weight_kg)));
+  const pendingShiftCount = (unmatched ?? []).filter((u) => u.shift_status === 'pending').length;
 
-  const updatedAt = lastUpdatedAt(uploads);
+  const allUploads = [...(uploads ?? []), ...(uploadFiles ?? [])];
+  const updatedAt = lastUpdatedAt(allUploads);
+  const requiredFileTypes = REQUIRED_FILE_TYPES[productLine];
+  // Categories with at least one validated file — ABS0000/BDR130 can each hold several files.
+  const presentFileTypeCount = requiredFileTypes.filter((t) =>
+    allUploads.some((u) => u.file_type === t && u.status === 'validated'),
+  ).length;
   const achievementStatus = thresholds && computeStatus(total.pct, thresholds);
   const achievementTone =
     achievementStatus?.color === 'green' ? 'good' : achievementStatus?.color === 'red' ? 'bad' : achievementStatus?.color === 'amber' ? 'warn' : 'default';
@@ -88,10 +101,10 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
             <p className="text-sm text-gray-500">
               📅 {week.label}
               {updatedAt && <> · อัปเดตล่าสุด {formatDateTime(updatedAt)}</>}
-              {uploads && (
+              {uploads && uploadFiles && (
                 <>
                   {' '}
-                  · {uploads.length}/{REQUIRED_FILE_COUNT[productLine]} ไฟล์
+                  · {presentFileTypeCount}/{requiredFileTypes.length} ประเภทไฟล์
                 </>
               )}
             </p>
@@ -156,9 +169,19 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
                 <KpiCard label="% โอนเทียบแผน Daily" value={formatPct(daily.pct)} />
                 <KpiCard label="ปริมาณโอนจริงตามแผน" value={formatKg(total.toleranceAdjSum)} />
                 <KpiCard label="ปริมาณ Reject" value={formatKg(reject.rejectSum)} sub={`% Reject: ${formatPct(reject.pct)}`} />
-                <KpiCard label="โอนไม่ตรงแผนเลย" value={formatKg(unmatchedTotal)} sub="สินค้า/เส้นทางที่ไม่มีในแผน" />
+                <KpiCard
+                  label="โอนไม่ตรงแผนเลย"
+                  value={formatKg(unmatchedTotal)}
+                  sub={
+                    pendingShiftCount > 0
+                      ? `สินค้า/เส้นทางที่ไม่มีในแผน · รอยืนยัน ±1 วัน ${pendingShiftCount} รายการ`
+                      : 'สินค้า/เส้นทางที่ไม่มีในแผน'
+                  }
+                />
               </div>
             )}
+
+            <DateShiftReviewPanel weekId={weekId} unmatched={unmatched ?? []} />
 
             <div className="rounded-lg border border-gray-200 bg-white p-4">
               <DrilldownTable weekId={weekId} rows={rows} title="Tracking Data" />

@@ -86,7 +86,7 @@ function compareValues(a: string | number | null, b: string | number | null): nu
 }
 
 function searchText(r: TrackingResultRow): string {
-  return `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.remark ?? ''}`.toLowerCase();
+  return `${r.origin_code} ${r.origin_name} ${r.dest_code} ${r.dest_name} ${r.product_group} ${r.remark ?? ''} ${r.system_note ?? ''}`.toLowerCase();
 }
 
 /** Same accessor as sortValue, except "status" resolves to its category label (ตามแผน/ต่ำกว่าแผน/...) instead of the raw pct — filtering by status should match what the badge shows, not a number. */
@@ -439,7 +439,7 @@ export default function DrilldownTable({ weekId, rows, title }: DrilldownTablePr
                   )}
                   {isVisible('remark') && (
                     <td className={`px-1 py-0.5 group-hover:bg-blue-50 ${rowBg('remark', isTintRow)}`}>
-                      <RemarkCell id={r.id} value={r.remark} />
+                      <RemarkCell id={r.id} value={r.remark} systemNote={r.system_note} />
                     </td>
                   )}
                 </tr>

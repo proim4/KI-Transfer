@@ -8,8 +8,7 @@ import SupplyDailyDetailModal from '../components/SupplyDailyDetailModal';
 import WeekSelector from '../components/WeekSelector';
 import { useDefaultedWeekId } from '../hooks/useDefaultedWeekId';
 import { useMasFactoryZones, useSupplyDailyResults } from '../hooks/useSupplyDailyResults';
-import { useUploads } from '../hooks/useUploads';
-import { lastUpdatedAt } from '../lib/lastUpdated';
+import { useWeekLastUpdated } from '../hooks/useWeekLastUpdated';
 import { computeSupplyDailyKpis, matchesException, type ExceptionKey } from '../lib/supplyDailyAggregate';
 import type { ProductLine, SupplyDailyResultRow } from '../types/db';
 
@@ -121,7 +120,7 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
   const [weekId, setWeekId] = useDefaultedWeekId(productLine);
   const { data: results, isLoading } = useSupplyDailyResults(weekId);
   const { data: factoryZones } = useMasFactoryZones();
-  const { data: uploads } = useUploads(weekId);
+  const updatedAt = useWeekLastUpdated(weekId);
 
   const [routeFilter, setRouteFilter] = useState<RouteFilterValue>(EMPTY_ROUTE_FILTER);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
@@ -260,7 +259,7 @@ export default function SupplyDailyTracking({ productLine = 'chicken' }: SupplyD
         <h1 className="mb-2 text-xl font-semibold text-gray-900">ติดตามการกรอก Supply Daily</h1>
         <div className="flex flex-wrap items-center gap-3">
           <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} />
-          <LastUpdatedLabel at={lastUpdatedAt(uploads)} />
+          <LastUpdatedLabel at={updatedAt} />
         </div>
       </div>
 

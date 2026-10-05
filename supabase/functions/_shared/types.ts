@@ -92,6 +92,8 @@ export interface TrackingResult {
   rejectTotal: number;
   /** rejectTotal / suggestTotal, or null when suggestTotal is 0. */
   rejectPct: number | null;
+  /** System-generated remark (one line per item) — currently ±1-day transfers credited to (or awaiting confirmation for) this route's plan date. Regenerated on every process run, separate from the user-editable remark. */
+  systemNote: string | null;
 }
 
 /** The latest manual override of a route's actual_total, keyed the same way as matchKey (date, origin, dest, productGroup) — see calcEngine.ts's computeTracking. */
@@ -118,6 +120,12 @@ export interface UnmatchedActual {
   productGroup: string;
   totalWeightKg: number;
   rows: ActualRow[];
+  /** The plan date this group would be credited to under the ±1-day rule, or null when no planned, still-short route exists one day either side. */
+  suggestedPlanDate: string | null;
+  /** +1 = transferred the day after suggestedPlanDate, -1 = the day before. */
+  dayOffset: 1 | -1 | null;
+  /** 'pending' awaits a user's confirmation, 'rejected' was declined; confirmed groups are credited to their plan date and never appear here. */
+  shiftStatus: 'pending' | 'rejected' | null;
 }
 
 // ---------------------------------------------------------------------------

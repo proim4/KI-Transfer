@@ -2,6 +2,7 @@ import { useRef, useState, type DragEvent } from 'react';
 import { useMultiFileUpload } from '../hooks/useMultiFileUpload';
 import { useProcessWeek } from '../hooks/useProcessWeek';
 import { useDeleteUploadFile, useUploadFiles } from '../hooks/useUploadFiles';
+import { SUSPECTED_EXPORT_ROW_LIMIT, looksTruncated } from '../lib/duplicateUpload';
 import { supabase } from '../lib/supabase';
 import type { MultiFileUploadType, UploadFileRow } from '../types/db';
 import ConfirmDialog from './ConfirmDialog';
@@ -52,9 +53,9 @@ const statusBadge: Record<UploadFileRow['status'], { text: string; className: st
 };
 
 /**
- * Upload widget for the 3 Supply Daily sources that support several files
- * per week (BSD010/ราคารายวัน/TC05 — one file per day, all combining, see
- * migration 0012) — unlike UploadDropzone (ABS0000/BSR030/BDR130), which
+ * Upload widget for the sources that support several files per week
+ * (BSD010/ราคารายวัน/TC05/BDR130/ABS0000 — all files in a category combine,
+ * see migrations 0012/0013/0018) — unlike UploadDropzone (BSR030), which
  * holds exactly one current file per category. Selecting/dropping several
  * files at once uploads them one by one, then recomputes the week once.
  */
@@ -62,7 +63,7 @@ export default function MultiFileUploadZone({ weekId, fileType, label, hint }: M
   const { data: files } = useUploadFiles(weekId, fileType);
   const uploadMutation = useMultiFileUpload();
   const processWeek = useProcessWeek();
-  const deleteMutation = useDeleteUploadFile(weekId, fileType);
+  const deleteMutation = useDeleteUploadFile(weekId);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [batch, setBatch] = useState<{ total: number; done: number } | null>(null);
@@ -187,6 +188,12 @@ export default function MultiFileUploadZone({ weekId, fileType, label, hint }: M
                     🗑
                   </button>
                 </div>
+                {row.status === 'validated' && looksTruncated(row.row_count + row.skipped_count) && (
+                  <p className="mt-1 text-amber-700">
+                    ⚠ ไฟล์นี้มี {SUSPECTED_EXPORT_ROW_LIMIT.toLocaleString('en-US')} แถวพอดี — อาจถูกตัดที่เพดาน Export ของระบบต้นทาง
+                    ตรวจสอบว่า Export ครบ หรือแบ่งช่วงวันที่แล้วอัปโหลดไฟล์ที่เหลือเพิ่ม
+                  </p>
+                )}
                 {row.status === 'error' && row.error_report && (
                   <ul className="mt-1 max-h-24 space-y-0.5 overflow-y-auto text-red-600">
                     {row.error_report.slice(0, 10).map((e, i) => (
