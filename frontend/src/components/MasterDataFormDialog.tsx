@@ -37,9 +37,20 @@ export default function MasterDataFormDialog({
     return base;
   });
 
+  const [missing, setMissing] = useState<string | null>(null);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSubmit(values);
+    // The key field (readOnlyOnEdit) identifies the row — an empty one can't be saved meaningfully.
+    const blankKey = fields.find((f) => f.readOnlyOnEdit && String(values[f.key] ?? '').trim() === '');
+    if (blankKey) {
+      setMissing(`กรุณากรอก ${blankKey.label}`);
+      return;
+    }
+    setMissing(null);
+    onSubmit(
+      Object.fromEntries(Object.entries(values).map(([k, v]) => [k, typeof v === 'string' ? v.trim() : v])),
+    );
   }
 
   return (
@@ -52,7 +63,10 @@ export default function MasterDataFormDialog({
             const disabled = initial !== null && f.readOnlyOnEdit;
             return (
               <div key={f.key}>
-                <label className={labelClass}>{f.label}</label>
+                <label className={labelClass}>
+                  {f.label}
+                  {f.readOnlyOnEdit && <span className="text-red-600"> *</span>}
+                </label>
                 <input
                   type={f.type === 'number' ? 'number' : 'text'}
                   value={values[f.key] as string | number}
@@ -70,7 +84,7 @@ export default function MasterDataFormDialog({
           })}
         </div>
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {(missing ?? error) && <p className="mt-3 text-sm text-red-600">{missing ?? error}</p>}
 
         <div className="mt-5 flex justify-end gap-2">
           <button

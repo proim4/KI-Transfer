@@ -22,6 +22,10 @@ export function useMasterDataRows(table: string) {
  * this hook itself does not check role; a non-admin's write is simply
  * rejected by Postgres and surfaces as a thrown error.
  */
+// RLS silently filters an update/delete the caller may not perform (no
+// error, just 0 rows), which used to read as a successful save.
+const NOT_SAVED = 'บันทึกไม่สำเร็จ — ไม่มีสิทธิ์แก้ไข Master Data (ต้องเป็น Admin ที่ Login อยู่) หรือรายการถูกลบไปแล้ว';
+
 export function useMasterDataMutations(table: string, idField: string) {
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKey(table) });
@@ -36,16 +40,18 @@ export function useMasterDataMutations(table: string, idField: string) {
 
   const update = useMutation({
     mutationFn: async ({ id, row }: { id: unknown; row: MasterDataRow }) => {
-      const { error } = await supabase.from(table).update(row).eq(idField, id as string | number);
+      const { data, error } = await supabase.from(table).update(row).eq(idField, id as string | number).select(idField);
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(NOT_SAVED);
     },
     onSuccess: invalidate,
   });
 
   const remove = useMutation({
     mutationFn: async (id: unknown) => {
-      const { error } = await supabase.from(table).delete().eq(idField, id as string | number);
+      const { data, error } = await supabase.from(table).delete().eq(idField, id as string | number).select(idField);
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(NOT_SAVED);
     },
     onSuccess: invalidate,
   });

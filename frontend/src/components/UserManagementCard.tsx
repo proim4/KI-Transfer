@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDeleteUser, useUsers } from '../hooks/useUserManagement';
 import { PAGE_AREAS, areasOf } from '../lib/pageAccess';
 import type { ProfileRow } from '../types/db';
+import CollapsibleCard from './CollapsibleCard';
 import ConfirmDialog from './ConfirmDialog';
 import EditUserDialog from './EditUserDialog';
 import RegisterUserDialog from './RegisterUserDialog';
@@ -42,12 +43,12 @@ export default function UserManagementCard() {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="mb-1 flex items-center justify-between">
-        <div>
-          <p className="font-medium text-gray-900">👤 ลงทะเบียนผู้ใช้งาน</p>
-          <p className="text-sm text-gray-500">เพิ่มและจัดการบัญชีผู้ใช้งานระบบ</p>
-        </div>
+    <CollapsibleCard
+      title="👤 ลงทะเบียนผู้ใช้งาน"
+      summary={users ? `(${users.length} ผู้ใช้)` : undefined}
+      description="เพิ่มและจัดการบัญชีผู้ใช้งาน และกำหนดสิทธิ์การเข้าถึงหน้า"
+      storageKey="settings-card-open:users"
+      actions={
         <button
           type="button"
           onClick={() => setShowRegister(true)}
@@ -55,15 +56,16 @@ export default function UserManagementCard() {
         >
           + เพิ่มผู้ใช้งาน
         </button>
-      </div>
+      }
+    >
 
-      {isLoading && <p className="mt-4 text-sm text-gray-500">กำลังโหลด...</p>}
+      {isLoading && <p className="text-sm text-gray-500">กำลังโหลด...</p>}
       {!isLoading && (users ?? []).length === 0 && (
-        <p className="mt-4 text-sm text-gray-500">ยังไม่มีผู้ใช้งานในระบบ</p>
+        <p className="text-sm text-gray-500">ยังไม่มีผู้ใช้งานในระบบ</p>
       )}
 
       {(users ?? []).length > 0 && (
-        <div className="mt-4 overflow-auto rounded-md border border-gray-200">
+        <div className="overflow-auto rounded-md border border-gray-200">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
@@ -130,6 +132,6 @@ export default function UserManagementCard() {
           onCancel={() => setDeleting(null)}
         />
       )}
-    </div>
+    </CollapsibleCard>
   );
 }

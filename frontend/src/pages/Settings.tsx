@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import CollapsibleCard from '../components/CollapsibleCard';
+import ConfirmDialog from '../components/ConfirmDialog';
 import MasterDataCard from '../components/MasterDataCard';
 import StatusBadge from '../components/StatusBadge';
 import UserManagementCard from '../components/UserManagementCard';
@@ -19,6 +21,7 @@ function ColorSelect({ value, onChange }: { value: StatusColor; onChange: (c: St
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as StatusColor)}
+      aria-label="สี"
       className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
     >
       {COLOR_OPTIONS.map((c) => (
@@ -30,10 +33,23 @@ function ColorSelect({ value, onChange }: { value: StatusColor; onChange: (c: St
   );
 }
 
+/** Stored as a 0–1 fraction; shown as a percent rounded to 2 decimals so 0.9 reads 90, not 90.00000000000001. */
+function toPercent(fraction: number): number {
+  return Math.round(fraction * 10000) / 100;
+}
+
+function parsePercent(text: string): number {
+  return text.trim() === '' ? Number.NaN : Number(text);
+}
+
+const ROW_CLASS = 'grid grid-cols-[8.5rem_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5';
+const PCT_INPUT_CLASS = 'w-20 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-right text-sm text-gray-900';
+
 export default function Settings() {
   const { data: settings, isLoading } = useAppSettings();
   const setRequireLogin = useSetRequireLogin();
   const setThresholds = useSetStatusThresholds();
+  const [confirmLoginOff, setConfirmLoginOff] = useState(false);
 
   const [highPct, setHighPct] = useState(100);
   const [lowPct, setLowPct] = useState(90);
@@ -44,8 +60,8 @@ export default function Settings() {
 
   useEffect(() => {
     if (!settings) return;
-    setHighPct(settings.status_high_pct * 100);
-    setLowPct(settings.status_low_pct * 100);
+    setHighPct(toPercent(settings.status_high_pct));
+    setLowPct(toPercent(settings.status_low_pct));
     setHighColor(settings.status_high_color);
     setMidColor(settings.status_mid_color);
     setLowColor(settings.status_low_color);
@@ -56,7 +72,21 @@ export default function Settings() {
     return <p className="text-gray-500">กำลังโหลด...</p>;
   }
 
-  const thresholdsInvalid = lowPct >= highPct;
+  // % โอนเทียบแผน is capped at 100% (never above the plan), so a ตามแผน
+  // threshold above 100 could never be reached.
+  let thresholdError: string | null = null;
+  if (!Number.isFinite(highPct) || !Number.isFinite(lowPct)) thresholdError = 'กรุณากรอกเกณฑ์เป็นตัวเลข';
+  else if (highPct > 100) thresholdError = 'เกณฑ์ "ตามแผน" ต้องไม่เกิน 100% (% โอนเทียบแผนสูงสุดคือ 100%)';
+  else if (lowPct <= 0) thresholdError = 'เกณฑ์ "ต่ำกว่าแผน" ต้องมากกว่า 0%';
+  else if (lowPct >= highPct) thresholdError = 'เกณฑ์ "ตามแผน" ต้องมากกว่าเกณฑ์ "ต่ำกว่าแผน"';
+
+  const thresholdsDirty =
+    highPct !== toPercent(settings.status_high_pct) ||
+    lowPct !== toPercent(settings.status_low_pct) ||
+    highColor !== settings.status_high_color ||
+    midColor !== settings.status_mid_color ||
+    lowColor !== settings.status_low_color ||
+    zeroColor !== settings.status_zero_color;
 
   function handleSaveThresholds() {
     setThresholds.mutate({
@@ -69,32 +99,51 @@ export default function Settings() {
     });
   }
 
-  const previewThresholds = { highPct: highPct / 100, lowPct: lowPct / 100, highColor, midColor, lowColor, zeroColor };
+  function handleToggleLogin() {
+    // Turning login off opens every figure to anyone with the link — confirm first.
+    if (settings?.require_login) setConfirmLoginOff(true);
+    else setRequireLogin.mutate(true);
+  }
+
+  const previewThresholds = {
+    highPct: highPct / 100,
+    lowPct: lowPct / 100,
+    highColor,
+    midColor,
+    lowColor,
+    zeroColor,
+  };
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">Setting</h1>
-        <p className="text-sm text-gray-500">จัดการการตั้งค่าระบบและผู้ใช้งาน</p>
+        <h1 className="text-xl font-semibold text-gray-900">ตั้งค่า (Settings)</h1>
+        <p className="text-sm text-gray-500">จัดการผู้ใช้งาน การเข้าสู่ระบบ เกณฑ์สถานะ และ Master Data</p>
       </div>
 
-      <div className="max-w-xl space-y-6">
-        <UserManagementCard />
+      <UserManagementCard />
 
-        <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4">
+      <CollapsibleCard
+        title="บังคับ Login ก่อนใช้งาน"
+        summary={settings.require_login ? '(เปิดอยู่)' : '(ปิดอยู่)'}
+        storageKey="settings-card-open:login"
+      >
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-medium text-gray-900">บังคับ Login ก่อนใช้งาน</p>
             <p className="text-sm text-gray-500">
-              เมื่อปิด ผู้ใช้ทุกคนเข้าใช้งานเว็บแอปนี้ได้โดยไม่ต้องเข้าสู่ระบบ
+              {settings.require_login
+                ? 'เฉพาะผู้ใช้ที่ Login และสถานะ Active เท่านั้นที่เห็นข้อมูล'
+                : 'ทุกคนที่มีลิงก์เข้าดูและแก้ข้อมูลได้โดยไม่ต้อง Login'}
             </p>
           </div>
           <button
             type="button"
             role="switch"
             aria-checked={settings.require_login}
-            onClick={() => setRequireLogin.mutate(!settings.require_login)}
+            aria-label="บังคับ Login ก่อนใช้งาน"
+            onClick={handleToggleLogin}
             disabled={setRequireLogin.isPending}
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+            className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
               settings.require_login ? 'bg-green-600' : 'bg-gray-300'
             }`}
           >
@@ -105,76 +154,100 @@ export default function Settings() {
             />
           </button>
         </div>
+        {setRequireLogin.isError && <p className="mt-2 text-sm text-red-600">{(setRequireLogin.error as Error).message}</p>}
+      </CollapsibleCard>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="font-medium text-gray-900">เกณฑ์สถานะ (Status Badge)</p>
-          <p className="mb-4 text-sm text-gray-500">
-            กำหนดเกณฑ์ % โอนเทียบแผน (Total) และสีที่ใช้แสดงในตาราง Tracking — ไม่กระทบตัวเลขหรือสูตรคำนวณ
-          </p>
+      <CollapsibleCard
+        title="เกณฑ์สถานะ (Status Badge)"
+        summary={`(ตามแผน ≥ ${toPercent(settings.status_high_pct)}% · ต่ำกว่าแผน ≥ ${toPercent(settings.status_low_pct)}%)`}
+        description="กำหนดเกณฑ์ % โอนเทียบแผนและสีของสถานะในตาราง Dashboard และหน้าติดตามโอน — ไม่กระทบตัวเลขหรือสูตรคำนวณ"
+        storageKey="settings-card-open:thresholds"
+      >
 
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <StatusBadge pct={1} thresholds={previewThresholds} />
-              <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ≥</span>
+        <div className="max-w-2xl divide-y divide-gray-100 rounded-md border border-gray-100">
+          <div className={ROW_CLASS}>
+            <StatusBadge pct={1} thresholds={previewThresholds} />
+            <span className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+              ≥
               <input
+                id="status-high-pct"
                 type="number"
-                value={highPct}
-                onChange={(e) => setHighPct(Number(e.target.value))}
-                className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
+                min={0}
+                max={100}
+                step="any"
+                value={Number.isFinite(highPct) ? highPct : ''}
+                onChange={(e) => setHighPct(parsePercent(e.target.value))}
+                aria-label="เกณฑ์ตามแผน (%)"
+                className={PCT_INPUT_CLASS}
               />
-              <span className="text-sm text-gray-500">%</span>
-              <ColorSelect value={highColor} onChange={setHighColor} />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <StatusBadge pct={lowPct / 100} thresholds={previewThresholds} />
-              <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ≥</span>
-              <input
-                type="number"
-                value={lowPct}
-                onChange={(e) => setLowPct(Number(e.target.value))}
-                className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
-              />
-              <span className="text-sm text-gray-500">%</span>
-              <ColorSelect value={midColor} onChange={setMidColor} />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <StatusBadge pct={0.001} thresholds={previewThresholds} />
-              <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน ต่ำกว่านั้น (แต่ยังโอนอยู่บ้าง)</span>
-              <ColorSelect value={lowColor} onChange={setLowColor} />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <StatusBadge pct={0} thresholds={previewThresholds} />
-              <span className="text-sm text-gray-500">เมื่อ % โอนเทียบแผน = 0% (ไม่โอนเลย)</span>
-              <ColorSelect value={zeroColor} onChange={setZeroColor} />
-            </div>
+              %
+            </span>
+            <ColorSelect value={highColor} onChange={setHighColor} />
           </div>
 
-          {thresholdsInvalid && (
-            <p className="mt-3 text-xs text-red-600">เกณฑ์ "ตามแผน" ต้องมากกว่าเกณฑ์ "ต่ำกว่าแผน"</p>
-          )}
+          <div className={ROW_CLASS}>
+            <StatusBadge pct={Number.isFinite(lowPct) ? lowPct / 100 : 0.5} thresholds={previewThresholds} />
+            <span className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+              ≥
+              <input
+                id="status-low-pct"
+                type="number"
+                min={0}
+                max={100}
+                step="any"
+                value={Number.isFinite(lowPct) ? lowPct : ''}
+                onChange={(e) => setLowPct(parsePercent(e.target.value))}
+                aria-label="เกณฑ์ต่ำกว่าแผน (%)"
+                className={PCT_INPUT_CLASS}
+              />
+              % แต่ยังไม่ถึงเกณฑ์ตามแผน
+            </span>
+            <ColorSelect value={midColor} onChange={setMidColor} />
+          </div>
 
+          <div className={ROW_CLASS}>
+            <StatusBadge pct={0.001} thresholds={previewThresholds} />
+            <span className="text-sm text-gray-600">มากกว่า 0% แต่ต่ำกว่าเกณฑ์ต่ำกว่าแผน</span>
+            <ColorSelect value={lowColor} onChange={setLowColor} />
+          </div>
+
+          <div className={ROW_CLASS}>
+            <StatusBadge pct={0} thresholds={previewThresholds} />
+            <span className="text-sm text-gray-600">= 0% (มีแผนแต่ไม่โอนเลย)</span>
+            <ColorSelect value={zeroColor} onChange={setZeroColor} />
+          </div>
+        </div>
+
+        <p className="mt-2 text-xs text-gray-400">
+          รายเส้นทางที่ขาดไม่ถึง 10% ของแผนถูกปัดเป็น 100% สถานะ “ต่ำกว่าแผน” จึงพบในยอดรวมบ่อยกว่ารายแถว
+        </p>
+
+        {thresholdError && <p className="mt-3 text-sm text-red-600">{thresholdError}</p>}
+        {setThresholds.isError && <p className="mt-3 text-sm text-red-600">{(setThresholds.error as Error).message}</p>}
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleSaveThresholds}
-            disabled={thresholdsInvalid || setThresholds.isPending}
-            className="mt-4 rounded-md bg-navy-800 px-4 py-2 text-sm font-medium text-white hover:bg-navy-900 disabled:opacity-40"
+            disabled={thresholdError !== null || !thresholdsDirty || setThresholds.isPending}
+            className="rounded-md bg-navy-800 px-4 py-2 text-sm font-medium text-white hover:bg-navy-900 disabled:opacity-40"
           >
             {setThresholds.isPending ? 'กำลังบันทึก...' : 'บันทึกเกณฑ์'}
           </button>
-          {setThresholds.isSuccess && <span className="ml-3 text-sm text-green-600">บันทึกแล้ว</span>}
+          {setThresholds.isSuccess && !thresholdsDirty && <span className="text-sm text-green-600">✓ บันทึกแล้ว</span>}
+          {thresholdsDirty && thresholdError === null && (
+            <span className="text-sm text-amber-700">มีการเปลี่ยนแปลงที่ยังไม่บันทึก</span>
+          )}
         </div>
-      </div>
+      </CollapsibleCard>
 
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Master Data — ติดตามการกรอก Supply Daily</h2>
-        <p className="mb-3 text-sm text-gray-500">
-          ข้อมูลอ้างอิงนิ่ง (seed ครั้งเดียวจาก Excel เดิม) ไม่ได้อัปโหลดซ้ำรายสัปดาห์เหมือน 5 data source อื่น —
-          แก้ไขที่นี่เมื่อโรงงาน/SKU มีการเปลี่ยนแปลง
-        </p>
-        <div className="space-y-3">
+      <CollapsibleCard
+        title="🗂️ Master Data — ติดตามการกรอก Supply Daily"
+        summary="(6 ตาราง)"
+        description="ข้อมูลอ้างอิงที่ไม่ต้องอัปโหลดทุกสัปดาห์ แก้ไขเมื่อโรงงานหรือ SKU เปลี่ยน — มีผลกับหน้าติดตามการกรอก Supply Daily หลังกด “ประมวลผล” ของ Week นั้นที่หน้า Upload Data"
+        storageKey="settings-card-open:master-data"
+      >
+        <div className="divide-y divide-gray-100 rounded-md border border-gray-100 px-3">
           <MasterDataCard
             table="mas_factory_zones"
             idField="plant_code"
@@ -246,7 +319,21 @@ export default function Settings() {
             ]}
           />
         </div>
-      </div>
+      </CollapsibleCard>
+
+      {confirmLoginOff && (
+        <ConfirmDialog
+          title="ปิดการบังคับ Login?"
+          message={'เมื่อปิด ทุกคนที่มีลิงก์เว็บนี้จะเข้าดู อัปโหลด และแก้ข้อมูลได้ทันทีโดยไม่ต้อง Login\nรวมถึงหน้าตั้งค่านี้ด้วย'}
+          confirmLabel="ปิดการบังคับ Login"
+          danger
+          onConfirm={() => {
+            setRequireLogin.mutate(false);
+            setConfirmLoginOff(false);
+          }}
+          onCancel={() => setConfirmLoginOff(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMasterDataMutations, useMasterDataRows, type MasterDataRow } from '../hooks/useMasterData';
+import CollapsibleCard from './CollapsibleCard';
 import ConfirmDialog from './ConfirmDialog';
 import MasterDataFormDialog, { type MasterDataFieldConfig } from './MasterDataFormDialog';
 import SortableTable, { type Column } from './SortableTable';
@@ -27,7 +28,7 @@ export default function MasterDataCard({ table, idField, title, description, fie
   const [editing, setEditing] = useState<MasterDataRow | null | 'new'>(null);
   const [deleting, setDeleting] = useState<MasterDataRow | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const all = rows ?? [];
@@ -90,57 +91,47 @@ export default function MasterDataCard({ table, idField, title, description, fie
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="flex items-center gap-2 text-left font-medium text-gray-900"
-          >
-            <span className="text-xs text-gray-400">{expanded ? '▾' : '▸'}</span>
-            {title}
-            <span className="text-xs font-normal text-gray-400">({rows?.length ?? 0} รายการ)</span>
-          </button>
-          <p className="mt-1 text-sm text-gray-500">{description}</p>
-        </div>
-        {expanded && (
-          <button
-            type="button"
-            onClick={() => {
-              setFormError(null);
-              setEditing('new');
-            }}
-            className="rounded-md bg-navy-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-navy-900"
-          >
-            + เพิ่มรายการ
-          </button>
-        )}
-      </div>
+    <CollapsibleCard
+      title={title}
+      summary={`(${isLoading ? '…' : (rows?.length ?? 0).toLocaleString('en-US')} รายการ)`}
+      description={description}
+      storageKey={`settings-card-open:${table}`}
+      defaultOpen={false}
+      variant="row"
+      actions={
+        <button
+          type="button"
+          onClick={() => {
+            setFormError(null);
+            setEditing('new');
+          }}
+          className="rounded-md border border-navy-300 bg-white px-3 py-1 text-sm font-medium text-navy-800 hover:bg-navy-50"
+        >
+          + เพิ่มรายการ
+        </button>
+      }
+    >
+      {deleteError && <p className="mb-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{deleteError}</p>}
 
-      {expanded && (
-        <div className="mt-3">
-          {isLoading ? (
-            <p className="text-sm text-gray-500">กำลังโหลด...</p>
-          ) : (
-            <SortableTable
-              rows={filtered}
-              columns={columns}
-              rowKey={(r) => String(r[idField])}
-              defaultSortKey={fields[0]?.key ?? idField}
-              maxHeight="400px"
-              filterBar={
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="ค้นหา..."
-                  className="w-48 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
-                />
-              }
+      {isLoading ? (
+        <p className="text-sm text-gray-500">กำลังโหลด...</p>
+      ) : (
+        <SortableTable
+          rows={filtered}
+          columns={columns}
+          rowKey={(r) => String(r[idField])}
+          defaultSortKey={fields[0]?.key ?? idField}
+          maxHeight="400px"
+          filterBar={
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหา..."
+              className="w-48 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
             />
-          )}
-        </div>
+          }
+        />
       )}
 
       {editing !== null && (
@@ -162,12 +153,15 @@ export default function MasterDataCard({ table, idField, title, description, fie
           confirmLabel="ยืนยันการลบ"
           danger
           onConfirm={() => {
-            remove.mutate(deleting[idField]);
+            setDeleteError(null);
+            remove.mutate(deleting[idField], {
+              onError: (err) => setDeleteError(err instanceof Error ? err.message : 'ลบไม่สำเร็จ'),
+            });
             setDeleting(null);
           }}
           onCancel={() => setDeleting(null)}
         />
       )}
-    </div>
+    </CollapsibleCard>
   );
 }

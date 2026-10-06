@@ -6,6 +6,9 @@ import type { AppSettingsRow, StatusColor } from '../types/db';
 
 const QUERY_KEY = ['app-settings'];
 
+/** RLS filters an unauthorized update to 0 rows without an error — report it instead of "saved". */
+const SETTINGS_NOT_SAVED = 'บันทึกไม่สำเร็จ — เฉพาะผู้ดูแลระบบ (Admin) ที่ Login อยู่เท่านั้นที่แก้การตั้งค่าได้';
+
 export function useAppSettings() {
   return useQuery({
     queryKey: QUERY_KEY,
@@ -21,11 +24,13 @@ export function useSetRequireLogin() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (requireLogin: boolean) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('app_settings')
         .update({ require_login: requireLogin, updated_at: new Date().toISOString() })
-        .eq('id', true);
+        .eq('id', true)
+        .select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(SETTINGS_NOT_SAVED);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   });
@@ -61,11 +66,13 @@ export function useSetStatusThresholds() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (settings: StatusThresholdSettings) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('app_settings')
         .update({ ...settings, updated_at: new Date().toISOString() })
-        .eq('id', true);
+        .eq('id', true)
+        .select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(SETTINGS_NOT_SAVED);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   });
