@@ -636,7 +636,8 @@ html { scroll-behavior: smooth; }
   <div class="tbl"><table>
     <tr><th>เหตุการณ์</th><th>ประมวลผลอัตโนมัติ?</th></tr>
     <tr><td>อัปโหลดไฟล์ ABS0000, BDR130, BSD010, ราคารายวัน, TC05 (กล่องที่เลือกได้หลายไฟล์)</td><td>ใช่ — หลังอัปโหลดครบทั้งชุดที่เลือก</td></tr>
-    <tr><td>อัปโหลดไฟล์ BSR030 Weekly</td><td><strong>ไม่</strong> — ต้องกดปุ่ม <strong>ประมวลผล</strong> เอง</td></tr>
+    <tr><td>อัปโหลดไฟล์ BSR030 Weekly</td><td>ใช่ — ทันทีที่ไฟล์ตรวจผ่าน</td></tr>
+    <tr><td>กดปุ่ม ประมวลผล</td><td>คำนวณใหม่ทั้ง Week ตามต้องการ (เช่น หลังแก้ Master Data)</td></tr>
     <tr><td>ลบไฟล์</td><td>ใช่ — ลบข้อมูลของไฟล์นั้นแล้วคำนวณใหม่ทันที</td></tr>
     <tr><td>กดยืนยัน / ไม่นับ / ยกเลิกการตัดสิน ±1 วัน</td><td>ใช่</td></tr>
     <tr><td>แก้ไขโอนจริง (ยืนยันการแก้ไข)</td><td>บันทึกและปรับตัวเลขของเส้นทางนั้นทันที (สูตรเดียวกับ Engine)</td></tr>
@@ -816,7 +817,7 @@ KPI “ปริมาณโอนจริง (Actual)” = Σ โอนจร�
     <tr><td>ข้อมูล Real-time หรือไม่</td><td>ไม่ใช่ Real-time · ตัวเลขทันสมัยเท่ากับไฟล์ที่อัปโหลดล่าสุด ดูเวลาได้จากข้อความ <strong>“อัปเดตล่าสุด …”</strong> ข้างตัวเลือก Week (เวลาไฟล์ล่าสุดของ Week นั้น)</td></tr>
     <tr><td>ผู้ใช้ต้องกด Refresh หรือไม่</td><td>ไม่มีปุ่ม Refresh ในหน้าจอ · หน้าเว็บจะโหลดข้อมูลใหม่เมื่อสลับกลับมาที่หน้าต่างเบราว์เซอร์ (ค่าเริ่มต้นของ React Query) หรือกด F5 ของเบราว์เซอร์</td></tr>
     <tr><td>ข้อมูลมี Delay หรือไม่</td><td>ขึ้นกับเวลาที่ผู้รับผิดชอบ Export จาก Smart Sales และนำมาอัปโหลด · <span class="verify">รอบการอัปโหลดมาตรฐาน — ต้องตรวจสอบกับ System Owner</span></td></tr>
-    <tr><td>ถ้าข้อมูลไม่ Update</td><td>1) ดู “อัปเดตล่าสุด” ว่าตรงกับที่คาดหรือไม่ · 2) ที่หน้า Upload Data ดูว่าไฟล์อยู่ในสถานะ “✓ สำเร็จ” · 3) ถ้าอัปโหลด BSR030 ใหม่ ต้องกด <strong>ประมวลผล</strong> · 4) กด F5 · 5) ติดต่อผู้ดูแลระบบ</td></tr>
+    <tr><td>ถ้าข้อมูลไม่ Update</td><td>1) ดู “อัปเดตล่าสุด” ว่าตรงกับที่คาดหรือไม่ · 2) ที่หน้า Upload Data ดูว่าไฟล์อยู่ในสถานะ “✓ สำเร็จ” · 3) กด <strong>ประมวลผล</strong> ที่หน้า Upload Data เพื่อคำนวณใหม่ · 4) กด F5 · 5) ติดต่อผู้ดูแลระบบ</td></tr>
   </table></div>
   <div class="callout owner"><span class="ttl">ยังไม่พบข้อมูลจากระบบต้นทาง</span><p>เวลาที่ Smart Sales / Supply Planning มีข้อมูลพร้อม Export ของแต่ละวัน — กรุณาตรวจสอบกับผู้ดูแลระบบ</p></div>
 </section>
@@ -975,11 +976,11 @@ KPI “ปริมาณโอนจริง (Actual)” = Σ โอนจร�
         <div class="row" style="margin-top:6px"><span class="sel mk ring" data-n="1">WK36 (2026) ▾</span><span class="btn mk ring" data-n="2">+ สร้าง Week ใหม่</span><span class="s">อัปเดตล่าสุด 04/09/2026 16:20</span><span class="btn pri mk ring" data-n="3">ประมวลผล</span><span style="background:#f0fdf4;color:#15803d;padding:4px 8px;border-radius:6px">ประมวลผลสำเร็จ: 1,284 แถว (พบการโอนที่ไม่ตรงกับแผน 37 กลุ่ม) <u>ไปที่ Dashboard</u></span></div>
         <div class="grid2" style="margin-top:10px">
           <div class="card mk" data-n="4"><b>Upload Excel Files</b><div class="s" style="font-size:11px">รองรับการอัปโหลดหลายไฟล์ — ลากไฟล์มาวางหรือกดเลือกไฟล์ทีละรายการ</div>
-            <div class="zone"><div class="row" style="justify-content:space-between"><b>โอนจริง (ABS0000)</b><span class="btn">เลือกไฟล์ (เลือกได้หลายไฟล์)</span></div>
-              <div style="margin-top:4px" class="row"><span class="pill ok">✓ สำเร็จ</span><span>ABS0000_StockTransfers (92).xls</span><span class="s">5,000 แถว (ข้าม 1,210 แถวที่ไม่เกี่ยวข้อง)</span><span class="btn mk r" data-n="5" style="padding:0 6px">⬇</span><span class="btn" style="padding:0 6px;color:#dc2626">🗑</span></div>
-              <div style="color:#b45309;font-size:10.5px">⚠ ไฟล์นี้มี 5,000 แถวพอดี — อาจถูกตัดที่เพดาน Export ของระบบต้นทาง</div></div>
-            <div class="zone"><div class="row" style="justify-content:space-between"><b>แผนโอนรายสัปดาห์ (BSR030 Weekly)</b><span class="btn">อัพโหลดไฟล์ใหม่</span></div><div style="margin-top:4px" class="row"><span class="pill ok">✓ สำเร็จ</span><span>BSR030_Weekly 36.xls</span><span class="s">2,140 แถว</span></div></div>
-            <div class="zone mk" data-n="6"><div class="row" style="justify-content:space-between"><b>แผนโอนรายวัน (BDR130 Daily)</b><span class="btn">เลือกไฟล์ (เลือกได้หลายไฟล์)</span></div><div style="margin-top:4px" class="row"><span class="pill err">พบข้อผิดพลาด</span><span>BDR130_Daily 36 (1).xls</span><span class="btn" style="color:#b91c1c;border-color:#fca5a5;padding:0 6px">ดาวน์โหลด Error</span></div><div style="color:#dc2626;font-size:10.5px">แถว 1: แผน Daily ของวันเดียวกันมีอยู่แล้วในไฟล์ "BDR130_Daily 36.xls" (วันที่ 31/08) — ...</div></div>
+            <div class="zone"><div class="row" style="justify-content:space-between"><b>โอนจริง (ABS0000)</b><span class="btn">+ เพิ่มไฟล์</span></div>
+              <div style="margin-top:4px" class="row"><span class="pill ok">✓ สำเร็จ</span><span>ABS0000_StockTransfers (92).xls</span><span class="s">3,790 แถว (ข้าม 1,210 แถวที่ไม่เกี่ยวข้อง)</span><span class="pill" style="background:#fef3c7;color:#b45309">5,000 แถวพอดี</span><span class="btn mk r" data-n="5" style="padding:0 6px">⬇</span><span class="btn" style="padding:0 6px;color:#dc2626">🗑</span></div>
+              <div style="color:#92400e;background:#fffbeb;border-radius:5px;padding:3px 6px;margin-top:4px;font-size:10.5px">⚠ มี 1 ไฟล์ที่มี 5,000 แถวพอดี ซึ่งเป็นเพดาน Export ของระบบต้นทาง — ตรวจว่าได้ Export ครบทุกช่วงวันที่แล้ว</div></div>
+            <div class="zone"><div class="row" style="justify-content:space-between"><b>แผนโอนรายสัปดาห์ (BSR030 Weekly)</b><span class="btn">เปลี่ยนไฟล์</span></div><div style="margin-top:4px" class="row"><span class="pill ok">✓ สำเร็จ</span><span>BSR030_Weekly 36.xls</span><span class="s">2,140 แถว</span></div></div>
+            <div class="zone mk" data-n="6"><div class="row" style="justify-content:space-between"><b>แผนโอนรายวัน (BDR130 Daily)</b><span class="btn">+ เพิ่มไฟล์</span></div><div style="margin-top:4px" class="row"><span class="pill err">พบข้อผิดพลาด</span><span>BDR130_Daily 36 (1).xls</span><span class="btn" style="color:#b91c1c;border-color:#fca5a5;padding:0 6px">ดาวน์โหลด Error</span></div><div style="color:#dc2626;font-size:10.5px">แถว 1: แผน Daily ของวันเดียวกันมีอยู่แล้วในไฟล์ "BDR130_Daily 36.xls" (วันที่ 31/08) — ...</div></div>
           </div>
           <div class="card"><b>Upload — ติดตามการกรอก Supply Daily</b><div class="s" style="font-size:11px">ไม่บังคับสำหรับการประมวลผลแผนโอน</div>
             <div class="zone"><b>กรอก Supply Daily (BSD010)</b></div><div class="zone"><b>ราคารายวัน</b><div class="s" style="font-size:10.5px">ชื่อไฟล์ ChickenW2_DD.MM.YYYY.xlsx</div></div><div class="zone"><b>รายการ Bidding (TC05)</b></div></div>
@@ -990,7 +991,7 @@ KPI “ปริมาณโอนจริง (Actual)” = Σ โอนจร�
       <li><span class="n">1</span><div><strong>เลือก Week</strong> — Week ที่จะอัปโหลดข้อมูลเข้า (หน้านี้ไม่เลือกให้อัตโนมัติ)</div></li>
       <li><span class="n">2</span><div><strong>+ สร้าง Week ใหม่</strong> — กรอกปี และ WK (ค่าเริ่มต้นคือสัปดาห์ปัจจุบัน) แล้วกด <strong>สร้าง</strong> หรือ <strong>ยกเลิก</strong></div></li>
       <li><span class="n">3</span><div><strong>ประมวลผล</strong> — กดได้เมื่อไฟล์บังคับผ่านครบ (ไก่ 3 ไฟล์ / หมู 2 ไฟล์) ระหว่างทำงานแสดง “กำลังประมวลผล...” เมื่อเสร็จมีจำนวนแถวและลิงก์ <strong>ไปที่ Dashboard</strong></div></li>
-      <li><span class="n">4</span><div><strong>กล่องไฟล์บังคับ</strong> — ลากไฟล์มาวาง หรือกดปุ่มเลือกไฟล์ รับเฉพาะ .xls / .xlsx · สถานะ: อัพโหลดแล้ว / กำลังตรวจสอบ... / ✓ สำเร็จ / พบข้อผิดพลาด</div></li>
+      <li><span class="n">4</span><div><strong>กล่องไฟล์บังคับ</strong> — ลากไฟล์มาวาง หรือกดปุ่มเลือกไฟล์ รับเฉพาะ .xls / .xlsx · ใต้หัวข้อแสดงจำนวนไฟล์และจำนวนแถวรวม · ถ้ามีมากกว่า 4 ไฟล์ รายการจะเลื่อนดูในกรอบ · สถานะ: อัปโหลดแล้ว / กำลังตรวจสอบ... / ✓ สำเร็จ / พบข้อผิดพลาด</div></li>
       <li><span class="n">5</span><div><strong>⬇ ดาวน์โหลดไฟล์ต้นฉบับ</strong> และ <strong>🗑 ลบไฟล์นี้</strong> — การลบจะลบข้อมูลของไฟล์นั้นและคำนวณใหม่ทันที (มีหน้าต่างยืนยัน)</div></li>
       <li><span class="n">6</span><div><strong>ไฟล์ที่ไม่ผ่าน</strong> — แสดงสาเหตุ 10 แถวแรก และปุ่ม <strong>ดาวน์โหลด Error</strong> (ไฟล์ CSV: แถวที่, สาเหตุ)</div></li>
     </ul>
@@ -1000,7 +1001,7 @@ KPI “ปริมาณโอนจริง (Actual)” = Σ โอนจร�
       <li><b>อัปโหลดโอนจริง (ABS0000)</b>เลือกทุกไฟล์ของสัปดาห์พร้อมกันได้ ถ้าไฟล์ใดมี 5,000 แถวพอดี ให้ Export แบ่งช่วงวันที่เพิ่ม</li>
       <li><b>อัปโหลดแผน</b>ไก่: BSR030 Weekly 1 ไฟล์ + BDR130 Daily · หมู: BDR130 Daily เท่านั้น</li>
       <li><b>ตรวจว่าทุกไฟล์ “✓ สำเร็จ”</b>ไฟล์ที่ “พบข้อผิดพลาด” ให้กดดาวน์โหลด Error แก้แล้วอัปใหม่</li>
-      <li><b>กด ประมวลผล</b>จำเป็นเสมอหลังอัปโหลด BSR030 (กล่องหลายไฟล์ประมวลผลให้เองแล้ว แต่กดซ้ำได้ไม่มีผลเสีย)</li>
+      <li><b>ตรวจผลการประมวลผล</b>ทุกกล่องประมวลผลให้อัตโนมัติหลังอัปโหลดผ่าน · กด <strong>ประมวลผล</strong> ซ้ำได้ทุกเมื่อโดยไม่มีผลเสีย (เช่น หลังแก้ Master Data)</li>
       <li><b>กด ไปที่ Dashboard</b>ตรวจผลลัพธ์</li>
     </ol>
     <div class="callout warn"><span class="ttl">อัปโหลดแผน Daily ฉบับใหม่ของวันเดิม</span><p>ระบบจะปฏิเสธเพื่อกันแผนถูกนับซ้ำ ให้ลบไฟล์เดิม (🗑) ก่อน แล้วจึงอัปโหลดไฟล์ใหม่ · ส่วน BSR030 การอัปโหลดใหม่จะแทนที่ไฟล์เดิมทั้งช่อง (ถ้าชื่อไฟล์เดียวกันจะถาม “เพิ่มเป็นเวอร์ชันใหม่”)</p></div>
@@ -1173,12 +1174,12 @@ KPI “ปริมาณโอนจริง (Actual)” = Σ โอนจร�
     <tr><td>เพิ่มเติม ▾</td><td>แถบเมนู</td><td>เปิดเมนูรอง</td><td>ไปหน้าข้อมูลดิบ / ติดตามโอน / Supply Daily / Settings</td><td>รายการเมนู</td></tr>
     <tr><td>เลือก Week ▾</td><td>ทุกหน้าข้อมูล</td><td>เลือกสัปดาห์</td><td>ดู/อัปโหลดสัปดาห์อื่น</td><td>ข้อมูลของ Week นั้น</td></tr>
     <tr><td>+ สร้าง Week ใหม่ / สร้าง / ยกเลิก</td><td>Upload Data</td><td>สร้าง Week</td><td>เริ่มสัปดาห์ใหม่</td><td>Week ใหม่ถูกเลือก</td></tr>
-    <tr><td>เลือกไฟล์ / เลือกไฟล์ (เลือกได้หลายไฟล์) / อัพโหลดไฟล์ใหม่</td><td>Upload Data</td><td>เลือกไฟล์จากเครื่อง (หรือลากไฟล์มาวาง)</td><td>มีไฟล์ Export ใหม่</td><td>ตรวจและบันทึกไฟล์</td></tr>
+    <tr><td>เลือกไฟล์ / + เพิ่มไฟล์ / เปลี่ยนไฟล์</td><td>Upload Data</td><td>เลือกไฟล์จากเครื่อง (หรือลากไฟล์มาวาง)</td><td>มีไฟล์ Export ใหม่</td><td>ตรวจและบันทึกไฟล์</td></tr>
     <tr><td>เพิ่มเป็นเวอร์ชันใหม่</td><td>Upload Data (BSR030)</td><td>ยืนยันอัปโหลดไฟล์ชื่อเดิม</td><td>ระบบพบไฟล์ชื่อเดียวกัน</td><td>แทนที่ไฟล์เดิม</td></tr>
     <tr><td>ดาวน์โหลด Error</td><td>Upload Data</td><td>ดาวน์โหลด CSV รายการแถวที่ผิด</td><td>ไฟล์ “พบข้อผิดพลาด”</td><td>ไฟล์ errors_….csv</td></tr>
     <tr><td>⬇ (ดาวน์โหลดไฟล์ต้นฉบับ)</td><td>Upload Data</td><td>ดาวน์โหลดไฟล์ที่เคยอัปโหลด</td><td>ตรวจสอบย้อนหลัง</td><td>ไฟล์ต้นฉบับ</td></tr>
     <tr><td>🗑 (ลบไฟล์นี้) → ยืนยันการลบ</td><td>Upload Data</td><td>ลบไฟล์และข้อมูลจากไฟล์นั้น</td><td>อัปผิดไฟล์ / ต้องการอัปฉบับใหม่</td><td>คำนวณใหม่ทันที</td></tr>
-    <tr><td>ประมวลผล</td><td>Upload Data</td><td>คำนวณผลลัพธ์ทั้ง Week</td><td>หลังอัปโหลดไฟล์ครบ (บังคับหลังอัป BSR030)</td><td>“ประมวลผลสำเร็จ: x แถว”</td></tr>
+    <tr><td>ประมวลผล</td><td>Upload Data</td><td>คำนวณผลลัพธ์ทั้ง Week</td><td>ต้องการคำนวณใหม่ทั้ง Week (ปกติระบบประมวลผลให้เองหลังอัปโหลด)</td><td>“ประมวลผลสำเร็จ: x แถว”</td></tr>
     <tr><td>ไปที่ Dashboard</td><td>Upload Data</td><td>ไปหน้า Dashboard</td><td>หลังประมวลผลสำเร็จ</td><td>Dashboard</td></tr>
     <tr><td>Export Excel</td><td>Dashboard, ติดตามโอน</td><td>สร้างไฟล์ Excel</td><td>ต้องการนำข้อมูลไปวิเคราะห์ / ประชุม</td><td>ไฟล์ Tracking_WKxx.xlsx</td></tr>
     <tr><td>▴ / ▾ (การ์ดมูลค่าสูญเสีย)</td><td>Dashboard</td><td>ซ่อน / แสดงแถว KPI รอง</td><td>ต้องการพื้นที่ตารางมากขึ้น</td><td>จำค่าไว้ในเบราว์เซอร์</td></tr>
@@ -1307,12 +1308,12 @@ KPI “ปริมาณโอนจริง (Actual)” = Σ โอนจร�
     <tr><td>“ยังไม่มีข้อมูล Week ในระบบ”</td><td>ยังไม่เคยสร้าง Week ของสินค้านี้</td><td>หน้า Upload Data ช่องเลือก Week</td><td>สร้าง Week และอัปโหลดไฟล์</td></tr>
     <tr><td>“Week นี้ยังไม่มีผลการประมวลผล”</td><td>อัปโหลดแล้วแต่ยังไม่ประมวลผล หรือไฟล์ไม่ผ่าน</td><td>หน้า Upload Data: สถานะไฟล์</td><td>แก้ไฟล์ที่ไม่ผ่าน แล้วกด ประมวลผล</td></tr>
     <tr><td>ตารางว่าง / “0 รายการ”</td><td>Filter หรือคำค้นหาไม่ตรงข้อมูล</td><td>ปุ่ม Clear Filter เป็นสีเข้ม = มี Filter อยู่</td><td>กด Clear Filter</td></tr>
-    <tr><td>ปุ่ม ประมวลผล กดไม่ได้</td><td>ไฟล์บังคับยังไม่ “✓ สำเร็จ” ครบ</td><td>ข้อความ “อัพโหลดและตรวจสอบให้ผ่านครบทั้ง x ไฟล์ก่อน”</td><td>อัปโหลดไฟล์ที่ขาด</td></tr>
+    <tr><td>ปุ่ม ประมวลผล กดไม่ได้</td><td>ไฟล์บังคับยังไม่ “✓ สำเร็จ” ครบ</td><td>ข้อความ “อัปโหลดและตรวจสอบให้ผ่านครบทั้ง x ไฟล์ก่อน”</td><td>อัปโหลดไฟล์ที่ขาด</td></tr>
     <tr><td>“ไฟล์ขาดคอลัมน์ที่จำเป็น: …”</td><td>Export ผิดรายงาน หรือหัวคอลัมน์เปลี่ยนชื่อ</td><td>เทียบกับตาราง Section 5.2</td><td>Export ใหม่จากรายงานที่ถูกต้อง</td></tr>
     <tr><td>“ไฟล์นี้มีวันที่ … ซึ่งอยู่นอก WKxx”</td><td>เลือก Week ผิด หรือไฟล์ผิดสัปดาห์</td><td>วันที่ในไฟล์ vs ช่วง Week ที่แสดงในข้อความ</td><td>เลือก Week ที่ถูก หรือ Export ช่วงวันที่ใหม่</td></tr>
     <tr><td>“ข้อมูลในไฟล์นี้ซ้ำกับไฟล์ … x%”</td><td>อัปโหลด ABS0000 ไฟล์เดิมซ้ำ (เช่น ไฟล์ “(1)”)</td><td>เทียบรายชื่อไฟล์ที่อัปแล้ว</td><td>ไม่ต้องอัปซ้ำ · ถ้าต้องการแทนที่ ลบไฟล์เดิมก่อน</td></tr>
     <tr><td>“แผน Daily ของวันเดียวกันมีอยู่แล้วในไฟล์ …”</td><td>อัปแผน Daily ฉบับใหม่ของวันเดิม</td><td>วันที่ที่แสดงในข้อความ</td><td>ลบไฟล์เดิมแล้วอัปไฟล์ใหม่</td></tr>
-    <tr><td>⚠ ไฟล์นี้มี 5,000 แถวพอดี</td><td>Smart Sales ตัดไฟล์ที่ 5,000 แถว</td><td>เทียบช่วงวันที่ในไฟล์</td><td>Export แบ่งช่วงวันที่ แล้วอัปโหลดไฟล์ที่เหลือเพิ่ม</td></tr>
+    <tr><td>ป้าย “5,000 แถวพอดี” / ⚠ มี x ไฟล์ที่มี 5,000 แถวพอดี</td><td>ระบบต้นทางตัดไฟล์ที่ 5,000 แถว</td><td>เทียบช่วงวันที่ในไฟล์</td><td>Export แบ่งช่วงวันที่ แล้วอัปโหลดไฟล์ที่เหลือเพิ่ม</td></tr>
     <tr><td>“ข้าม x แถวที่ไม่เกี่ยวข้อง”</td><td>แถว ABS0000 ไม่มีโรงงานปลายทาง (ขายตรง) หรือวันที่นอก Week ±1 วัน · ราคา/Bidding: SKU ไม่มีใน Master</td><td>ข้อมูลดิบ / ไฟล์ต้นฉบับ</td><td>ปกติไม่ต้องแก้</td></tr>
     <tr><td>“รองรับเฉพาะไฟล์ .xls หรือ .xlsx เท่านั้น”</td><td>ไฟล์ CSV / PDF / อื่น ๆ</td><td>นามสกุลไฟล์</td><td>บันทึกเป็น .xlsx</td></tr>
     <tr><td>“อ่านวันที่จากชื่อไฟล์ไม่ได้”</td><td>ไฟล์ราคารายวันชื่อไม่มี DD.MM.YYYY</td><td>ชื่อไฟล์</td><td>เปลี่ยนชื่อ เช่น ChickenW2_26.08.2026.xlsx</td></tr>
@@ -1320,7 +1321,7 @@ KPI “ปริมาณโอนจริง (Actual)” = Σ โอนจร�
     <tr><td>% = 100% แต่โอนจริงน้อยกว่าแผน</td><td>ขาดไม่ถึง 10% (ปัดหน่วยหยิบ)</td><td>เทียบคอลัมน์แผนกับจริง</td><td>ไม่ใช่ Error · ดูสูญเสียกำไรสำหรับส่วนที่ขาดจริง</td></tr>
     <tr><td>Achievement % ไม่เท่ากับ โอนจริง ÷ แผน</td><td>ตัดเพดานต่อเส้นทาง + ปัด 10%</td><td>ค่า “โอนจริง ÷ แผน (ไม่ปรับ)” ใต้ตัวเลข</td><td>ไม่ใช่ Error · ดู Section 7.2</td></tr>
     <tr><td>ตัวเลขไม่ตรงกับ Excel เดิม</td><td>Excel เดิมมีบั๊กสูตรลากไม่ครบ, การแบ่ง Weekly/Daily และการแบ่งหลายราคาแบบใหม่</td><td>README · Section 10</td><td>ใช้ตัวเลขจากระบบ · ถ้าต่างมากให้แจ้งผู้ดูแล</td></tr>
-    <tr><td>ตัวเลขไม่เปลี่ยนหลังอัปโหลด BSR030</td><td>ยังไม่ได้กด ประมวลผล</td><td>เวลา “อัปเดตล่าสุด”</td><td>กด ประมวลผล</td></tr>
+    <tr><td>ตัวเลขไม่เปลี่ยนหลังอัปโหลด</td><td>การประมวลผลอัตโนมัติไม่สำเร็จ หรือเบราว์เซอร์ยังแสดงข้อมูลเก่า</td><td>เวลา “อัปเดตล่าสุด” · ข้อความ Error ที่หน้า Upload Data</td><td>กด ประมวลผล แล้วกด F5</td></tr>
     <tr><td>ตัวเลขไม่ Update</td><td>เบราว์เซอร์ยังแสดงข้อมูลเก่า</td><td>เวลา “อัปเดตล่าสุด”</td><td>สลับหน้าต่างไปมา หรือกด F5</td></tr>
     <tr><td>โอนจริงต่ำผิดปกติในบางเส้นทาง</td><td>รายการ ±1 วันยังไม่ยืนยัน / กลุ่มสินค้าไม่ตรง / ไฟล์ ABS0000 ไม่ครบ</td><td>กล่อง ±1 วัน · การ์ดโอนไม่ตรงแผนเลย · ข้อมูลดิบ</td><td>ยืนยันรายการ / อัปไฟล์ที่ขาด / แก้ไขโอนจริงพร้อมเหตุผล</td></tr>
     <tr><td>Export ไม่ครบทุกแถว</td><td>มี Filter อยู่</td><td>ชื่อไฟล์ลงท้าย _filtered · Sheet Summary “ขอบเขตข้อมูล”</td><td>Clear Filter แล้ว Export ใหม่</td></tr>

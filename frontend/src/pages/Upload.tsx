@@ -43,7 +43,7 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
   const processMutation = useProcessWeek();
 
   return (
-    <div className="max-w-6xl space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="mb-2 text-xl font-semibold text-gray-900">Upload Data</h1>
         <div className="flex flex-wrap items-center gap-3">
@@ -61,7 +61,7 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
           )}
           {weekId && processMutation.isSuccess && (
             <div className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
-              ประมวลผลสำเร็จ: {processMutation.data.trackingRowCount} แถว
+              ประมวลผลสำเร็จ: {processMutation.data.trackingRowCount.toLocaleString('en-US')} แถว
               {processMutation.data.unmatchedRowCount > 0 &&
                 ` (พบการโอนที่ไม่ตรงกับแผน ${processMutation.data.unmatchedRowCount} กลุ่ม)`}
               <button
@@ -80,7 +80,7 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
           )}
         </div>
         {weekId && !allValidated && (
-          <p className="mt-2 text-xs text-gray-500">อัพโหลดและตรวจสอบให้ผ่านครบทั้ง {requiredFileCount} ไฟล์ก่อน</p>
+          <p className="mt-2 text-xs text-gray-500">อัปโหลดและตรวจสอบให้ผ่านครบทั้ง {requiredFileCount} ไฟล์ก่อน</p>
         )}
       </div>
 

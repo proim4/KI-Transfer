@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import type { UploadHistoryRow } from '../types/db';
+import type { UploadFileType, UploadHistoryRow } from '../types/db';
 import { LATEST_UPLOAD_STAMPS_QUERY_KEY } from './useLatestWeekId';
 import { useProcessWeek } from './useProcessWeek';
 import { uploadsQueryKey } from './useUploads';
@@ -35,41 +35,45 @@ const TABLE_BY_TYPE: Record<string, string> = {
 };
 
 /**
- * Deletes one upload_history row. If it's the current version for its slot,
- * this also clears that slot's live data (plan_rows/actual_rows), resets the
- * `uploads` row so the dropzone shows "ยังไม่อัพโหลด" again, and immediately
- * re-runs process-week so Dashboard/Tracking reflect the removal. Deleting a
- * superseded (already-replaced) version only removes the log entry — its data
- * was already purged when the newer version was uploaded.
+ * Deletes the current file of a single-file slot: clears that slot's live
+ * data (plan_rows/actual_rows) and stored file, resets the `uploads` row so
+ * the dropzone shows "ยังไม่อัปโหลด" again, removes its upload_history entry
+ * when there is one (files uploaded before history logging have none), and
+ * re-runs process-week so Dashboard/Tracking reflect the removal.
  */
+interface DeleteSlotArgs {
+  weekId: string;
+  fileType: UploadFileType;
+  storagePath: string | null;
+  historyId: string | null;
+}
+
 export function useDeleteUploadHistory(weekId: string) {
   const queryClient = useQueryClient();
   const processWeek = useProcessWeek();
 
   return useMutation({
-    mutationFn: async ({ row, isCurrent }: { row: UploadHistoryRow; isCurrent: boolean }) => {
-      if (isCurrent) {
-        if (row.storage_path) {
-          await supabase.storage.from('transfer-uploads').remove([row.storage_path]);
-        }
-
-        const table = TABLE_BY_TYPE[row.file_type];
-        const sourceFile = SOURCE_FILE_BY_TYPE[row.file_type];
-        if (sourceFile) {
-          await supabase.from(table).delete().eq('week_id', weekId).eq('source_file', sourceFile);
-        } else {
-          await supabase.from(table).delete().eq('week_id', weekId);
-        }
-
-        await supabase.from('uploads').delete().eq('week_id', weekId).eq('file_type', row.file_type);
+    mutationFn: async ({ fileType, storagePath, historyId }: DeleteSlotArgs) => {
+      if (storagePath) {
+        await supabase.storage.from('transfer-uploads').remove([storagePath]);
       }
 
-      const { error } = await supabase.from('upload_history').delete().eq('id', row.id);
-      if (error) throw error;
+      const table = TABLE_BY_TYPE[fileType];
+      const sourceFile = SOURCE_FILE_BY_TYPE[fileType];
+      const { error: dataError } = sourceFile
+        ? await supabase.from(table).delete().eq('week_id', weekId).eq('source_file', sourceFile)
+        : await supabase.from(table).delete().eq('week_id', weekId);
+      if (dataError) throw dataError;
 
-      if (isCurrent) {
-        await processWeek.mutateAsync(weekId);
+      const { error: uploadError } = await supabase.from('uploads').delete().eq('week_id', weekId).eq('file_type', fileType);
+      if (uploadError) throw uploadError;
+
+      if (historyId !== null) {
+        const { error } = await supabase.from('upload_history').delete().eq('id', historyId);
+        if (error) throw error;
       }
+
+      await processWeek.mutateAsync(weekId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: uploadHistoryQueryKey(weekId) });

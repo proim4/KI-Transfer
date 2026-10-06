@@ -39,6 +39,14 @@ async function downloadOriginalFile(storagePath: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+/** Row counts in this zone use thousands separators, matching the "5,000" export-cap note. */
+function formatCount(n: number): string {
+  return n.toLocaleString('en-US');
+}
+
+/** Past this many files the list scrolls inside the card instead of stretching the whole column. */
+const SCROLL_AFTER_FILES = 4;
+
 const ACCEPTED_EXTENSIONS = ['.xls', '.xlsx'];
 function hasAcceptedExtension(filename: string): boolean {
   const lower = filename.toLowerCase();
@@ -46,7 +54,7 @@ function hasAcceptedExtension(filename: string): boolean {
 }
 
 const statusBadge: Record<UploadFileRow['status'], { text: string; className: string }> = {
-  uploaded: { text: 'อัพโหลดแล้ว', className: 'bg-gray-100 text-gray-600' },
+  uploaded: { text: 'อัปโหลดแล้ว', className: 'bg-gray-100 text-gray-600' },
   validating: { text: 'กำลังตรวจสอบ...', className: 'bg-amber-100 text-amber-700' },
   validated: { text: '✓ สำเร็จ', className: 'bg-green-100 text-green-700' },
   error: { text: 'พบข้อผิดพลาด', className: 'bg-red-100 text-red-700' },
@@ -96,6 +104,9 @@ export default function MultiFileUploadZone({ weekId, fileType, label, hint }: M
 
   const rows = files ?? [];
   const isBusy = batch !== null;
+  const validatedRows = rows.filter((r) => r.status === 'validated');
+  const errorCount = rows.filter((r) => r.status === 'error').length;
+  const truncatedCount = validatedRows.filter((r) => looksTruncated(r.row_count + r.skipped_count)).length;
 
   return (
     <div
@@ -130,7 +141,7 @@ export default function MultiFileUploadZone({ weekId, fileType, label, hint }: M
             disabled={isBusy}
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 hover:bg-gray-50 disabled:opacity-50"
           >
-            เลือกไฟล์ (เลือกได้หลายไฟล์)
+            + เพิ่มไฟล์
           </button>
         </div>
       </div>
@@ -145,7 +156,13 @@ export default function MultiFileUploadZone({ weekId, fileType, label, hint }: M
       {rows.length === 0 && !isBusy && <p className="mt-2 text-xs text-gray-400">ยังไม่มีไฟล์</p>}
 
       {rows.length > 0 && (
-        <ul className="mt-2 space-y-1">
+        <p className="mt-2 text-xs text-gray-500">
+          {rows.length} ไฟล์ · รวม {formatCount(validatedRows.reduce((a, r) => a + r.row_count, 0))} แถว
+          {errorCount > 0 && <span className="text-red-600"> · ไม่ผ่าน {errorCount} ไฟล์</span>}
+        </p>
+      )}
+      {rows.length > 0 && (
+        <ul className={`mt-1 space-y-1 ${rows.length > SCROLL_AFTER_FILES ? 'max-h-64 overflow-y-auto pr-1' : ''}`}>
           {rows.map((row) => {
             const badge = statusBadge[row.status];
             return (
@@ -157,7 +174,16 @@ export default function MultiFileUploadZone({ weekId, fileType, label, hint }: M
                   </span>
                   {row.status === 'validated' && (
                     <span className="shrink-0 text-gray-500">
-                      {row.row_count} แถว{row.skipped_count > 0 && ` (ข้าม ${row.skipped_count} แถวที่ไม่เกี่ยวข้อง)`}
+                      {formatCount(row.row_count)} แถว
+                      {row.skipped_count > 0 && ` (ข้าม ${formatCount(row.skipped_count)} แถวที่ไม่เกี่ยวข้อง)`}
+                    </span>
+                  )}
+                  {row.status === 'validated' && looksTruncated(row.row_count + row.skipped_count) && (
+                    <span
+                      className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-700"
+                      title="จำนวนแถวเท่ากับเพดาน Export ของระบบต้นทางพอดี — อาจถูกตัด"
+                    >
+                      {formatCount(SUSPECTED_EXPORT_ROW_LIMIT)} แถวพอดี
                     </span>
                   )}
                   {row.status === 'error' && row.error_report && row.error_report.length > 0 && (
@@ -188,12 +214,6 @@ export default function MultiFileUploadZone({ weekId, fileType, label, hint }: M
                     🗑
                   </button>
                 </div>
-                {row.status === 'validated' && looksTruncated(row.row_count + row.skipped_count) && (
-                  <p className="mt-1 text-amber-700">
-                    ⚠ ไฟล์นี้มี {SUSPECTED_EXPORT_ROW_LIMIT.toLocaleString('en-US')} แถวพอดี — อาจถูกตัดที่เพดาน Export ของระบบต้นทาง
-                    ตรวจสอบว่า Export ครบ หรือแบ่งช่วงวันที่แล้วอัปโหลดไฟล์ที่เหลือเพิ่ม
-                  </p>
-                )}
                 {row.status === 'error' && row.error_report && (
                   <ul className="mt-1 max-h-24 space-y-0.5 overflow-y-auto text-red-600">
                     {row.error_report.slice(0, 10).map((e, i) => (
@@ -208,6 +228,12 @@ export default function MultiFileUploadZone({ weekId, fileType, label, hint }: M
             );
           })}
         </ul>
+      )}
+      {truncatedCount > 0 && (
+        <p className="mt-2 rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-800">
+          ⚠ มี {truncatedCount} ไฟล์ที่มี {formatCount(SUSPECTED_EXPORT_ROW_LIMIT)} แถวพอดี ซึ่งเป็นเพดาน Export ของระบบต้นทาง —
+          ตรวจว่าได้ Export ครบทุกช่วงวันที่แล้ว ถ้ายังไม่ครบให้แบ่งช่วงวันที่แล้วเพิ่มไฟล์ที่เหลือ
+        </p>
       )}
 
       {pendingDeleteRow && (

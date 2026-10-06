@@ -1,5 +1,6 @@
 import { useRef, useState, type DragEvent } from 'react';
 import { useFileUpload } from '../hooks/useFileUpload';
+import { useProcessWeek } from '../hooks/useProcessWeek';
 import { useDeleteUploadHistory, useUploadHistory } from '../hooks/useUploadHistory';
 import { useUploadFor } from '../hooks/useUploads';
 import { supabase } from '../lib/supabase';
@@ -46,7 +47,7 @@ function hasAcceptedExtension(filename: string): boolean {
 }
 
 const statusBadge: Record<string, { text: string; className: string }> = {
-  none: { text: 'ยังไม่อัพโหลด', className: 'bg-gray-100 text-gray-600' },
+  none: { text: 'ยังไม่อัปโหลด', className: 'bg-gray-100 text-gray-600' },
   validating: { text: 'กำลังตรวจสอบ...', className: 'bg-amber-100 text-amber-700' },
   validated: { text: '✓ สำเร็จ', className: 'bg-green-100 text-green-700' },
   error: { text: 'พบข้อผิดพลาด', className: 'bg-red-100 text-red-700' },
@@ -63,6 +64,7 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
   const mutation = useFileUpload();
   const { data: history } = useUploadHistory(weekId);
   const deleteMutation = useDeleteUploadHistory(weekId);
+  const processWeek = useProcessWeek();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
@@ -72,8 +74,9 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
   const slotHistory = (history ?? []).filter((h) => h.file_type === fileType);
   const currentHistoryRow = slotHistory.find((h) => isCurrentVersion(h, slotHistory));
 
-  function startUpload(file: File) {
-    mutation.mutate({ weekId, fileType, file });
+  async function startUpload(file: File) {
+    const outcome = await mutation.mutateAsync({ weekId, fileType, file });
+    if (outcome.status === 'validated') await processWeek.mutateAsync(weekId);
   }
 
   function handleFile(file: File | undefined) {
@@ -87,7 +90,7 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
       setPendingDuplicate(file);
       return;
     }
-    startUpload(file);
+    void startUpload(file);
   }
 
   function handleDrop(e: DragEvent<HTMLDivElement>) {
@@ -96,7 +99,7 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
     handleFile(e.dataTransfer.files?.[0]);
   }
 
-  const isBusy = mutation.isPending || upload?.status === 'validating';
+  const isBusy = mutation.isPending || processWeek.isPending || upload?.status === 'validating';
   const status = isBusy ? 'validating' : (upload?.status ?? 'none');
   const badge = statusBadge[status];
 
@@ -129,7 +132,7 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
             disabled={isBusy}
             className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 hover:bg-gray-50 disabled:opacity-50"
           >
-            {upload ? 'อัพโหลดไฟล์ใหม่' : 'เลือกไฟล์'}
+            {upload ? 'เปลี่ยนไฟล์' : 'เลือกไฟล์'}
           </button>
         </div>
       </div>
@@ -148,7 +151,8 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
               </span>
               {status === 'validated' && upload && (
                 <span className="shrink-0 text-gray-500">
-                  {upload.row_count} แถว{upload.skipped_count > 0 && ` (ข้าม ${upload.skipped_count} แถวที่ไม่เกี่ยวข้อง)`}
+                  {upload.row_count.toLocaleString('en-US')} แถว
+                  {upload.skipped_count > 0 && ` (ข้าม ${upload.skipped_count.toLocaleString('en-US')} แถวที่ไม่เกี่ยวข้อง)`}
                 </span>
               )}
               {status === 'error' && upload?.error_report && upload.error_report.length > 0 && (
@@ -170,7 +174,7 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
                   ⬇
                 </button>
               )}
-              {status === 'validated' && currentHistoryRow && (
+              {status === 'validated' && upload && (
                 <button
                   type="button"
                   onClick={() => setConfirmingDelete(true)}
@@ -201,21 +205,21 @@ export default function UploadDropzone({ weekId, fileType, label, hint }: Upload
           message={`พบไฟล์ชื่อ "${pendingDuplicate.name}" ที่เคยอัปโหลดไว้ก่อนหน้านี้\n\nต้องการอัปโหลดทับเป็นเวอร์ชันใหม่หรือไม่?`}
           confirmLabel="เพิ่มเป็นเวอร์ชันใหม่"
           onConfirm={() => {
-            startUpload(pendingDuplicate);
+            void startUpload(pendingDuplicate);
             setPendingDuplicate(null);
           }}
           onCancel={() => setPendingDuplicate(null)}
         />
       )}
 
-      {confirmingDelete && currentHistoryRow && (
+      {confirmingDelete && upload && (
         <ConfirmDialog
           title="ต้องการลบไฟล์นี้หรือไม่?"
-          message={`"${currentHistoryRow.original_filename}" จะถูกลบพร้อมข้อมูลที่ประมวลผลจากไฟล์นี้ และระบบจะคำนวณผลลัพธ์ใหม่ทันที`}
+          message={`"${upload.original_filename}" จะถูกลบพร้อมข้อมูลที่ประมวลผลจากไฟล์นี้ และระบบจะคำนวณผลลัพธ์ใหม่ทันที`}
           confirmLabel="ยืนยันการลบ"
           danger
           onConfirm={() => {
-            deleteMutation.mutate({ row: currentHistoryRow, isCurrent: true });
+            deleteMutation.mutate({ weekId, fileType, storagePath: upload.storage_path, historyId: currentHistoryRow?.id ?? null });
             setConfirmingDelete(false);
           }}
           onCancel={() => setConfirmingDelete(false)}
