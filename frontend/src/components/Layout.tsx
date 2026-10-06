@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+import { usePageAccess } from '../hooks/usePageAccess';
 import { supabase } from '../lib/supabase';
 import Dropdown from './Dropdown';
 import LiveClock from './LiveClock';
@@ -99,6 +100,11 @@ export default function Layout() {
   // หมู's own top-level Dashboard/Upload Data/เพิ่มเติม side by side instead
   // of tucking หมู's away in a small dropdown.
   const isAll = location.pathname.startsWith('/all');
+  // Only the products this user may open (Settings → ลงทะเบียนผู้ใช้งาน) get
+  // nav links; a หมู-only user sees หมู's menu even outside /pork pages.
+  const { can } = usePageAccess();
+  const showChickenNav = !isPork && can('chicken');
+  const showPorkNav = can('pork') && (isPork || isAll || !can('chicken'));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -109,17 +115,7 @@ export default function Layout() {
               ติดตามโอนเทียบแผน
             </NavLink>
             <nav className="flex items-center gap-2">
-              {isPork ? (
-                <>
-                  <NavLink to="/pork/dashboard" className={navLinkClass}>
-                    🐷 Dashboard
-                  </NavLink>
-                  <NavLink to="/pork/upload" className={navLinkClass}>
-                    🐷 Upload Data
-                  </NavLink>
-                  <PorkMoreMenu showSettings={showSettings} />
-                </>
-              ) : (
+              {showChickenNav && (
                 <>
                   <NavLink to="/dashboard" className={navLinkClass}>
                     🐔 Dashboard
@@ -128,17 +124,17 @@ export default function Layout() {
                     🐔 Upload Data
                   </NavLink>
                   <MoreMenu showSettings={showSettings} />
-                  {isAll && (
-                    <>
-                      <NavLink to="/pork/dashboard" className={navLinkClass}>
-                        🐷 Dashboard
-                      </NavLink>
-                      <NavLink to="/pork/upload" className={navLinkClass}>
-                        🐷 Upload Data
-                      </NavLink>
-                      <PorkMoreMenu showSettings={showSettings} />
-                    </>
-                  )}
+                </>
+              )}
+              {showPorkNav && (
+                <>
+                  <NavLink to="/pork/dashboard" className={navLinkClass}>
+                    🐷 Dashboard
+                  </NavLink>
+                  <NavLink to="/pork/upload" className={navLinkClass}>
+                    🐷 Upload Data
+                  </NavLink>
+                  <PorkMoreMenu showSettings={showSettings} />
                 </>
               )}
               <NavLink to="/manual" className={navLinkClass}>

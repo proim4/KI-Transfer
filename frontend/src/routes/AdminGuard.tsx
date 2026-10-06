@@ -18,7 +18,7 @@ export default function AdminGuard() {
 
   const requireLogin = settings?.require_login ?? true;
   if (requireLogin && !isAdmin) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

@@ -16,12 +16,15 @@ export interface AppSettingsRow {
 
 export type UserRole = 'admin' | 'user';
 export type UserStatus = 'active' | 'inactive';
+/** Product pages a non-admin user may open (migration 0020); admins always have every page. */
+export type PageAccess = 'chicken' | 'pork' | 'all';
 
 export interface ProfileRow {
   id: string;
   username: string;
   role: UserRole;
   status: UserStatus;
+  page_access: PageAccess[];
   created_at: string;
   updated_at: string;
 }

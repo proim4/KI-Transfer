@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useBootstrapAdmin, useCreateUser } from '../hooks/useUserManagement';
 import { normalizeUsername } from '../lib/username';
-import type { UserRole, UserStatus } from '../types/db';
+import { ALL_PAGE_ACCESS, toRoleAndAccess, type PageArea } from '../lib/pageAccess';
+import type { UserStatus } from '../types/db';
+import PageAccessField from './PageAccessField';
 import PasswordInput from './PasswordInput';
 
 interface RegisterUserDialogProps {
@@ -19,7 +21,7 @@ export default function RegisterUserDialog({ mode, onClose, onRegistered }: Regi
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('user');
+  const [areas, setAreas] = useState<Set<PageArea>>(() => new Set<PageArea>(ALL_PAGE_ACCESS));
   const [status, setStatus] = useState<UserStatus>('active');
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +53,7 @@ export default function RegisterUserDialog({ mode, onClose, onRegistered }: Regi
       if (mode === 'bootstrap') {
         await bootstrap.mutateAsync({ username: normalized, password });
       } else {
-        await create.mutateAsync({ username: normalized, password, role, status });
+        await create.mutateAsync({ username: normalized, password, status, ...toRoleAndAccess(areas) });
       }
       onRegistered?.();
       onClose();
@@ -89,22 +91,16 @@ export default function RegisterUserDialog({ mode, onClose, onRegistered }: Regi
         </div>
 
         {mode === 'admin' && (
-          <div className="mb-3 grid grid-cols-2 gap-2">
-            <div>
-              <label className={labelClass}>Role</label>
-              <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} className={selectClass}>
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div>
+          <>
+            <PageAccessField value={areas} onChange={setAreas} />
+            <div className="mb-3">
               <label className={labelClass}>Status</label>
               <select value={status} onChange={(e) => setStatus(e.target.value as UserStatus)} className={selectClass}>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
             </div>
-          </div>
+          </>
         )}
 
         {error && <p className="mb-3 text-sm text-red-600">{error}</p>}

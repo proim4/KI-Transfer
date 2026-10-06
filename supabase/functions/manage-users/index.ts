@@ -20,6 +20,34 @@ const CORS_HEADERS = {
 };
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,32}$/;
+
+/** Product pages a non-admin user may open (migration 0020). Admins always get every page. */
+const PAGE_ACCESS_VALUES = ['chicken', 'pork', 'all'] as const;
+type PageAccess = (typeof PAGE_ACCESS_VALUES)[number];
+
+function validatePageAccess(value: unknown): PageAccess[] | Response {
+  if (!Array.isArray(value) || value.some((v) => !PAGE_ACCESS_VALUES.includes(v))) {
+    return json({ error: 'สิทธิ์การเข้าถึงไม่ถูกต้อง' }, 400);
+  }
+  const set = new Set<PageAccess>(value);
+  // ทั้งหมด shows both products' data, so it can't exist without both of them.
+  if (set.has('all') && !(set.has('chicken') && set.has('pork'))) {
+    return json({ error: 'สิทธิ์ "ทั้งหมด" ต้องมีสิทธิ์ทั้ง ไก่ และ หมู ด้วย' }, 400);
+  }
+  return PAGE_ACCESS_VALUES.filter((v) => set.has(v));
+}
+
+/** Refuses to leave the system without an active admin (demoting or deactivating the last one). */
+async function wouldRemoveLastAdmin(supabase: ReturnType<typeof admin>, userId: string): Promise<boolean> {
+  const { data: target } = await supabase.from('profiles').select('role, status').eq('id', userId).single();
+  if (target?.role !== 'admin' || target.status !== 'active') return false;
+  const { count } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('role', 'admin')
+    .eq('status', 'active');
+  return (count ?? 0) <= 1;
+}
 const MIN_PASSWORD_LENGTH = 8;
 
 function usernameToEmail(username: string): string {
@@ -71,6 +99,7 @@ async function createAuthUserAndProfile(
   password: string,
   role: 'admin' | 'user',
   status: 'active' | 'inactive',
+  pageAccess: PageAccess[] = [...PAGE_ACCESS_VALUES],
 ) {
   const { data: created, error: createError } = await supabase.auth.admin.createUser({
     email: usernameToEmail(username),
@@ -84,7 +113,7 @@ async function createAuthUserAndProfile(
 
   const { error: profileError } = await supabase
     .from('profiles')
-    .insert({ id: created.user.id, username, role, status });
+    .insert({ id: created.user.id, username, role, status, page_access: role === 'admin' ? [...PAGE_ACCESS_VALUES] : pageAccess });
   if (profileError) {
     await supabase.auth.admin.deleteUser(created.user.id);
     const duplicate = profileError.message.includes('duplicate') || profileError.code === '23505';
@@ -129,7 +158,9 @@ Deno.serve(async (req: Request) => {
     if (password instanceof Response) return password;
     const role = body.role === 'admin' ? 'admin' : 'user';
     const status = body.status === 'inactive' ? 'inactive' : 'active';
-    return createAuthUserAndProfile(supabase, username, password, role, status);
+    const pageAccess = body.pageAccess === undefined ? [...PAGE_ACCESS_VALUES] : validatePageAccess(body.pageAccess);
+    if (pageAccess instanceof Response) return pageAccess;
+    return createAuthUserAndProfile(supabase, username, password, role, status, pageAccess);
   }
 
   if (action === 'update') {
@@ -139,7 +170,18 @@ Deno.serve(async (req: Request) => {
     if (typeof userId !== 'string') return json({ error: 'userId is required' }, 400);
 
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    const demoting = body.role === 'user' || body.status === 'inactive';
+    if (demoting && (await wouldRemoveLastAdmin(supabase, userId))) {
+      return json({ error: 'ไม่สามารถลดสิทธิ์หรือระงับผู้ดูแลระบบคนสุดท้ายได้ ระบบต้องมีผู้ดูแลระบบอย่างน้อย 1 คน' }, 400);
+    }
     if (body.role === 'admin' || body.role === 'user') updates.role = body.role;
+    if (body.role === 'admin') {
+      updates.page_access = [...PAGE_ACCESS_VALUES];
+    } else if (body.pageAccess !== undefined) {
+      const pageAccess = validatePageAccess(body.pageAccess);
+      if (pageAccess instanceof Response) return pageAccess;
+      updates.page_access = pageAccess;
+    }
     if (body.status === 'active' || body.status === 'inactive') {
       updates.status = body.status;
       const { error: banError } = await supabase.auth.admin.updateUserById(userId, {
@@ -165,16 +207,8 @@ Deno.serve(async (req: Request) => {
     const userId = body.userId;
     if (typeof userId !== 'string') return json({ error: 'userId is required' }, 400);
 
-    const { data: target } = await supabase.from('profiles').select('role, status').eq('id', userId).single();
-    if (target?.role === 'admin' && target.status === 'active') {
-      const { count } = await supabase
-        .from('profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('role', 'admin')
-        .eq('status', 'active');
-      if ((count ?? 0) <= 1) {
-        return json({ error: 'ไม่สามารถลบผู้ดูแลระบบคนสุดท้ายได้ ระบบต้องมีผู้ดูแลระบบอย่างน้อย 1 คน' }, 400);
-      }
+    if (await wouldRemoveLastAdmin(supabase, userId)) {
+      return json({ error: 'ไม่สามารถลบผู้ดูแลระบบคนสุดท้ายได้ ระบบต้องมีผู้ดูแลระบบอย่างน้อย 1 คน' }, 400);
     }
 
     const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);

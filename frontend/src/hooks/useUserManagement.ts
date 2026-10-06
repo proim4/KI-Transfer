@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import type { ProfileRow, UserRole, UserStatus } from '../types/db';
+import type { PageAccess, ProfileRow, UserRole, UserStatus } from '../types/db';
 
 const USERS_QUERY_KEY = ['profiles'];
 
@@ -46,7 +46,7 @@ export function useBootstrapAdmin() {
 export function useCreateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (args: { username: string; password: string; role: UserRole; status: UserStatus }) =>
+    mutationFn: (args: { username: string; password: string; role: UserRole; status: UserStatus; pageAccess: PageAccess[] }) =>
       invoke({ action: 'create', ...args }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY }),
   });
@@ -55,7 +55,7 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (args: { userId: string; role?: UserRole; status?: UserStatus; password?: string }) =>
+    mutationFn: (args: { userId: string; role?: UserRole; status?: UserStatus; pageAccess?: PageAccess[]; password?: string }) =>
       invoke({ action: 'update', ...args }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY }),
   });

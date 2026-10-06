@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useUpdateUser } from '../hooks/useUserManagement';
-import type { ProfileRow, UserRole, UserStatus } from '../types/db';
+import { areasOf, toRoleAndAccess, type PageArea } from '../lib/pageAccess';
+import type { ProfileRow, UserStatus } from '../types/db';
+import PageAccessField from './PageAccessField';
 import PasswordInput from './PasswordInput';
 
 interface EditUserDialogProps {
@@ -12,7 +14,7 @@ const selectClass = 'w-full rounded-md border border-gray-300 bg-white px-3 py-2
 const labelClass = 'mb-1 block text-sm text-gray-600';
 
 export default function EditUserDialog({ user, onClose }: EditUserDialogProps) {
-  const [role, setRole] = useState<UserRole>(user.role);
+  const [areas, setAreas] = useState<Set<PageArea>>(() => areasOf(user.role, user.page_access));
   const [status, setStatus] = useState<UserStatus>(user.status);
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export default function EditUserDialog({ user, onClose }: EditUserDialogProps) {
     try {
       await updateUser.mutateAsync({
         userId: user.id,
-        role,
+        ...toRoleAndAccess(areas),
         status,
         ...(newPassword ? { password: newPassword } : {}),
       });
@@ -50,21 +52,13 @@ export default function EditUserDialog({ user, onClose }: EditUserDialogProps) {
           className="mb-3 w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500"
         />
 
-        <div className="mb-3 grid grid-cols-2 gap-2">
-          <div>
-            <label className={labelClass}>Role</label>
-            <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} className={selectClass}>
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <div>
-            <label className={labelClass}>Status</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value as UserStatus)} className={selectClass}>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
+        <PageAccessField value={areas} onChange={setAreas} />
+        <div className="mb-3">
+          <label className={labelClass}>Status</label>
+          <select value={status} onChange={(e) => setStatus(e.target.value as UserStatus)} className={selectClass}>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
         </div>
 
         <label className={labelClass}>Password ใหม่ (ไม่จำเป็น)</label>

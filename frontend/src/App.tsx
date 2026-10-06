@@ -12,6 +12,7 @@ import TrackingChannel from './pages/TrackingChannel';
 import Upload from './pages/Upload';
 import AdminGuard from './routes/AdminGuard';
 import AuthGuard from './routes/AuthGuard';
+import PageGuard from './routes/PageGuard';
 
 export default function App() {
   return (
@@ -20,32 +21,38 @@ export default function App() {
       <Route element={<AuthGuard />}>
         <Route element={<Layout />}>
           <Route path="/" element={<ProductSelect />} />
-          <Route path="/all/dashboard" element={<AllDashboard />} />
-          <Route path="/upload" element={<Upload />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/raw-data" element={<RawData />} />
           <Route path="/manual" element={<Manual />} />
-          <Route
-            path="/tracking/weekly"
-            element={<TrackingChannel channel="weekly" title="ติดตามโอน Weekly เทียบแผน" />}
-          />
-          <Route
-            path="/tracking/daily"
-            element={<TrackingChannel channel="daily" title="ติดตามโอน Daily เทียบแผน" />}
-          />
-          <Route
-            path="/tracking/total"
-            element={<TrackingChannel channel="total" title="ติดตามโอนรวม (Weekly + Daily) เทียบแผน" />}
-          />
-          <Route path="/supply-daily" element={<SupplyDailyTracking />} />
-          <Route path="/pork/dashboard" element={<Dashboard productLine="pork" />} />
-          <Route path="/pork/upload" element={<Upload productLine="pork" />} />
-          <Route path="/pork/raw-data" element={<RawData productLine="pork" />} />
-          <Route
-            path="/pork/tracking/daily"
-            element={<TrackingChannel channel="daily" title="ติดตามโอน (หมู) เทียบแผน" productLine="pork" />}
-          />
-          <Route path="/pork/supply-daily" element={<SupplyDailyTracking productLine="pork" />} />
+          <Route element={<PageGuard area="all" />}>
+            <Route path="/all/dashboard" element={<AllDashboard />} />
+          </Route>
+          <Route element={<PageGuard area="chicken" />}>
+            <Route path="/upload" element={<Upload />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/raw-data" element={<RawData />} />
+            <Route
+              path="/tracking/weekly"
+              element={<TrackingChannel channel="weekly" title="ติดตามโอน Weekly เทียบแผน" />}
+            />
+            <Route
+              path="/tracking/daily"
+              element={<TrackingChannel channel="daily" title="ติดตามโอน Daily เทียบแผน" />}
+            />
+            <Route
+              path="/tracking/total"
+              element={<TrackingChannel channel="total" title="ติดตามโอนรวม (Weekly + Daily) เทียบแผน" />}
+            />
+            <Route path="/supply-daily" element={<SupplyDailyTracking />} />
+          </Route>
+          <Route element={<PageGuard area="pork" />}>
+            <Route path="/pork/dashboard" element={<Dashboard productLine="pork" />} />
+            <Route path="/pork/upload" element={<Upload productLine="pork" />} />
+            <Route path="/pork/raw-data" element={<RawData productLine="pork" />} />
+            <Route
+              path="/pork/tracking/daily"
+              element={<TrackingChannel channel="daily" title="ติดตามโอน (หมู) เทียบแผน" productLine="pork" />}
+            />
+            <Route path="/pork/supply-daily" element={<SupplyDailyTracking productLine="pork" />} />
+          </Route>
           <Route element={<AdminGuard />}>
             <Route path="/settings" element={<Settings />} />
           </Route>

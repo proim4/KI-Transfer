@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
 
   // This function runs with the service-role key, so it must check the
   // caller itself: the platform's own JWT check accepts the public anon key.
-  const accessError = await requireDataAccess(supabase, req);
+  const accessError = await requireDataAccess(supabase, req, weekId);
   if (accessError) return accessError;
 
   let planRowsRaw: Record<string, unknown>[];
@@ -339,10 +339,11 @@ async function recomputeSupplyDaily(
 }
 
 /**
- * Mirrors the database's can_access_data() (migration 0019): while
- * require_login is on, only an active signed-in user may trigger a recompute.
+ * Mirrors the database's can_access_week() (migrations 0019/0020): while
+ * require_login is on, only an active signed-in user with access to this
+ * week's product line (or an admin) may trigger a recompute.
  */
-async function requireDataAccess(supabase: ReturnType<typeof createClient>, req: Request): Promise<Response | null> {
+async function requireDataAccess(supabase: ReturnType<typeof createClient>, req: Request, weekId: string): Promise<Response | null> {
   const { data: settings } = await supabase.from('app_settings').select('require_login').limit(1).maybeSingle();
   if (settings && settings.require_login === false) return null;
 
@@ -350,8 +351,14 @@ async function requireDataAccess(supabase: ReturnType<typeof createClient>, req:
   const { data: userData } = jwt ? await supabase.auth.getUser(jwt) : { data: { user: null } };
   if (!userData.user) return jsonError('ต้องเข้าสู่ระบบก่อน', 401);
 
-  const { data: profile } = await supabase.from('profiles').select('status').eq('id', userData.user.id).maybeSingle();
+  const { data: profile } = await supabase.from('profiles').select('status, role, page_access').eq('id', userData.user.id).maybeSingle();
   if (!profile || profile.status !== 'active') return jsonError('บัญชีนี้ไม่มีสิทธิ์ใช้งาน', 403);
+  if (profile.role === 'admin') return null;
+
+  const { data: week } = await supabase.from('weeks').select('product_line').eq('id', weekId).maybeSingle();
+  if (!week || !(profile.page_access ?? []).includes(week.product_line)) {
+    return jsonError('บัญชีนี้ไม่มีสิทธิ์ใช้งานข้อมูลสินค้านี้', 403);
+  }
   return null;
 }
 

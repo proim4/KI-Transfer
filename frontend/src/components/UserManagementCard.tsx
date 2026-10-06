@@ -1,11 +1,26 @@
 import { useState } from 'react';
 import { useDeleteUser, useUsers } from '../hooks/useUserManagement';
+import { PAGE_AREAS, areasOf } from '../lib/pageAccess';
 import type { ProfileRow } from '../types/db';
 import ConfirmDialog from './ConfirmDialog';
 import EditUserDialog from './EditUserDialog';
 import RegisterUserDialog from './RegisterUserDialog';
 
 const ROLE_LABEL: Record<string, string> = { admin: 'Admin', user: 'User' };
+
+function AccessChips({ user }: { user: ProfileRow }) {
+  const areas = areasOf(user.role, user.page_access);
+  if (areas.size === 0) return <span className="text-xs text-amber-700">ไม่มีสิทธิ์</span>;
+  return (
+    <div className="flex flex-wrap gap-1">
+      {PAGE_AREAS.filter((a) => areas.has(a.key)).map((a) => (
+        <span key={a.key} className="whitespace-nowrap rounded-full bg-navy-50 px-2 py-0.5 text-xs text-navy-800">
+          {a.label}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export default function UserManagementCard() {
   const { data: users, isLoading } = useUsers();
@@ -54,6 +69,7 @@ export default function UserManagementCard() {
               <tr>
                 <th className="px-3 py-2">Username</th>
                 <th className="px-3 py-2">Role</th>
+                <th className="px-3 py-2">สิทธิ์การเข้าถึง</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Action</th>
               </tr>
@@ -63,6 +79,9 @@ export default function UserManagementCard() {
                 <tr key={u.id} className="hover:bg-gray-50">
                   <td className="px-3 py-2 font-medium text-gray-900">{u.username}</td>
                   <td className="px-3 py-2 text-gray-600">{ROLE_LABEL[u.role] ?? u.role}</td>
+                  <td className="px-3 py-2">
+                    <AccessChips user={u} />
+                  </td>
                   <td className="px-3 py-2">
                     <span
                       className={`inline-flex items-center gap-1 text-xs font-medium ${
