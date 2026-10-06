@@ -12,7 +12,7 @@ export default function ColumnVisibilityMenu({ columns, hiddenKeys, onToggle }: 
     <Dropdown
       closeOnContentClick={false}
       summaryClassName="flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-      panelClassName="absolute right-0 z-30 mt-1 max-h-80 w-56 overflow-auto rounded-md border border-gray-200 bg-white p-1 shadow-lg"
+      panelClassName="absolute right-0 z-40 mt-1 max-h-80 w-56 overflow-auto rounded-md border border-gray-200 bg-white p-1 shadow-lg"
       label={
         <>
           คอลัม <span className="text-xs">▾</span>

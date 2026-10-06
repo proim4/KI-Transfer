@@ -108,7 +108,8 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-navy-900">
+      {/* relative z-40: keeps the nav dropdowns above tables' sticky header rows (z-10..z-30); dialogs (z-50) still cover it. */}
+      <header className="relative z-40 bg-navy-900">
         <div className="mx-auto flex max-w-screen-2xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-6">
             <NavLink to="/" className="text-lg font-semibold text-white">
