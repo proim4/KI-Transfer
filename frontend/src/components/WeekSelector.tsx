@@ -29,9 +29,34 @@ export default function WeekSelector({ value, onChange, productLine, allowCreate
   const defaults = currentIsoWeek();
   const [yearNo, setYearNo] = useState(defaults.yearNo);
   const [weekNo, setWeekNo] = useState(defaults.weekNo);
+  // null = follow the selected week's own year, so the year filter is always in step with the page's week.
+  const [yearFilter, setYearFilter] = useState<number | 'all' | null>(null);
+
+  const selectedWeek = weeks?.find((w) => w.id === value);
+  // A picked year that no longer holds the selected week (it changed from outside) yields to the week's own year, so the week dropdown never shows a value missing from its options.
+  const effectiveYear =
+    yearFilter !== null && (yearFilter === 'all' || !selectedWeek || selectedWeek.year_no === yearFilter)
+      ? yearFilter
+      : (selectedWeek?.year_no ?? 'all');
+  const years = Array.from(new Set((weeks ?? []).map((w) => w.year_no))).sort((a, b) => b - a);
+  // Listed by week number, highest first (then year) — useWeeks' own year-first order is kept for picking the default week.
+  const visibleWeeks = (weeks ?? [])
+    .filter((w) => effectiveYear === 'all' || w.year_no === effectiveYear)
+    .sort((a, b) => b.week_no - a.week_no || b.year_no - a.year_no);
+
+  function handleYearChange(raw: string) {
+    const next = raw === 'all' ? 'all' : Number(raw);
+    setYearFilter(next);
+    // Switching to a year that doesn't hold the current week jumps to that year's latest week, so the page never shows a week the dropdown can't.
+    if (next !== 'all' && selectedWeek?.year_no !== next) {
+      const latest = (weeks ?? []).filter((w) => w.year_no === next).sort((a, b) => b.week_no - a.week_no)[0];
+      if (latest) onChange(latest.id);
+    }
+  }
 
   async function handleCreate() {
     const week = await createWeek.mutateAsync({ yearNo, weekNo });
+    setYearFilter(null);
     onChange(week.id);
     setShowCreate(false);
   }
@@ -39,15 +64,30 @@ export default function WeekSelector({ value, onChange, productLine, allowCreate
   return (
     <div className="flex items-center gap-2">
       <select
+        value={String(effectiveYear)}
+        onChange={(e) => handleYearChange(e.target.value)}
+        disabled={isLoading}
+        aria-label="ปี"
+        className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900"
+      >
+        <option value="all">ทุกปี</option>
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+      <select
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         disabled={isLoading}
+        aria-label="Week"
         className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-900"
       >
         <option value="" disabled>
           เลือก Week
         </option>
-        {weeks?.map((w) => (
+        {visibleWeeks.map((w) => (
           <option key={w.id} value={w.id}>
             {w.label} ({w.year_no})
           </option>
