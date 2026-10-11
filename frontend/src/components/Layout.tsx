@@ -31,8 +31,8 @@ function NavDropdown({ label, children }: { label: string; children: ReactNode }
   );
 }
 
-/** ข้อมูลดิบ / 3 หน้า Tracking / สรุป / Settings live under one "เพิ่มเติม" menu so the
- * primary nav only ever shows the 2 things most people need (Dashboard, Upload). */
+/** ข้อมูลดิบ / 3 หน้า Tracking / Settings live under one "เพิ่มเติม" menu so the
+ * primary nav only shows what most people need (Dashboard, สรุปรายวัน/โรงงาน, Upload). */
 function MoreMenu({ showSettings }: { showSettings: boolean }) {
   return (
     <NavDropdown label="🐔 เพิ่มเติม">
@@ -47,9 +47,6 @@ function MoreMenu({ showSettings }: { showSettings: boolean }) {
       </NavLink>
       <NavLink to="/tracking/total" className={moreLinkClass}>
         🐔 ติดตามโอนรวม
-      </NavLink>
-      <NavLink to="/summary" className={moreLinkClass}>
-        🐔 สรุปรายวัน / รายโรงงาน
       </NavLink>
       <NavLink to="/supply-daily" className={moreLinkClass}>
         🐔 ติดตามการกรอก Supply Daily
@@ -74,9 +71,6 @@ function PorkMoreMenu({ showSettings }: { showSettings: boolean }) {
     <NavDropdown label="🐷 เพิ่มเติม">
       <NavLink to="/pork/tracking/daily" className={moreLinkClass}>
         🐷 ติดตามโอน (หมู)
-      </NavLink>
-      <NavLink to="/pork/summary" className={moreLinkClass}>
-        🐷 สรุปรายวัน / รายโรงงาน (หมู)
       </NavLink>
       <NavLink to="/pork/raw-data" className={moreLinkClass}>
         🐷 ข้อมูลดิบ (หมู)
@@ -127,6 +121,9 @@ export default function Layout() {
                   <NavLink to="/dashboard" className={navLinkClass}>
                     🐔 Dashboard
                   </NavLink>
+                  <NavLink to="/summary" className={navLinkClass}>
+                    🐔 สรุปรายวัน/โรงงาน
+                  </NavLink>
                   <NavLink to="/upload" className={navLinkClass}>
                     🐔 Upload Data
                   </NavLink>
@@ -137,6 +134,9 @@ export default function Layout() {
                 <>
                   <NavLink to="/pork/dashboard" className={navLinkClass}>
                     🐷 Dashboard
+                  </NavLink>
+                  <NavLink to="/pork/summary" className={navLinkClass}>
+                    🐷 สรุปรายวัน/โรงงาน
                   </NavLink>
                   <NavLink to="/pork/upload" className={navLinkClass}>
                     🐷 Upload Data
