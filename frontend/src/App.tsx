@@ -9,6 +9,7 @@ import RawData from './pages/RawData';
 import Settings from './pages/Settings';
 import SupplyDailyTracking from './pages/SupplyDailyTracking';
 import TrackingChannel from './pages/TrackingChannel';
+import TransferSummary from './pages/TransferSummary';
 import Upload from './pages/Upload';
 import AdminGuard from './routes/AdminGuard';
 import AuthGuard from './routes/AuthGuard';
@@ -41,6 +42,7 @@ export default function App() {
               path="/tracking/total"
               element={<TrackingChannel channel="total" title="ติดตามโอนรวม (Weekly + Daily) เทียบแผน" />}
             />
+            <Route path="/summary" element={<TransferSummary />} />
             <Route path="/supply-daily" element={<SupplyDailyTracking />} />
           </Route>
           <Route element={<PageGuard area="pork" />}>
@@ -51,6 +53,7 @@ export default function App() {
               path="/pork/tracking/daily"
               element={<TrackingChannel channel="daily" title="ติดตามโอน (หมู) เทียบแผน" productLine="pork" />}
             />
+            <Route path="/pork/summary" element={<TransferSummary productLine="pork" />} />
             <Route path="/pork/supply-daily" element={<SupplyDailyTracking productLine="pork" />} />
           </Route>
           <Route element={<AdminGuard />}>

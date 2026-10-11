@@ -31,7 +31,7 @@ function NavDropdown({ label, children }: { label: string; children: ReactNode }
   );
 }
 
-/** ข้อมูลดิบ / 3 หน้า Tracking / Settings live under one "เพิ่มเติม" menu so the
+/** ข้อมูลดิบ / 3 หน้า Tracking / สรุป / Settings live under one "เพิ่มเติม" menu so the
  * primary nav only ever shows the 2 things most people need (Dashboard, Upload). */
 function MoreMenu({ showSettings }: { showSettings: boolean }) {
   return (
@@ -47,6 +47,9 @@ function MoreMenu({ showSettings }: { showSettings: boolean }) {
       </NavLink>
       <NavLink to="/tracking/total" className={moreLinkClass}>
         🐔 ติดตามโอนรวม
+      </NavLink>
+      <NavLink to="/summary" className={moreLinkClass}>
+        🐔 สรุปรายวัน / รายโรงงาน
       </NavLink>
       <NavLink to="/supply-daily" className={moreLinkClass}>
         🐔 ติดตามการกรอก Supply Daily
@@ -71,6 +74,9 @@ function PorkMoreMenu({ showSettings }: { showSettings: boolean }) {
     <NavDropdown label="🐷 เพิ่มเติม">
       <NavLink to="/pork/tracking/daily" className={moreLinkClass}>
         🐷 ติดตามโอน (หมู)
+      </NavLink>
+      <NavLink to="/pork/summary" className={moreLinkClass}>
+        🐷 สรุปรายวัน / รายโรงงาน (หมู)
       </NavLink>
       <NavLink to="/pork/raw-data" className={moreLinkClass}>
         🐷 ข้อมูลดิบ (หมู)
