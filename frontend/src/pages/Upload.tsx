@@ -47,7 +47,16 @@ export default function Upload({ productLine = 'chicken' }: UploadProps) {
       <div>
         <h1 className="mb-2 text-xl font-semibold text-gray-900">Upload Data</h1>
         <div className="flex flex-wrap items-center gap-3">
-          <WeekSelector value={weekId} onChange={setWeekId} productLine={productLine} allowCreate />
+          <WeekSelector
+            value={weekId}
+            onChange={setWeekId}
+            productLine={productLine}
+            allowCreate
+            onWeekDeleted={() => {
+              setWeekId(null);
+              processMutation.reset();
+            }}
+          />
           <LastUpdatedLabel at={updatedAt} />
           {weekId && (
             <button

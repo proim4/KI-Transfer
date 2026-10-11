@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCreateWeek, useWeeks } from '../hooks/useWeeks';
+import DeleteWeekButton from './DeleteWeekButton';
 import type { ProductLine } from '../types/db';
 
 interface WeekSelectorProps {
@@ -10,6 +11,8 @@ interface WeekSelectorProps {
    * pages (Dashboard/Raw Data/Tracking) get a clean "Week: [ WK36 ▼ ]" —
    * only the Upload page (where a new week's data actually gets created) needs it. */
   allowCreate?: boolean;
+  /** With allowCreate: shows "ลบ Week" for the selected week; called once it's deleted so the page can drop it. */
+  onWeekDeleted?: () => void;
 }
 
 function currentIsoWeek(): { yearNo: number; weekNo: number } {
@@ -22,7 +25,7 @@ function currentIsoWeek(): { yearNo: number; weekNo: number } {
   return { yearNo: target.getUTCFullYear(), weekNo };
 }
 
-export default function WeekSelector({ value, onChange, productLine, allowCreate = false }: WeekSelectorProps) {
+export default function WeekSelector({ value, onChange, productLine, allowCreate = false, onWeekDeleted }: WeekSelectorProps) {
   const { data: weeks, isLoading } = useWeeks(productLine);
   const createWeek = useCreateWeek(productLine);
   const [showCreate, setShowCreate] = useState(false);
@@ -93,6 +96,15 @@ export default function WeekSelector({ value, onChange, productLine, allowCreate
           </option>
         ))}
       </select>
+      {allowCreate && selectedWeek && onWeekDeleted && (
+        <DeleteWeekButton
+          week={selectedWeek}
+          onDeleted={() => {
+            setYearFilter(null);
+            onWeekDeleted();
+          }}
+        />
+      )}
       {allowCreate &&
         (!showCreate ? (
           <button
