@@ -24,6 +24,34 @@ interface DrilldownTableProps {
   title?: string;
   /** Called with the rows left after the table's own search/filters, so the page's KPIs (and Export) can follow the same filter. */
   onFilteredChange?: (rows: TrackingResultRow[]) => void;
+  /** Preset filter driven from outside the table (the Dashboard's KPI cards), applied on top of search/header filters. */
+  quickFilter?: QuickFilter | null;
+  onQuickFilterChange?: (filter: QuickFilter | null) => void;
+}
+
+export type QuickFilter = 'plan' | 'actual' | 'below_plan' | 'loss';
+
+export const QUICK_FILTER_LABEL: Record<QuickFilter, string> = {
+  plan: 'มีแผนโอน',
+  actual: 'มีโอนจริง',
+  below_plan: 'ยังไม่ถึงแผน',
+  loss: 'มีมูลค่าสูญเสีย',
+};
+
+function matchesQuickFilter(r: TrackingResultRow, filter: QuickFilter, thresholds: StatusThresholds | undefined): boolean {
+  switch (filter) {
+    case 'plan':
+      return Number(r.plan_total) > 0;
+    case 'actual':
+      return Number(r.actual_alloc) > 0;
+    case 'below_plan': {
+      if (!thresholds) return true;
+      const zone = computeStatus(r.total_pct, thresholds).zone;
+      return zone !== 'high' && zone !== 'none';
+    }
+    case 'loss':
+      return Number(r.profit_lost) < 0;
+  }
 }
 
 type SortKey =
@@ -103,7 +131,7 @@ function actualTitle(r: TrackingResultRow): string | undefined {
   return `ส่วนของราคานี้ (ตามสัดส่วนแผน) จากโอนจริงทั้งเส้นทาง ${formatKg(Number(r.actual_total))}`;
 }
 
-export default function DrilldownTable({ weekId, rows, title, onFilteredChange }: DrilldownTableProps) {
+export default function DrilldownTable({ weekId, rows, title, onFilteredChange, quickFilter = null, onQuickFilterChange }: DrilldownTableProps) {
   const thresholds = useStatusThresholds();
   const [search, setSearch] = useState('');
   const [columnFilters, setColumnFilters] = useState<Partial<Record<SortKey, string>>>({});
@@ -159,6 +187,7 @@ export default function DrilldownTable({ weekId, rows, title, onFilteredChange }
   const filtered = useMemo(
     () =>
       rows.filter((r) => {
+        if (quickFilter && !matchesQuickFilter(r, quickFilter, thresholds)) return false;
         if (search && !searchText(r).includes(search.toLowerCase())) return false;
         return COLUMNS.every((c) => {
           const fv = columnFilters[c.key];
@@ -166,7 +195,7 @@ export default function DrilldownTable({ weekId, rows, title, onFilteredChange }
           return String(filterValue(r, c.key, thresholds) ?? '') === fv;
         });
       }),
-    [rows, search, columnFilters, thresholds],
+    [rows, search, columnFilters, thresholds, quickFilter],
   );
 
   useEffect(() => {
@@ -240,13 +269,28 @@ export default function DrilldownTable({ weekId, rows, title, onFilteredChange }
           placeholder="ค้นหา..."
           className="w-40 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900"
         />
+        {quickFilter && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-navy-100 py-0.5 pl-2.5 pr-1 text-xs font-medium text-navy-700">
+            {QUICK_FILTER_LABEL[quickFilter]}
+            <button
+              type="button"
+              onClick={() => onQuickFilterChange?.(null)}
+              title="ยกเลิก Filter นี้"
+              aria-label="ยกเลิก Filter นี้"
+              className="flex h-4 w-4 items-center justify-center rounded-full hover:bg-navy-200"
+            >
+              ×
+            </button>
+          </span>
+        )}
         <span className="text-xs text-gray-400">{filtered.length} รายการ</span>
         <div className="ml-auto flex items-center gap-2">
           <ClearFilterButton
-            active={search !== '' || Object.values(columnFilters).some(Boolean)}
+            active={search !== '' || Object.values(columnFilters).some(Boolean) || quickFilter !== null}
             onClear={() => {
               setSearch('');
               setColumnFilters({});
+              onQuickFilterChange?.(null);
             }}
           />
           <ColumnVisibilityMenu columns={COLUMNS} hiddenKeys={hiddenKeys} onToggle={toggleColumnVisibility} />

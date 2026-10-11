@@ -6,6 +6,11 @@ interface KpiCardProps {
   size?: 'default' | 'hero';
   /** Explanation shown as a tooltip on an ⓘ next to the label (e.g. how a % is calculated). */
   hint?: string;
+  /** Makes the whole card a toggle button (e.g. filtering the table below by this KPI). */
+  onClick?: () => void;
+  active?: boolean;
+  /** Tooltip for the clickable card. */
+  title?: string;
 }
 
 const toneClass: Record<NonNullable<KpiCardProps['tone']>, string> = {
@@ -22,15 +27,17 @@ const heroToneClass: Record<NonNullable<KpiCardProps['tone']>, string> = {
   warn: 'text-amber-700',
 };
 
-export default function KpiCard({ label, value, sub, tone = 'default', size = 'default', hint }: KpiCardProps) {
+export default function KpiCard({ label, value, sub, tone = 'default', size = 'default', hint, onClick, active = false, title }: KpiCardProps) {
   const isHero = size === 'hero';
+  const Tag = onClick ? 'button' : 'div';
+  const base = isHero
+    ? 'h-full w-full rounded-xl border bg-navy-50 p-5 text-left shadow-sm transition-shadow hover:shadow-md'
+    : 'h-full w-full rounded-xl border bg-white p-4 text-left shadow-sm transition-shadow hover:shadow-md';
+  const border = active ? 'border-navy-500 ring-2 ring-navy-400' : isHero ? 'border-navy-100' : 'border-gray-200';
   return (
-    <div
-      className={
-        isHero
-          ? 'h-full rounded-xl border border-navy-100 bg-navy-50 p-5 shadow-sm transition-shadow hover:shadow-md'
-          : 'h-full rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md'
-      }
+    <Tag
+      {...(onClick ? { type: 'button' as const, onClick, 'aria-pressed': active, title } : {})}
+      className={`${base} ${border} ${onClick ? 'cursor-pointer' : ''}`}
     >
       <p
         className={
@@ -52,7 +59,7 @@ export default function KpiCard({ label, value, sub, tone = 'default', size = 'd
         {value}
       </p>
       {sub && <p className={`mt-1 text-xs ${isHero ? 'text-navy-400' : 'text-gray-400'}`}>{sub}</p>}
-    </div>
+    </Tag>
   );
 }
 
