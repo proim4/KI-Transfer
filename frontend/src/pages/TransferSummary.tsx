@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { formatKg, formatPct } from '../components/KpiCard';
 import LastUpdatedLabel from '../components/LastUpdatedLabel';
 import PctBar from '../components/PctBar';
@@ -35,32 +35,91 @@ interface SummaryTableProps {
   thresholds: StatusThresholds | undefined;
 }
 
+type MetricKey = 'plan' | 'actual' | 'diff' | 'pct';
+/** A label column (by its index in cellsOf) or one of the metric columns. */
+type SortKey = number | MetricKey;
+
+const METRIC_VALUE: Record<MetricKey, (g: SummaryGroup) => number | null> = {
+  plan: (g) => g.planSum,
+  actual: (g) => g.toleranceAdjSum,
+  diff: (g) => g.diff,
+  pct: (g) => g.pct,
+};
+
 function SummaryTable({ labels, groups, total, cellsOf, thresholds }: SummaryTableProps) {
   const th = 'whitespace-nowrap px-3 py-2 text-xs font-semibold';
   const td = 'whitespace-nowrap px-3 py-1';
+  // null = the summary's own order (by date / by plant code).
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' } | null>(null);
+
+  const sorted = useMemo(() => {
+    if (!sort) return groups;
+    const { key, dir } = sort;
+    const copy = [...groups];
+    copy.sort((a, b) => {
+      let cmp: number;
+      if (typeof key === 'number') {
+        cmp = cellsOf(a)[key].localeCompare(cellsOf(b)[key], undefined, { numeric: true });
+      } else {
+        // A "-" % (no plan) sorts last ascending, first descending — never dropped.
+        const av = METRIC_VALUE[key](a) ?? -Infinity;
+        const bv = METRIC_VALUE[key](b) ?? -Infinity;
+        cmp = av === bv ? 0 : av < bv ? -1 : 1;
+      }
+      return dir === 'asc' ? cmp : -cmp;
+    });
+    return copy;
+  }, [groups, sort, cellsOf]);
+
+  function toggleSort(key: SortKey) {
+    setSort((prev) => (prev?.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+  }
+
+  // A plain render helper, not a nested component — a component defined in here would remount every render.
+  function sortTh(sortKey: SortKey, className: string, children: ReactNode) {
+    const active = sort?.key === sortKey;
+    return (
+      <th
+        key={String(sortKey)}
+        className={`${th} ${className} cursor-pointer select-none hover:brightness-95`}
+        onClick={() => toggleSort(sortKey)}
+        aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
+        title="คลิกเพื่อเรียงลำดับ"
+      >
+        {children}
+        <span className={`ml-1 ${active ? '' : 'opacity-40'}`}>{active ? (sort.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+      </th>
+    );
+  }
+
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200">
       <table className="w-full text-left text-sm">
         <thead>
           <tr>
-            {labels.map((l) => (
-              <th key={l} className={`${th} bg-[#FFC000] text-amber-950`}>
-                {l}
-              </th>
-            ))}
-            <th className={`${th} bg-[#FFC000] text-right text-amber-950`}>แผนโอน</th>
-            <th className={`${th} bg-[#375623] text-right text-white`}>
-              โอนจริง
-              <span title={ACTUAL_HINT} aria-label={ACTUAL_HINT} className="ml-1 cursor-help font-normal">
-                ⓘ
-              </span>
-            </th>
-            <th className={`${th} bg-red-600 text-right text-white`}>Diff แผนโอน</th>
-            <th className={`${th} bg-[#375623] text-right text-white`}>% โอนเทียบแผน</th>
+            {labels.map((l, i) => sortTh(i, 'bg-[#FFC000] text-amber-950', l))}
+            {sortTh('plan', 'bg-[#FFC000] text-right text-amber-950', 'แผนโอน')}
+            {sortTh(
+              'actual',
+              'bg-[#375623] text-right text-white',
+              <>
+                โอนจริง
+                <span
+                  title={ACTUAL_HINT}
+                  aria-label={ACTUAL_HINT}
+                  onClick={(e) => e.stopPropagation()}
+                  className="ml-1 cursor-help font-normal"
+                >
+                  ⓘ
+                </span>
+              </>,
+            )}
+            {sortTh('diff', 'bg-red-600 text-right text-white', 'Diff แผนโอน')}
+            {sortTh('pct', 'bg-[#375623] text-right text-white', '% โอนเทียบแผน')}
           </tr>
         </thead>
         <tbody>
-          {groups.map((g, i) => (
+          {sorted.map((g, i) => (
             <tr key={g.key} className={`border-b border-gray-100 hover:bg-blue-50 ${i % 2 === 1 ? 'bg-amber-50/40' : 'bg-white'}`}>
               {cellsOf(g).map((c, j) => (
                 // max-width on a <td> is ignored by auto table layout, so the truncation lives on an inner div.
