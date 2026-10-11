@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import DateShiftReviewPanel from '../components/DateShiftReviewPanel';
-import DrilldownTable, { QUICK_FILTER_LABEL, type QuickFilter } from '../components/DrilldownTable';
+import DrilldownTable, { matchesQuickFilter, QUICK_FILTER_LABEL, type QuickFilter } from '../components/DrilldownTable';
 import KpiCard, { formatBaht, formatKg, formatPct } from '../components/KpiCard';
 import WeekSelector from '../components/WeekSelector';
 import { useStatusThresholds } from '../hooks/useAppSettings';
@@ -67,9 +67,11 @@ export default function Dashboard({ productLine = 'chicken' }: DashboardProps) {
 
   async function handleExport() {
     if (!weekId || !week || !results) return;
+    // Export what the table shows, including a clicked KPI card's filter.
+    const exportRows = quickFilter ? kpiRows.filter((r) => matchesQuickFilter(r, quickFilter, thresholds)) : kpiRows;
     setExporting(true);
     try {
-      await exportWeekToExcel(weekId, week.label, kpiRows, { filtered: isFiltered, totalRowCount: rows.length });
+      await exportWeekToExcel(weekId, week.label, exportRows, { filtered: exportRows.length !== rows.length, totalRowCount: rows.length });
     } finally {
       setExporting(false);
     }

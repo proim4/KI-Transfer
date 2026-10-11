@@ -22,7 +22,7 @@ interface DrilldownTableProps {
   rows: TrackingResultRow[];
   /** Heading shown on the same row as the search box / Clear Filter / คอลัม, instead of the caller stacking it above separately. */
   title?: string;
-  /** Called with the rows left after the table's own search/filters, so the page's KPIs (and Export) can follow the same filter. */
+  /** Called with the rows left after the table's own search/header filters (not the quick filter), so the page's KPIs can follow the same filter. */
   onFilteredChange?: (rows: TrackingResultRow[]) => void;
   /** Preset filter driven from outside the table (the Dashboard's KPI cards), applied on top of search/header filters. */
   quickFilter?: QuickFilter | null;
@@ -38,7 +38,7 @@ export const QUICK_FILTER_LABEL: Record<QuickFilter, string> = {
   loss: 'มีมูลค่าสูญเสีย',
 };
 
-function matchesQuickFilter(r: TrackingResultRow, filter: QuickFilter, thresholds: StatusThresholds | undefined): boolean {
+export function matchesQuickFilter(r: TrackingResultRow, filter: QuickFilter, thresholds: StatusThresholds | undefined): boolean {
   switch (filter) {
     case 'plan':
       return Number(r.plan_total) > 0;
@@ -184,10 +184,9 @@ export default function DrilldownTable({ weekId, rows, title, onFilteredChange, 
     return map;
   }, [rows, thresholds]);
 
-  const filtered = useMemo(
+  const baseFiltered = useMemo(
     () =>
       rows.filter((r) => {
-        if (quickFilter && !matchesQuickFilter(r, quickFilter, thresholds)) return false;
         if (search && !searchText(r).includes(search.toLowerCase())) return false;
         return COLUMNS.every((c) => {
           const fv = columnFilters[c.key];
@@ -195,12 +194,20 @@ export default function DrilldownTable({ weekId, rows, title, onFilteredChange, 
           return String(filterValue(r, c.key, thresholds) ?? '') === fv;
         });
       }),
-    [rows, search, columnFilters, thresholds, quickFilter],
+    [rows, search, columnFilters, thresholds],
+  );
+
+  // The quick filter (a clicked KPI card) narrows only the table itself — the
+  // KPI cards keep showing the figures for the rows above, not the subset
+  // they were clicked to drill into.
+  const filtered = useMemo(
+    () => (quickFilter ? baseFiltered.filter((r) => matchesQuickFilter(r, quickFilter, thresholds)) : baseFiltered),
+    [baseFiltered, quickFilter, thresholds],
   );
 
   useEffect(() => {
-    onFilteredChange?.(filtered);
-  }, [filtered, onFilteredChange]);
+    onFilteredChange?.(baseFiltered);
+  }, [baseFiltered, onFilteredChange]);
 
   // Every column's header cell gets its own filter dropdown alongside the
   // existing click-to-sort label/arrow.
